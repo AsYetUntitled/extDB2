@@ -3,24 +3,24 @@
 I got bored waiting on Arma 2017 / Epoch for Arma3.  
 So i decided to write up an C++ Extension for Arma3server.
 
-
+ 
 #### Known Public Missions / Mods using older extDB  
 http://www.altisliferpg.com  
 http://a3wasteland.com/  
 
 
-#### Known Public Missions / Mods using older extDB  
-None Available  
-
+#### Known Public Missions / Mods using extDB2
+None  
+  
+  
 ### Features
 
- - ASYNC Support + Multi-threading  
+ - ASYNC Support
  - Unique ID for Messages  
  - Multi-Part Messages  
  - Rcon Support  
  - Steam VAC + Friends Queries  
  - MySQL + SQLite Support  
- - Supports Mysql / SQlite / ODBC  
  - Arma2 Legacy randomize configfile support  
 
 
@@ -35,10 +35,10 @@ None Available
 
 
 #### WIP
- 
- - Redis Support
- - Remote Console for extDB2 i.e so you can remote execute SQF Code
-  
+
+ - Remote Console for extDB2 i.e so you can remote execute SQF Code 
+ - Redis Support Coming Soon
+
   
 #### Known Issues
  - https://github.com/Torndeco/extDB2/wiki/Known-Issues
