@@ -1,0 +1,8 @@
+extDB contains both GPLv3 Code + MIT Licensed Code
+
+License Info is located inside the relevant directories...
+
+src/LICENSE
+src/redis/LICENSE
+src/spdlog/LICENSE
+
