@@ -17,12 +17,10 @@ None Available
  - ASYNC Support + Multi-threading  
  - Unique ID for Messages  
  - Multi-Part Messages  
- 
  - Rcon Support  
  - Steam VAC + Friends Queries  
  - MySQL + SQLite Support  
-
- - Supports Mysql / SQlite / ODBC
+ - Supports Mysql / SQlite / ODBC  
  - Arma2 Legacy randomize configfile support  
 
 
@@ -61,19 +59,18 @@ Windows 7 + Later
 Install vcredist_x86.exe  
 http://www.microsoft.com/en-ie/download/details.aspx?id=40784  
 
+#### Donation Link @  
+
+https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=2SUEFTGABTAM2
  
 
 #### Thanks to
 
  - bladez- For code to encode BERcon packets from https://github.com/bladez-/bercon for RCON  
  - Fank for his code to convert SteamID to BEGUID https://gist.github.com/Fank/11127158
-
  - rajkosto for his work on DayZ Hive, using almost the exact same boost parser for sanitize checks for input/output https://github.com/rajkosto/hive  
  - firefly2442 for the CMake Build System & wiki updates https://github.com/firefly2442
  - MaHuJa for fixing Test Application Input, no longer hardcoded input limit https://github.com/MaHuJa
-
  - killzonekid for his blog http://killzonekid.com/
-  
  - Tonic & Atlis RPG Admins for beening literally beening bleeding edge testers for extDB. https://github.com/TAWTonic
-
  - Gabime for Spdlog https://github.com/gabime/spdlog
