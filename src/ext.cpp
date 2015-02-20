@@ -138,37 +138,26 @@ Ext::Ext(std::string dll_path)
 		}
 
 		// Initialize Loggers
-		Poco::DateTime now;
-		std::string log_filename = Poco::DateTimeFormatter::format(now, "%H-%M-%S.log");
+		Poco::DateTime current_dateTime;
+		std::string log_filename = Poco::DateTimeFormatter::format(current_dateTime, "%H-%M-%S.log");
 
 		boost::filesystem::path log_relative_path;
 		log_relative_path = boost::filesystem::path(extDB_info.path);
 		log_relative_path /= "extDB";
 		log_relative_path /= "logs";
-		log_relative_path /= Poco::DateTimeFormatter::format(now, "%Y");
-		log_relative_path /= Poco::DateTimeFormatter::format(now, "%n");
-		log_relative_path /= Poco::DateTimeFormatter::format(now, "%d");
+		log_relative_path /= Poco::DateTimeFormatter::format(current_dateTime, "%Y");
+		log_relative_path /= Poco::DateTimeFormatter::format(current_dateTime, "%n");
+		log_relative_path /= Poco::DateTimeFormatter::format(current_dateTime, "%d");
 		extDB_info.log_path = log_relative_path.make_preferred().string();
 		boost::filesystem::create_directories(log_relative_path);
 		log_relative_path /= log_filename;
 
-		boost::filesystem::path vacBans_log_relative_path;
-		vacBans_log_relative_path = boost::filesystem::path(extDB_info.path);
-		vacBans_log_relative_path /= "extDB";
-		vacBans_log_relative_path /= "vacban_logs";
-		vacBans_log_relative_path /= Poco::DateTimeFormatter::format(now, "%Y");
-		vacBans_log_relative_path /= Poco::DateTimeFormatter::format(now, "%n");
-		vacBans_log_relative_path /= Poco::DateTimeFormatter::format(now, "%d");
-		boost::filesystem::create_directories(vacBans_log_relative_path);
-		vacBans_log_relative_path /= log_filename;
 
 		auto console_temp = spdlog::stdout_logger_mt("extDB Console logger");
 		auto logger_temp = spdlog::daily_logger_mt("extDB File Logger", log_relative_path.make_preferred().string(), true);
-		auto vacBans_logger_temp = spdlog::daily_logger_mt("extDB vacBans Logger", vacBans_log_relative_path.make_preferred().string(), true);
 
 		console.swap(console_temp);
 		logger.swap(logger_temp);
-		vacBans_logger.swap(vacBans_logger_temp);
 
 		spdlog::set_level(spdlog::level::info);
 		spdlog::set_pattern("%v");
@@ -287,8 +276,8 @@ Ext::Ext(std::string dll_path)
  			// Initialize so have atomic setup correctly
 			rcon_worker.init(logger);
 
-			// Initialize so have atomic setup correctly
-			steam_worker.init(this);
+			// Initialize so have atomic setup correctly + Setup VAC Ban Logger
+			steam_worker.init(this, extDB_info.path, current_dateTime);
 
 			#ifdef _WIN32
 				if ((pConf->getBool("Main.Randomize Config File", false)) && (!conf_randomized))
@@ -1122,6 +1111,7 @@ void Ext::callExtenion(char *output, const int &output_size, const char *functio
 			console->critical("extDB2: Error: {0}", e.displayText());
 		#endif
 		logger->critical("extDB2: Error: {0}", e.displayText());
+		logger->critical("extDB2: Error: Input String {0}", function);
 	}
 }
 
@@ -1136,10 +1126,14 @@ int main(int nNumberofArgs, char* pszArgs[])
 	std::string current_path;
 	extension = (new Ext(current_path));
 
+	spdlog::set_pattern("%v");
 	extension->console->info("Welcome to extDB Test Application : Version {0}", VERSION);
 	extension->console->info("OutputSize is set to 80 for Test Application, just so it is readable ");
 	extension->console->info("OutputSize for Arma3 is more like 10k in size ");
 	extension->console->info("To exit type 'quit'");
+	extension->console->info();
+	extension->console->info();
+	spdlog::set_pattern("[%H:%M:%S %z] [Thread %t] %v");
 
 	bool test = false;
 	int test_counter = 0;

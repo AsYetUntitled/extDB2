@@ -23,6 +23,7 @@ From Frank https://gist.github.com/Fank/11127158
 #include "steamworker.h"
 
 #include <boost/algorithm/string.hpp>
+#include <boost/filesystem.hpp>
 #include <boost/property_tree/ptree.hpp>
 #include <boost/property_tree/json_parser.hpp>
 
@@ -117,13 +118,13 @@ void STEAMGET::stop()
 // --------------------------------------------------------------------------------------
 
 
-void STEAMWORKER::init(AbstractExt *extension)
+void STEAMWORKER::init(AbstractExt *extension, std::string &extension_path, Poco::DateTime &current_dateTime)
 {
 	extension_ptr = extension;
-
 	steam_run_flag = new std::atomic<bool>(false);
 
 	STEAM_api_key = extension_ptr->pConf->getString("Steam.API Key", "");
+
 	rconBanSettings.autoBan = extension_ptr->pConf->getBool("VAC.Auto Ban", false);
 	rconBanSettings.NumberOfVACBans = extension_ptr->pConf->getInt("VAC.NumberOfVACBans", 1);
 	rconBanSettings.DaysSinceLastBan = extension_ptr->pConf->getInt("VAC.DaysSinceLastBan", 0);
@@ -132,6 +133,24 @@ void STEAMWORKER::init(AbstractExt *extension)
 
 	SteamVacBans_Cache = new Poco::ExpireCache<std::string, SteamVACBans>(extension_ptr->pConf->getInt("STEAM.BanCacheTime", 3600000));
 	SteamFriends_Cache = new Poco::ExpireCache<std::string, SteamFriends>(extension_ptr->pConf->getInt("STEAM.FriendsCacheTime", 3600000));
+
+	if (rconBanSettings.autoBan)
+	{
+		std::string log_filename = Poco::DateTimeFormatter::format(current_dateTime, "%H-%M-%S.log");
+
+		boost::filesystem::path vacBans_log_relative_path;
+		vacBans_log_relative_path = boost::filesystem::path(extension_path);
+		vacBans_log_relative_path /= "extDB";
+		vacBans_log_relative_path /= "vacban_logs";
+		vacBans_log_relative_path /= Poco::DateTimeFormatter::format(current_dateTime, "%Y");
+		vacBans_log_relative_path /= Poco::DateTimeFormatter::format(current_dateTime, "%n");
+		vacBans_log_relative_path /= Poco::DateTimeFormatter::format(current_dateTime, "%d");
+		boost::filesystem::create_directories(vacBans_log_relative_path);
+		vacBans_log_relative_path /= log_filename;
+
+		auto vacBans_logger_temp = spdlog::daily_logger_mt("extDB vacBans Logger", vacBans_log_relative_path.make_preferred().string(), true);
+		extension_ptr->vacBans_logger.swap(vacBans_logger_temp);
+	}
 }
 
 

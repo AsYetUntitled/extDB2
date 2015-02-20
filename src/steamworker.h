@@ -72,7 +72,7 @@ class STEAMWORKER: public Poco::Runnable
 		void run();
 		void stop();
 
-		void init(AbstractExt *extension);
+		void init(AbstractExt *extension, std::string &extension_path, Poco::DateTime &current_dateTime);
 		void addQuery(const int &unique_id, bool queryFriends, bool queryVacBans, std::vector<std::string> &steamIDs);
 
 	private:

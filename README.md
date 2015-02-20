@@ -1,4 +1,4 @@
-## Arma3 Extension DB  C++ (windows / linux)   v35 
+## Arma3 Extension DB  C++ (windows / linux)
 
 I got bored waiting on Arma 2017 / Epoch for Arma3.  
 So i decided to write up an C++ Extension for Arma3server.
