@@ -155,11 +155,6 @@ void ResultMetadata::init(MYSQL_STMT* stmt)
 {
 	ResultMetadataHandle h(stmt);
 
-	if (h == NULL)
-	{
-		throw Poco::Data::MySQL::StatementException("Fetching Result Failed");
-	}
-
 	if (!h)
 	{
 		// all right, it is normal
