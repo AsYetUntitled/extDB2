@@ -61,7 +61,6 @@ along with this program. If not, see <http://www.gnu.org/licenses/>.
 #include "protocols/steam.h"
 
 
-
 Ext::Ext(std::string dll_path)
 {
 	try
@@ -172,40 +171,45 @@ Ext::Ext(std::string dll_path)
 		vacBans_logger.swap(vacBans_logger_temp);
 
 		spdlog::set_level(spdlog::level::info);
-		spdlog::set_pattern("[%H:%M:%S %z] [Thread %t] %v");
+		spdlog::set_pattern("%v");
 
 
-		logger->info("extDB: Version: {0}", getVersion());
+		logger->info("extDB2: Version: {0}", VERSION);
 		#ifdef __GNUC__
 			#ifndef DEBUG_TESTING
-				logger->info("extDB: Linux Version");
+				logger->info("extDB2: Linux Version");
 			#else
-				logger->info("extDB: Linux Debug Version");
+				logger->info("extDB2: Linux Debug Version");
 			#endif
 		#endif
 
 		#ifdef _MSC_VER
 			#ifndef DEBUG_TESTING
-				logger->info("extDB: Windows Version");
+				logger->info("extDB2: Windows Version");
 			#else
-				logger->info("extDB: Windows Debug Version");
+				logger->info("extDB2: Windows Debug Version");
 				logger->info();
 			#endif
 		#endif
 
 		#ifndef TESTING
-			logger->info("Message: Arma Linux Servers are using Older Physic Library (than Windows Servers), due to Debian 7 using old version of Glibc");
-			logger->info("Message: If you like extDB consider donating or bug BIS to drop support for Debian 7 thanks, so Linux Servers get same Physic Library Version as Windows");
-			logger->info("Message: Note currently most/all development for extDB is done on a Linux Server");
-			logger->info("Message: Torndeco: 24/01/15");
+			logger->info("Message: Donated to extDB2 Develeopment ?");
+			logger->info("Message: All development for extDB2 is done on a Linux Dedicated Server");
+			logger->info("Message: Leave a message if there is a feature you would like to see added.");
+			logger->info("Message: Donate Link @ https://github.com/Torndeco/extdb2");
+			logger->info("Message: Thanks for all the people that have donated.");
+			logger->info("Message: Torndeco: 20/02/15");
+			logger->info();
 			logger->info();
 		#endif
+
+		spdlog::set_pattern("[%H:%M:%S %z] [Thread %t] %v");
 
 
 		if (!conf_found)
 		{
-			console->critical("extDB: Unable to find extdb-conf.ini");
-			logger->critical("extDB: Unable to find extdb-conf.ini");
+			console->critical("extDB2: Unable to find extdb-conf.ini");
+			logger->critical("extDB2: Unable to find extdb-conf.ini");
 			// Kill Server no config file found -- Evil
 			std::exit(EXIT_SUCCESS);
 		}
@@ -214,9 +218,9 @@ Ext::Ext(std::string dll_path)
 			// Load extdb config
 			pConf = (new Poco::Util::IniFileConfiguration(extDB_config_path.make_preferred().string()));
 			#ifdef TESTING
-				console->info("extDB: Found extdb-conf.ini");
+				console->info("extDB2: Found extdb-conf.ini");
 			#endif
-			logger->info("extDB: Found extdb-conf.ini");
+			logger->info("extDB2: Found extdb-conf.ini");
 
 			// Start Threads + ASIO
 			extDB_info.max_threads = pConf->getInt("Main.Threads", 0);
@@ -227,44 +231,44 @@ Ext::Ext(std::string dll_path)
 				if (detected_cpu_cores > 6)
 				{
 					#ifdef TESTING
-						console->info("extDB: Detected {0} Cores, Setting up {1} Worker Threads", detected_cpu_cores, 6);
+						console->info("extDB2: Detected {0} Cores, Setting up {1} Worker Threads", detected_cpu_cores, 6);
 					#endif
-					logger->info("extDB: Detected {0} Cores, Setting up {1} Worker Threads", detected_cpu_cores, 6);
+					logger->info("extDB2: Detected {0} Cores, Setting up {1} Worker Threads", detected_cpu_cores, 6);
 					extDB_info.max_threads = 6;
 				}
 				else if (detected_cpu_cores <= 2)
 				{
 					#ifdef TESTING
-						console->info("extDB: Detected {0} Cores, Setting up {1} Worker Threads", detected_cpu_cores, 2);
+						console->info("extDB2: Detected {0} Cores, Setting up {1} Worker Threads", detected_cpu_cores, 2);
 					#endif
-					logger->info("extDB: Detected {0} Cores, Setting up {1} Worker Threads", detected_cpu_cores, 2);
+					logger->info("extDB2: Detected {0} Cores, Setting up {1} Worker Threads", detected_cpu_cores, 2);
 					extDB_info.max_threads = 2;
 				}
 				else
 				{
 					extDB_info.max_threads = detected_cpu_cores;
 					#ifdef TESTING
-						console->info("extDB: Detected {0} Cores, Setting up {1} Worker Threads", detected_cpu_cores, extDB_info.max_threads);
+						console->info("extDB2: Detected {0} Cores, Setting up {1} Worker Threads", detected_cpu_cores, extDB_info.max_threads);
 					#endif
-					logger->info("extDB: Detected {0} Cores, Setting up {1} Worker Threads", detected_cpu_cores, extDB_info.max_threads);
+					logger->info("extDB2: Detected {0} Cores, Setting up {1} Worker Threads", detected_cpu_cores, extDB_info.max_threads);
 				}
 			}
 			else if (extDB_info.max_threads > 8)  // Sanity Check
 			{
 				// Manual Config
 				#ifdef TESTING
-					console->info("extDB: Sanity Check, Setting up {0} Worker Threads (config settings {1})", 8, extDB_info.max_threads);
+					console->info("extDB2: Sanity Check, Setting up {0} Worker Threads (config settings {1})", 8, extDB_info.max_threads);
 				#endif
-				logger->info("extDB: Sanity Check, Setting up {0} Worker Threads (config settings {1})", 8, extDB_info.max_threads);
+				logger->info("extDB2: Sanity Check, Setting up {0} Worker Threads (config settings {1})", 8, extDB_info.max_threads);
 				extDB_info.max_threads = 8;
 			}
 			else
 			{
 				// Manual Config
 				#ifdef TESTING
-					console->info("extDB: Detected {0} Cores, Setting up {1} Worker Threads (config settings)", detected_cpu_cores, extDB_info.max_threads);
+					console->info("extDB2: Detected {0} Cores, Setting up {1} Worker Threads (config settings)", detected_cpu_cores, extDB_info.max_threads);
 				#endif
-				logger->info("extDB: Detected {0} Cores, Setting up {1} Worker Threads (config settings)", detected_cpu_cores, extDB_info.max_threads);
+				logger->info("extDB2: Detected {0} Cores, Setting up {1} Worker Threads (config settings)", detected_cpu_cores, extDB_info.max_threads);
 			}
 
 			// Setup ASIO Worker Pool
@@ -325,8 +329,8 @@ Ext::~Ext(void)
 
 void Ext::stop()
 {
-	console->info("extDB: Stopping ...");
-	logger->info("extDB: Stopping ...");
+	console->info("extDB2: Stopping ...");
+	logger->info("extDB2: Stopping ...");
 	io_work_ptr.reset();
 	//io_service.stop();
 	threads.join_all();
@@ -343,13 +347,6 @@ void Ext::stop()
 		rcon_worker.disconnect();
 		rcon_worker_thread.join();
 	}
-}
-
-
-
-std::string Ext::getVersion() const
-{
-	return "36";
 }
 
 
@@ -419,7 +416,7 @@ void Ext::connectRCon(char *output, const int &output_size, const std::string &r
 void Ext::rconCommand(std::string str)
 // Adds RCon Command to be sent to Server.
 {
-	console->warn("extDB: running {0}, rconCommand {1}", extDB_connectors_info.rcon, str);
+	console->warn("extDB2: running {0}, rconCommand {1}", extDB_connectors_info.rcon, str);
 	if (extDB_connectors_info.rcon) // Check if Rcon enabled
 	{
 		rcon_worker.addCommand(str);
@@ -440,9 +437,9 @@ void Ext::connectDatabase(char *output, const int &output_size, const std::strin
 		if (!database->type.empty())
 		{
 			#ifdef TESTING
-				console->warn("extDB: Already Connected to Database");
+				console->warn("extDB2: Already Connected to Database");
 			#endif
-			logger->warn("extDB: Already Connected to a Database");
+			logger->warn("extDB2: Already Connected to a Database");
 			std::strcpy(output, "[0,\"Already Connected to Database\"]");
 		}
 		else
@@ -467,9 +464,9 @@ void Ext::connectDatabase(char *output, const int &output_size, const std::strin
 				database->idle_time = pConf->getInt(database_conf + ".idleTime", 600);
 
 				#ifdef TESTING
-					console->info("extDB: Database Type: {0}", database->type);
+					console->info("extDB2: Database Type: {0}", database->type);
 				#endif
-				logger->info("extDB: Database Type: {0}", database->type);
+				logger->info("extDB2: Database Type: {0}", database->type);
 
 				if (boost::iequals(database->type, std::string("MySQL")) == 1)
 				{
@@ -506,17 +503,17 @@ void Ext::connectDatabase(char *output, const int &output_size, const std::strin
 					if (database->pool->get().isConnected())
 					{
 						#ifdef TESTING
-							console->info("extDB: Database Session Pool Started");
+							console->info("extDB2: Database Session Pool Started");
 						#endif
-						logger->info("extDB: Database Session Pool Started");
+						logger->info("extDB2: Database Session Pool Started");
 						std::strcpy(output, "[1]");
 					}
 					else
 					{
 						#ifdef TESTING
-							console->warn("extDB: Database Session Pool Failed");
+							console->warn("extDB2: Database Session Pool Failed");
 						#endif
-						logger->warn("extDB: Database Session Pool Failed");
+						logger->warn("extDB2: Database Session Pool Failed");
 						std::strcpy(output, "[0,\"Database Session Pool Failed\"]");
 						failed = true;
 					}
@@ -545,17 +542,17 @@ void Ext::connectDatabase(char *output, const int &output_size, const std::strin
 					if (database->pool->get().isConnected())
 					{
 						#ifdef TESTING
-							console->info("extDB: Database Session Pool Started");
+							console->info("extDB2: Database Session Pool Started");
 						#endif
-						logger->info("extDB: Database Session Pool Started");
+						logger->info("extDB2: Database Session Pool Started");
 						std::strcpy(output, "[1]");
 					}
 					else
 					{
 						#ifdef TESTING
-							console->warn("extDB: Database Session Pool Failed");
+							console->warn("extDB2: Database Session Pool Failed");
 						#endif
-						logger->warn("extDB: Database Session Pool Failed");
+						logger->warn("extDB2: Database Session Pool Failed");
 						std::strcpy(output, "[0,\"Database Session Pool Failed\"]");
 						failed = true;
 					}
@@ -563,9 +560,9 @@ void Ext::connectDatabase(char *output, const int &output_size, const std::strin
 				else
 				{
 					#ifdef TESTING
-						console->warn("extDB: No Database Engine Found for {0}", db_name);
+						console->warn("extDB2: No Database Engine Found for {0}", db_name);
 					#endif
-					logger->warn("extDB: No Database Engine Found for {0}", db_name);
+					logger->warn("extDB2: No Database Engine Found for {0}", db_name);
 					std::strcpy(output, "[0,\"Unknown Database Type\"]");
 					failed = true;
 				}
@@ -573,9 +570,9 @@ void Ext::connectDatabase(char *output, const int &output_size, const std::strin
 			else
 			{
 				#ifdef TESTING
-					console->warn("extDB: No Config Option Found: {0}", database_conf);
+					console->warn("extDB2: No Config Option Found: {0}", database_conf);
 				#endif
-				logger->warn("extDB: No Config Option Found: {0}", database_conf);
+				logger->warn("extDB2: No Config Option Found: {0}", database_conf);
 				std::strcpy(output, "[0,\"No Config Option Found\"]");
 				failed = true;
 			}
@@ -584,27 +581,27 @@ void Ext::connectDatabase(char *output, const int &output_size, const std::strin
 	catch (Poco::Data::NotConnectedException& e)
 	{
 		#ifdef TESTING
-			console->error("extDB: Database NotConnectedException Error: {0}", e.displayText());
+			console->error("extDB2: Database NotConnectedException Error: {0}", e.displayText());
 		#endif
-		logger->error("extDB: Database NotConnectedException Error: {0}", e.displayText());
+		logger->error("extDB2: Database NotConnectedException Error: {0}", e.displayText());
 		std::strcpy(output, "[0,\"Database NotConnectedException Error\"]");
 		failed = true;
 	}
 	catch (Poco::Data::MySQL::ConnectionException& e)
 	{
 		#ifdef TESTING
-			console->error("extDB: Database ConnectionException Error: {0}", e.displayText());
+			console->error("extDB2: Database ConnectionException Error: {0}", e.displayText());
 		#endif
-		logger->error("extDB: Database ConnectionException Error: {0}", e.displayText());
+		logger->error("extDB2: Database ConnectionException Error: {0}", e.displayText());
 		std::strcpy(output, "[0,\"Database ConnectionException Error\"]");
 		failed = true;
 	}
 	catch (Poco::Exception& e)
 	{
 		#ifdef TESTING
-			console->error("extDB: Database Exception Error: {0}", e.displayText());
+			console->error("extDB2: Database Exception Error: {0}", e.displayText());
 		#endif
-		logger->error("extDB: Database Exception Error: {0}", e.displayText());
+		logger->error("extDB2: Database Exception Error: {0}", e.displayText());
 		std::strcpy(output, "[0,\"Database Exception Error\"]");
 		failed = true;
 	}
@@ -633,7 +630,7 @@ void Ext::addProtocol(char *output, const int &output_size, const std::string &d
 	if (unordered_map_protocol.find(protocol_name) != unordered_map_protocol.end())
 	{
 		std::strcpy(output, "[0,\"Error Protocol Name Already Taken\"]");
-		logger->warn("extDB: Error Protocol Name Already Taken: {0}", protocol_name);
+		logger->warn("extDB2: Error Protocol Name Already Taken: {0}", protocol_name);
 	}
 	else
 	{
@@ -666,7 +663,7 @@ void Ext::addProtocol(char *output, const int &output_size, const std::string &d
 		{
 			status = false;
 			std::strcpy(output, "[0,\"Error Unknown Protocol\"]");
-			logger->warn("extDB: Failed to Load Unknown Protocol: {0}", protocol);
+			logger->warn("extDB2: Failed to Load Unknown Protocol: {0}", protocol);
 		}
 
 		if (status)
@@ -679,7 +676,7 @@ void Ext::addProtocol(char *output, const int &output_size, const std::string &d
 			{
 				unordered_map_protocol.erase(protocol_name);
 				std::strcpy(output, "[0,\"Failed to Load Protocol\"]");
-				logger->warn("extDB: Failed to Load Protocol: {0}", protocol);
+				logger->warn("extDB2: Failed to Load Protocol: {0}", protocol);
 			}
 		}
 	}
@@ -839,7 +836,7 @@ void Ext::callExtenion(char *output, const int &output_size, const char *functio
 	try
 	{
 		#ifdef DEBUG_LOGGING
-			logger->info("extDB: Extension Input from Server: {0}", std::string(function));
+			logger->info("extDB2: Extension Input from Server: {0}", std::string(function));
 		#endif
 
 		const std::string input_str(function);
@@ -848,7 +845,7 @@ void Ext::callExtenion(char *output, const int &output_size, const char *functio
 		if (input_str_length <= 2)
 		{
 			std::strcpy(output, "[0,\"Error Invalid Message\"]");
-			logger->info("extDB: Invalid Message: {0}", input_str);
+			logger->info("extDB2: Invalid Message: {0}", input_str);
 		}
 		else
 		{
@@ -864,7 +861,7 @@ void Ext::callExtenion(char *output, const int &output_size, const char *functio
 					if (found==std::string::npos)  // Check Invalid Format
 					{
 						std::strcpy(output, "[0,\"Error Invalid Format\"]");
-						logger->error("extDB: Invalid Format: {0}", input_str);
+						logger->error("extDB2: Invalid Format: {0}", input_str);
 					}
 					else
 					{
@@ -875,7 +872,7 @@ void Ext::callExtenion(char *output, const int &output_size, const char *functio
 						if (found == (input_str_length - 1))
 						{
 							std::strcpy(output, "[0,\"Error Invalid Format\"]");
-							logger->error("extDB: Invalid Format: {0}", input_str);
+							logger->error("extDB2: Invalid Format: {0}", input_str);
 						}
 						else
 						{
@@ -892,7 +889,7 @@ void Ext::callExtenion(char *output, const int &output_size, const char *functio
 							else
 							{
 								std::strcpy(output, "[0,\"Error Unknown Protocol\"]");
-								logger->error("extDB: Unknown Protocol: {0}", protocol);
+								logger->error("extDB2: Unknown Protocol: {0}", protocol);
 							}
 						}
 						// Only Add Job to Work Queue + Return ID if Protocol Name exists.
@@ -924,12 +921,12 @@ void Ext::callExtenion(char *output, const int &output_size, const char *functio
 					if (found==std::string::npos)  // Check Invalid Format
 					{
 						std::strcpy(output, "[0,\"Error Invalid Format\"]");
-						logger->error("extDB: Invalid Format: {0}", input_str);
+						logger->error("extDB2: Invalid Format: {0}", input_str);
 					}
 					else if (found == (input_str_length - 1))
 					{
 						std::strcpy(output, "[0,\"Error Invalid Format\"]");
-						logger->error("extDB: Invalid Format: {0}", input_str);
+						logger->error("extDB2: Invalid Format: {0}", input_str);
 					}
 					else
 					{
@@ -949,12 +946,12 @@ void Ext::callExtenion(char *output, const int &output_size, const char *functio
 					if (found==std::string::npos)  // Check Invalid Format
 					{
 						std::strcpy(output, "[0,\"Error Invalid Format\"]");
-						logger->error("extDB: Invalid Format: {0}", input_str);
+						logger->error("extDB2: Invalid Format: {0}", input_str);
 					}
 					else if (found == (input_str_length - 1))
 					{
 						std::strcpy(output, "[0,\"Error Invalid Format\"]");
-						logger->error("extDB: Invalid Format: {0}", input_str);
+						logger->error("extDB2: Invalid Format: {0}", input_str);
 					}
 					else
 					{
@@ -971,7 +968,7 @@ void Ext::callExtenion(char *output, const int &output_size, const char *functio
 						{
 							if (tokens[1] == "VERSION")
 							{
-								std::strcpy(output, getVersion().c_str());
+								std::strcpy(output, VERSION);
 							}
 							else if (tokens[1] == "LOCK_STATUS")
 							{
@@ -981,14 +978,14 @@ void Ext::callExtenion(char *output, const int &output_size, const char *functio
 							{
 								// Invalid Format
 								std::strcpy(output, "[0,\"Error Invalid Format\"]");
-								logger->error("extDB: Invalid Format: {0}", input_str);
+								logger->error("extDB2: Invalid Format: {0}", input_str);
 							}
 						}
 						else
 						{
 							// Invalid Format
 							std::strcpy(output, "[0,\"Error Invalid Format\"]");
-							logger->error("extDB: Invalid Format: {0}", input_str);
+							logger->error("extDB2: Invalid Format: {0}", input_str);
 						}
 					}
 					else
@@ -1013,7 +1010,7 @@ void Ext::callExtenion(char *output, const int &output_size, const char *functio
 								// LOCK / VERSION
 								else  if (tokens[1] == "VERSION")
 								{
-									std::strcpy(output, getVersion().c_str());
+									std::strcpy(output, VERSION);
 								}
 								else if (tokens[1] == "LOCK")
 								{
@@ -1033,7 +1030,7 @@ void Ext::callExtenion(char *output, const int &output_size, const char *functio
 								else
 								{
 									std::strcpy(output, "[0,\"Error Invalid Format\"]");
-									logger->error("extDB: Invalid Format: {0}", input_str);
+									logger->error("extDB2: Invalid Format: {0}", input_str);
 								}
 								break;
 							case 3:
@@ -1050,7 +1047,7 @@ void Ext::callExtenion(char *output, const int &output_size, const char *functio
 								{
 									// Invalid Format
 									std::strcpy(output, "[0,\"Error Invalid Format\"]");
-									logger->error("extDB: Invalid Format: {0}", input_str);
+									logger->error("extDB2: Invalid Format: {0}", input_str);
 								}
 								break;
 							case 4:
@@ -1067,7 +1064,7 @@ void Ext::callExtenion(char *output, const int &output_size, const char *functio
 								{
 									// Invalid Format
 									std::strcpy(output, "[0,\"Error Invalid Format\"]");
-									logger->error("extDB: Invalid Format: {0}", input_str);
+									logger->error("extDB2: Invalid Format: {0}", input_str);
 								}
 								break;
 							case 5:
@@ -1080,7 +1077,7 @@ void Ext::callExtenion(char *output, const int &output_size, const char *functio
 								{
 									// Invalid Format
 									std::strcpy(output, "[0,\"Error Invalid Format\"]");
-									logger->error("extDB: Invalid Format: {0}", input_str);
+									logger->error("extDB2: Invalid Format: {0}", input_str);
 								}
 								break;
 							case 6:
@@ -1092,14 +1089,14 @@ void Ext::callExtenion(char *output, const int &output_size, const char *functio
 								{
 									// Invalid Format
 									std::strcpy(output, "[0,\"Error Invalid Format\"]");
-									logger->error("extDB: Invalid Format: {0}", input_str);
+									logger->error("extDB2: Invalid Format: {0}", input_str);
 								}
 								break;
 							default:
 								{
 									// Invalid Format
 									std::strcpy(output, "[0,\"Error Invalid Format\"]");
-									logger->error("extDB: Invalid Format: {0}", input_str);
+									logger->error("extDB2: Invalid Format: {0}", input_str);
 								}
 						}
 					}
@@ -1108,7 +1105,7 @@ void Ext::callExtenion(char *output, const int &output_size, const char *functio
 				default:
 				{
 					std::strcpy(output, "[0,\"Error Invalid Message\"]");
-					logger->error("extDB: Invalid Message: {0}", input_str);
+					logger->error("extDB2: Invalid Message: {0}", input_str);
 				}
 			}
 		}
@@ -1122,9 +1119,9 @@ void Ext::callExtenion(char *output, const int &output_size, const char *functio
 	{
 		std::strcpy(output, "[0,\"Error\"]");
 		#ifdef TESTING
-			console->critical("extDB: Error: {0}", e.displayText());
+			console->critical("extDB2: Error: {0}", e.displayText());
 		#endif
-		logger->critical("extDB: Error: {0}", e.displayText());
+		logger->critical("extDB2: Error: {0}", e.displayText());
 	}
 }
 
@@ -1139,7 +1136,7 @@ int main(int nNumberofArgs, char* pszArgs[])
 	std::string current_path;
 	extension = (new Ext(current_path));
 
-	extension->console->info("Welcome to extDB Test Application : v{0}", extension->getVersion());
+	extension->console->info("Welcome to extDB Test Application : Version {0}", VERSION);
 	extension->console->info("OutputSize is set to 80 for Test Application, just so it is readable ");
 	extension->console->info("OutputSize for Arma3 is more like 10k in size ");
 	extension->console->info("To exit type 'quit'");
@@ -1160,7 +1157,7 @@ int main(int nNumberofArgs, char* pszArgs[])
 		else
 		{
 			extension->callExtenion(result, 80, input_str.c_str());
-			extension->console->info("extDB: {0}", result);
+			extension->console->info("extDB2: {0}", result);
 		}
 		while (test)
 		{
@@ -1176,7 +1173,7 @@ int main(int nNumberofArgs, char* pszArgs[])
 			extension->callExtenion(result, 80, std::string("1:SQL:TEST3:testing").c_str());
 			extension->callExtenion(result, 80, std::string("1:SQL:TEST4:testing").c_str());
 			extension->callExtenion(result, 80, std::string("1:SQL:TEST5:testing").c_str());
-			extension->console->info("extDB: {0}", result);			
+			extension->console->info("extDB2: {0}", result);			
 		}
 	}
 	extension->stop();

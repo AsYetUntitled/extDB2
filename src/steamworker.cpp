@@ -92,9 +92,9 @@ void STEAMGET::run()
 		catch (boost::property_tree::json_parser::json_parser_error &e)
 		{
 			#ifdef TESTING
-				extension_ptr->console->error("extDB: Steam: Parsing Error Message: {0}, URI: {1}", e.message(), path);
+				extension_ptr->console->error("extDB2: Steam: Parsing Error Message: {0}, URI: {1}", e.message(), path);
 			#endif
-			extension_ptr->logger->error("extDB: Steam: Parsing Error Message: {0}, URI: {1}", e.message(), path);
+			extension_ptr->logger->error("extDB2: Steam: Parsing Error Message: {0}, URI: {1}", e.message(), path);
 			response = -1;
 		}
 	}
@@ -270,9 +270,9 @@ void STEAMWORKER::updateSteamBans(std::vector<std::string> &steamIDs)
 			steam_get.abort();
 			steam_thread.join();
 			#ifdef TESTING
-				extension_ptr->console->error("extDB: Steam: Request Timed Out");
+				extension_ptr->console->error("extDB2: Steam: Request Timed Out");
 			#endif
-			extension_ptr->logger->error("extDB: Steam: Request Timed Out");
+			extension_ptr->logger->error("extDB2: Steam: Request Timed Out");
 		}
 	}
 }
@@ -355,7 +355,7 @@ void STEAMWORKER::addQuery(const int &unique_id, bool queryFriends, bool queryVa
 	else
 	{
 		AbstractExt::resultData result_data;
-		result_data.message = "[0, \"extDB: Steam Web API is not enabled\"]";
+		result_data.message = "[0, \"extDB2: Steam Web API is not enabled\"]";
 		extension_ptr->saveResult_mutexlock(unique_id, result_data);
 	}
 }
@@ -373,19 +373,19 @@ void STEAMWORKER::run()
 	while (*steam_run_flag)
 	{
 		#ifdef TESTING
-			extension_ptr->console->info("extDB: Steam: Sleep");
+			extension_ptr->console->info("extDB2: Steam: Sleep");
 		#endif
 		#ifdef DEBUG_LOGGING
-			extension_ptr->logger->info("extDB: Steam: Sleep");
+			extension_ptr->logger->info("extDB2: Steam: Sleep");
 		#endif
 
 		Poco::Thread::trySleep(60000); // 1 Minute Sleep unless woken up
 
 		#ifdef TESTING
-			extension_ptr->console->info("extDB: Steam: Wake Up");
+			extension_ptr->console->info("extDB2: Steam: Wake Up");
 		#endif
 		#ifdef DEBUG_LOGGING
-			extension_ptr->logger->info("extDB: Steam: Wake Up");
+			extension_ptr->logger->info("extDB2: Steam: Wake Up");
 		#endif
 
 		{
@@ -429,10 +429,10 @@ void STEAMWORKER::run()
 							{
 								result += "[],";
 								#ifdef TESTING
-									extension_ptr->logger->error("extDB: Steam: No Friends Entry for: {0}", steamID);
+									extension_ptr->logger->error("extDB2: Steam: No Friends Entry for: {0}", steamID);
 								#endif
 								#ifdef DEBUG_LOGGING
-									extension_ptr->logger->warn("extDB: Steam: No Friends Entry for: {0}", steamID);
+									extension_ptr->logger->warn("extDB2: Steam: No Friends Entry for: {0}", steamID);
 								#endif
 							}
 							else
@@ -453,10 +453,10 @@ void STEAMWORKER::run()
 							{
 								result += "false,";
 								#ifdef TESTING
-									extension_ptr->logger->error("extDB: Steam: No Bans Entry for: {0}", steamID);
+									extension_ptr->logger->error("extDB2: Steam: No Bans Entry for: {0}", steamID);
 								#endif
 								#ifdef DEBUG_LOGGING
-									extension_ptr->logger->warn("extDB: Steam: No Bans Entry for: {0}", steamID);
+									extension_ptr->logger->warn("extDB2: Steam: No Bans Entry for: {0}", steamID);
 								#endif
 							}
 							else

@@ -29,10 +29,10 @@ bool RCON::init(AbstractExt *extension,  const std::string &database_id, const s
 		Poco::StringTokenizer tokens(init_str, "-");
 		allowed_commands.insert(allowed_commands.begin(), tokens.begin(), tokens.end());
 		#ifdef TESTING
-			extension_ptr->console->warn("extDB: RCON: Commands Allowed: {0}", init_str);
+			extension_ptr->console->warn("extDB2: RCON: Commands Allowed: {0}", init_str);
 		#endif
-		extension_ptr->logger->warn("extDB: RCON: Commands Allowed: {0}", init_str);
-		extension_ptr->console->warn("extDB: RCON Status: {0}", extension_ptr->extDB_connectors_info.rcon);
+		extension_ptr->logger->warn("extDB2: RCON: Commands Allowed: {0}", init_str);
+		extension_ptr->console->warn("extDB2: RCON Status: {0}", extension_ptr->extDB_connectors_info.rcon);
 	}
 	return extension_ptr->extDB_connectors_info.rcon;
 }
@@ -41,10 +41,10 @@ bool RCON::init(AbstractExt *extension,  const std::string &database_id, const s
 bool RCON::callProtocol(std::string input_str, std::string &result, const int unique_id)
 {
 	#ifdef TESTING
-		extension_ptr->console->info("extDB: RCON: Trace: Input: {0}", input_str);
+		extension_ptr->console->info("extDB2: RCON: Trace: Input: {0}", input_str);
 	#endif
 	#ifdef DEBUG_LOGGING
-		extension_ptr->logger->info("extDB: RCON: Trace: Input: {0}", input_str);
+		extension_ptr->logger->info("extDB2: RCON: Trace: Input: {0}", input_str);
 	#endif
 
 	Poco::StringTokenizer tokens(input_str, ":");
@@ -52,9 +52,9 @@ bool RCON::callProtocol(std::string input_str, std::string &result, const int un
 	{
 		result = "[0,\"RCon Syntax Error\"]";
 		#ifdef TESTING
-			extension_ptr->console->warn("extDB: RCON: Syntax Error: Input: {0}", input_str);
+			extension_ptr->console->warn("extDB2: RCON: Syntax Error: Input: {0}", input_str);
 		#endif
-		extension_ptr->logger->warn("extDB: RCON: Syntax Error: Input: {0}", input_str);
+		extension_ptr->logger->warn("extDB2: RCON: Syntax Error: Input: {0}", input_str);
 	}
 	else
 	{
@@ -62,9 +62,9 @@ bool RCON::callProtocol(std::string input_str, std::string &result, const int un
 		{
 			result ="[0,\"RCon Command Not Allowed\"]";
 			#ifdef TESTING
-				extension_ptr->console->warn("extDB: RCON: Command Not Allowed: Input: {0}", input_str);
+				extension_ptr->console->warn("extDB2: RCON: Command Not Allowed: Input: {0}", input_str);
 			#endif
-			extension_ptr->logger->warn("extDB: RCON: Command Not Allowed: Input: {0}", input_str);
+			extension_ptr->logger->warn("extDB2: RCON: Command Not Allowed: Input: {0}", input_str);
 		}
 		else
 		{

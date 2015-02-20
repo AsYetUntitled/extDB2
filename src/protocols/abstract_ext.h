@@ -28,6 +28,8 @@ along with this program. If not, see <http://www.gnu.org/licenses/>.
 #include "../spdlog/spdlog.h"
 
 
+#define VERSION "37"
+
 class AbstractExt
 {
 	public:

@@ -40,9 +40,9 @@ bool LOG::init(AbstractExt *extension, const std::string &database_id, const std
 		catch (spdlog::spdlog_ex& e)
 		{
 			#ifdef TESTING
-				extension_ptr->console->warn("extDB: LOG: Error: {0}", e.what());
+				extension_ptr->console->warn("extDB2: LOG: Error: {0}", e.what());
 			#endif
-			extension_ptr->logger->warn("extDB: LOG: Error: {0}", e.what());
+			extension_ptr->logger->warn("extDB2: LOG: Error: {0}", e.what());
 			status = false;
 		}
 	}

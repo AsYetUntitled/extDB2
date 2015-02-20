@@ -281,7 +281,7 @@ bool MISC::callProtocol(std::string input_str, std::string &result, const int un
 	else
 	{
 		result = "[0,\"Error Invalid Format\"]";
-		extension_ptr->logger->error("extDB: Misc Invalid Command: {0}", command);
+		extension_ptr->logger->warn("extDB2: Misc Invalid Command: {0}", command);
 	}
 	return true;
 }

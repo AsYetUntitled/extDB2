@@ -42,9 +42,6 @@ class Ext: public AbstractExt
 		void callExtenion(char *output, const int &output_size, const char *function);
 		void rconCommand(std::string str);
 
-		// Version Info
-		std::string getVersion() const;
-
 	protected:
 		std::string getExtensionPath();
 		std::string getLogPath();

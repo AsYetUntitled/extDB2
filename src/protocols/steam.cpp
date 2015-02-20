@@ -58,19 +58,19 @@ bool STEAM::isNumber(const std::string &input_str)
 bool STEAM::callProtocol(std::string input_str, std::string &result, const int unique_id)
 {
 	#ifdef TESTING
-		extension_ptr->console->info("extDB: STEAM: Trace: Input: {0}", input_str);
+		extension_ptr->console->info("extDB2: STEAM: Trace: Input: {0}", input_str);
 	#endif
 	#ifdef DEBUG_LOGGING
-		extension_ptr->logger->info("extDB: STEAM: Trace: Input: {0}", input_str);
+		extension_ptr->logger->info("extDB2: STEAM: Trace: Input: {0}", input_str);
 	#endif
 
 	bool status = true;
 	if (unique_id == -1)
 	{
 		#ifdef TESTING
-			extension_ptr->console->warn("extDB: STEAM: SYNC MODE NOT SUPPORTED");
+			extension_ptr->console->warn("extDB2: STEAM: SYNC MODE NOT SUPPORTED");
 		#endif
-		extension_ptr->logger->warn("extDB: STEAM: SYNC MODE NOT SUPPORTED");
+		extension_ptr->logger->warn("extDB2: STEAM: SYNC MODE NOT SUPPORTED");
 		result = "[0, \"STEAM: SYNC MODE NOT SUPPORTED\"]";
 		status = false;
 	}
@@ -89,9 +89,9 @@ bool STEAM::callProtocol(std::string input_str, std::string &result, const int u
 				else
 				{
 					#ifdef TESTING
-						extension_ptr->console->warn("extDB: STEAM: Invalid SteamID: {0}", token);
+						extension_ptr->console->warn("extDB2: STEAM: Invalid SteamID: {0}", token);
 					#endif
-					extension_ptr->logger->warn("extDB: STEAM: Invalid SteamID: {0}", token);
+					extension_ptr->logger->warn("extDB2: STEAM: Invalid SteamID: {0}", token);
 					result = "[0, \"STEAM: Invalid SteamID\"]";
 					status = false;
 					break;
@@ -111,9 +111,9 @@ bool STEAM::callProtocol(std::string input_str, std::string &result, const int u
 				else
 				{
 					#ifdef TESTING
-						extension_ptr->console->warn("extDB: STEAM: Invalid Query Type: {0}", tokens[0]);
+						extension_ptr->console->warn("extDB2: STEAM: Invalid Query Type: {0}", tokens[0]);
 					#endif
-					extension_ptr->logger->warn("extDB: STEAM: Invalid Query Type: {0}", tokens[0]);
+					extension_ptr->logger->warn("extDB2: STEAM: Invalid Query Type: {0}", tokens[0]);
 					result = "[0, \"STEAM: Invalid Query Type\"]";
 					status = false;
 				}

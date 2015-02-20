@@ -55,20 +55,18 @@ bool SQL_CUSTOM::init(AbstractExt *extension, const std::string &database_id, co
 	if (extension_ptr->extDB_connectors_info.databases.count(database_id) == 0)
 	{
 		#ifdef TESTING
-			extension_ptr->console->warn("extDB: SQL_CUSTOM: No Database Connection ID: {0}", database_id);
+			extension_ptr->console->warn("extDB2: SQL_CUSTOM: No Database Connection ID: {0}", database_id);
 		#endif
-		extension_ptr->logger->warn("extDB: SQL_CUSTOM: No Database Connection ID: {0}", database_id);
+		extension_ptr->logger->warn("extDB2: SQL_CUSTOM: No Database Connection ID: {0}", database_id);
 		return false;
 	}
 
 	database_ptr = &extension_ptr->extDB_connectors_info.databases[database_id];
 	
 	bool status = false;
-	bool insertID_supported = false;
 	if (database_ptr->type == std::string("MySQL"))
 	{
 		status = true;
-		insertID_supported = true;
 	}
 	else if (database_ptr->type == std::string("SQLite"))
 	{
@@ -78,9 +76,9 @@ bool SQL_CUSTOM::init(AbstractExt *extension, const std::string &database_id, co
 	{
 		// DATABASE NOT SETUP YET
 		#ifdef TESTING
-			extension_ptr->console->warn("extDB: SQL_CUSTOM: Database Type Not Supported");
+			extension_ptr->console->warn("extDB2: SQL_CUSTOM: Database Type Not Supported");
 		#endif
-		extension_ptr->logger->warn("extDB: SQL_CUSTOM: Database Type Not Supported");
+		extension_ptr->logger->warn("extDB2: SQL_CUSTOM: Database Type Not Supported");
 		return false;
 	}
 
@@ -88,9 +86,9 @@ bool SQL_CUSTOM::init(AbstractExt *extension, const std::string &database_id, co
 	if (init_str.empty()) 
 	{
 		#ifdef TESTING
-			extension_ptr->console->warn("extDB: SQL_CUSTOM: Missing Init Parameter");
+			extension_ptr->console->warn("extDB2: SQL_CUSTOM: Missing Init Parameter");
 		#endif
-		extension_ptr->logger->warn("extDB: SQL_CUSTOM: Missing Init Parameter");
+		extension_ptr->logger->warn("extDB2: SQL_CUSTOM: Missing Init Parameter");
 		return false;
 	}
 
@@ -103,9 +101,9 @@ bool SQL_CUSTOM::init(AbstractExt *extension, const std::string &database_id, co
 	std::string db_template_file = extension_path.make_preferred().string();
 
 	#ifdef TESTING
-		extension_ptr->console->info("extDB: SQL_CUSTOM: Loading Template Filename: {0}", db_template_file);
+		extension_ptr->console->info("extDB2: SQL_CUSTOM: Loading Template Filename: {0}", db_template_file);
 	#endif
-	extension_ptr->logger->info("extDB: SQL_CUSTOM: Loading Template Filename: {0}", db_template_file);
+	extension_ptr->logger->info("extDB2: SQL_CUSTOM: Loading Template Filename: {0}", db_template_file);
 	
 	// Read Template File
 	if (boost::filesystem::exists(db_template_file))
@@ -125,14 +123,6 @@ bool SQL_CUSTOM::init(AbstractExt *extension, const std::string &database_id, co
 			bool default_output_sanitize_value_check = template_ini->getBool("Default.Sanitize Output Value Check", true);
 			bool default_preparedStatement_cache = template_ini->getBool("Default.Prepared Statement Cache", true);
 			bool default_returnInsertID = template_ini->getBool("Default.Return InsertID", false);
-			if ((default_returnInsertID) && (!insertID_supported))
-			{
-				status = false;
-				#ifdef TESTING
-					extension_ptr->console->warn("extDB: SQL_CUSTOM: InsertID not Supported with {0}", database_ptr->type);
-				#endif
-				extension_ptr->logger->warn("extDB: SQL_CUSTOM: InsertID not Supported with {0}", database_ptr->type);
-			}
 
 
 			bool default_strip = template_ini->getBool("Default.Strip", false);
@@ -160,9 +150,9 @@ bool SQL_CUSTOM::init(AbstractExt *extension, const std::string &database_id, co
 			else
 			{
 				#ifdef TESTING
-					extension_ptr->console->warn("extDB: SQL_CUSTOM: Invalid Default Strip Chars Action: {0}", strip_chars_action_str);
+					extension_ptr->console->warn("extDB2: SQL_CUSTOM: Invalid Default Strip Chars Action: {0}", strip_chars_action_str);
 				#endif
-				extension_ptr->logger->warn("extDB: SQL_CUSTOM: Invalid Default Strip Chars Action: {0}", strip_chars_action_str);
+				extension_ptr->logger->warn("extDB2: SQL_CUSTOM: Invalid Default Strip Chars Action: {0}", strip_chars_action_str);
 			}
 
 			for(std::string &call_name : custom_calls_list)
@@ -177,14 +167,6 @@ bool SQL_CUSTOM::init(AbstractExt *extension, const std::string &database_id, co
 				custom_calls[call_name].number_of_custom_inputs = template_ini->getInt(call_name + ".Number of Custom Inputs", default_number_of_custom_inputs);
 				custom_calls[call_name].preparedStatement_cache = template_ini->getBool("Default.Prepared Statement Cache", default_preparedStatement_cache);
 				custom_calls[call_name].returnInsertID = template_ini->getBool("Default.Return InsertID", default_returnInsertID);
-				if ((custom_calls[call_name].returnInsertID) && (!insertID_supported))
-				{
-					status = false;
-					#ifdef TESTING
-						extension_ptr->console->warn("extDB: SQL_CUSTOM: InsertID not Supported with {0}", database_ptr->type);
-					#endif
-					extension_ptr->logger->warn("extDB: SQL_CUSTOM: InsertID not Supported with {0}", database_ptr->type);
-				}
 
 				if (template_ini->has(call_name + ".Strip Chars Action"))
 				{
@@ -208,9 +190,9 @@ bool SQL_CUSTOM::init(AbstractExt *extension, const std::string &database_id, co
 					else
 					{
 						#ifdef TESTING
-							extension_ptr->console->warn("extDB: SQL_CUSTOM: Invalid Strip Chars Action: {0}", strip_chars_action_str);
+							extension_ptr->console->warn("extDB2: SQL_CUSTOM: Invalid Strip Chars Action: {0}", strip_chars_action_str);
 						#endif
-						extension_ptr->logger->warn("extDB: SQL_CUSTOM: Invalid Strip Chars Action: {0}", strip_chars_action_str);
+						extension_ptr->logger->warn("extDB2: SQL_CUSTOM: Invalid Strip Chars Action: {0}", strip_chars_action_str);
 						custom_calls[call_name].strip_chars_action = 1;
 					}
 				}
@@ -279,9 +261,9 @@ bool SQL_CUSTOM::init(AbstractExt *extension, const std::string &database_id, co
 									{
 										status = false;
 										#ifdef TESTING
-											extension_ptr->console->warn("extDB: SQL_CUSTOM: Invalid Strip Output Option: {0}: {1}", call_name, options_tokens[x]);
+											extension_ptr->console->warn("extDB2: SQL_CUSTOM: Invalid Strip Output Option: {0}: {1}", call_name, options_tokens[x]);
 										#endif
-										extension_ptr->logger->warn("extDB: SQL_CUSTOM: Invalid Strip Output Option: {0}: {1}", call_name, options_tokens[x]);
+										extension_ptr->logger->warn("extDB2: SQL_CUSTOM: Invalid Strip Output Option: {0}: {1}", call_name, options_tokens[x]);
 									}
 								}
 							}
@@ -357,9 +339,9 @@ bool SQL_CUSTOM::init(AbstractExt *extension, const std::string &database_id, co
 								{
 									status = false;
 									#ifdef TESTING
-										extension_ptr->console->warn("extDB: SQL_CUSTOM: Invalid Strip Input Option: {0}: {1}", call_name, sub_token_input);
+										extension_ptr->console->warn("extDB2: SQL_CUSTOM: Invalid Strip Input Option: {0}: {1}", call_name, sub_token_input);
 									#endif
-									extension_ptr->logger->warn("extDB: SQL_CUSTOM: Invalid Strip Input Option: {0}: {1}", call_name, sub_token_input);
+									extension_ptr->logger->warn("extDB2: SQL_CUSTOM: Invalid Strip Input Option: {0}: {1}", call_name, sub_token_input);
 								}
 							}
 						}
@@ -372,18 +354,18 @@ bool SQL_CUSTOM::init(AbstractExt *extension, const std::string &database_id, co
 		{
 			status = false;
 			#ifdef TESTING
-				extension_ptr->console->warn("extDB: SQL_CUSTOM: Incompatible Version: {0} Required: {1}", (template_ini->getInt("Default.Version", 1)), REQUIREDVERSION);
+				extension_ptr->console->warn("extDB2: SQL_CUSTOM: Incompatible Version: {0} Required: {1}", (template_ini->getInt("Default.Version", 1)), REQUIREDVERSION);
 			#endif
-			extension_ptr->logger->warn("extDB: SQL_CUSTOM: Incompatible Version: {0} Required: {1}", (template_ini->getInt("Default.Version", 1)), REQUIREDVERSION);
+			extension_ptr->logger->warn("extDB2: SQL_CUSTOM: Incompatible Version: {0} Required: {1}", (template_ini->getInt("Default.Version", 1)), REQUIREDVERSION);
 		}
 	}
 	else
 	{
 		status = false;
 		#ifdef TESTING
-			extension_ptr->console->warn("extDB: SQL_CUSTOM: Template File Not Found: {0}", db_template_file);
+			extension_ptr->console->warn("extDB2: SQL_CUSTOM: Template File Not Found: {0}", db_template_file);
 		#endif
-		extension_ptr->logger->warn("extDB: SQL_CUSTOM: Template File Not Found: {0}", db_template_file);
+		extension_ptr->logger->warn("extDB2: SQL_CUSTOM: Template File Not Found: {0}", db_template_file);
 	}
 	return status;
 }
@@ -435,25 +417,32 @@ void SQL_CUSTOM::getResult(Custom_Call_UnorderedMap::const_iterator &custom_call
 	{
 		if (custom_calls_itr->second.returnInsertID)
 		{
-			Poco::UInt64 insertID;
-			std::string insertID_str;
-			//insertID = Poco::AnyCast<Poco::UInt64>(session.getProperty("insertId"));
-
-			// Workaround
-			bool status = true;
-			Poco::Data::Statement sql(session);
-			sql << "SELECT LAST_INSERT_ID()", Poco::Data::Keywords::into(insertID);
-			executeSQL(sql, result, status);
-			// End of Workaround
-
-			insertID_str = Poco::NumberFormatter::format(insertID);
-			if (status)
+			if (session.isConnected())
 			{
-				result = "[1,[" + insertID_str + ",[";
+				result = "[1,[-1,["; // Return -1 If Session Died
 			}
 			else
 			{
-				result = "[1,[0,["; // Return 0 if insertID fails
+				Poco::UInt64 insertID;
+				std::string insertID_str;
+				//insertID = Poco::AnyCast<Poco::UInt64>(session.getProperty("insertId"));
+
+				// Workaround
+				bool status = true;
+				Poco::Data::Statement sql(session);
+				sql << "SELECT LAST_INSERT_ID()", Poco::Data::Keywords::into(insertID);
+				executeSQL(sql, result, status);
+				// End of Workaround
+
+				insertID_str = Poco::NumberFormatter::format(insertID);
+				if (status)
+				{
+					result = "[1,[" + insertID_str + ",[";
+				}
+				else
+				{
+					result = "[1,[0,["; // Return 0 if insertID fails
+				}
 			}
 		}
 		else
@@ -571,17 +560,17 @@ void SQL_CUSTOM::getResult(Custom_Call_UnorderedMap::const_iterator &custom_call
 	catch (Poco::NotImplementedException& e)
 	{
 		#ifdef TESTING
-			extension_ptr->console->error("extDB: SQL_CUSTOM: Error NotImplementedException: {0}", e.displayText());
+			extension_ptr->console->error("extDB2: SQL_CUSTOM: Error NotImplementedException: {0}", e.displayText());
 		#endif
-		extension_ptr->logger->error("extDB: SQL_CUSTOM: Error NotImplementedException: {0}", e.displayText());
+		extension_ptr->logger->error("extDB2: SQL_CUSTOM: Error NotImplementedException: {0}", e.displayText());
 		result = "[0,\"Error NotImplemented Exception\"]";
 	}
 	catch (Poco::Exception& e)
 	{
 		#ifdef TESTING
-			extension_ptr->console->error("extDB: SQL_CUSTOM: Error Exception: {0}", e.displayText());
+			extension_ptr->console->error("extDB2: SQL_CUSTOM: Error Exception: {0}", e.displayText());
 		#endif
-		extension_ptr->logger->error("extDB: SQL_CUSTOM: Error Exception: {0}", e.displayText());
+		extension_ptr->logger->error("extDB2: SQL_CUSTOM: Error Exception: {0}", e.displayText());
 		result = "[0,\"Error Exception\"]";
 	}
 }
@@ -597,72 +586,82 @@ void SQL_CUSTOM::executeSQL(Poco::Data::Statement &sql_statement, std::string &r
 	{
 		status = false;
 		#ifdef TESTING
-			extension_ptr->console->error("extDB: SQL_CUSTOM: Error NotConnectedException: {0}", e.displayText());
+			extension_ptr->console->error("extDB2: SQL_CUSTOM: Error NotConnectedException: {0}", e.displayText());
 		#endif
-		extension_ptr->logger->error("extDB: SQL_CUSTOM: Error NotConnectedException: {0}", e.displayText());
+		extension_ptr->logger->error("extDB2: SQL_CUSTOM: Error NotConnectedException: {0}", e.displayText());
 		result = "[0,\"Error NotConnected Exception\"]";
 	}
 	catch (Poco::Data::NotConnectedException& e)
 	{
 		status = false;
 		#ifdef TESTING
-			extension_ptr->console->error("extDB: SQL_CUSTOM: Error NotConnectedException: {0}", e.displayText());
+			extension_ptr->console->error("extDB2: SQL_CUSTOM: Error NotConnectedException: {0}", e.displayText());
 		#endif
-		extension_ptr->logger->error("extDB: SQL_CUSTOM: Error NotConnectedException: {0}", e.displayText());
+		extension_ptr->logger->error("extDB2: SQL_CUSTOM: Error NotConnectedException: {0}", e.displayText());
 		result = "[0,\"Error NotConnected Exception\"]";
 	}
 	catch (Poco::NotImplementedException& e)
 	{
 		status = false;
 		#ifdef TESTING
-			extension_ptr->console->error("extDB: SQL_CUSTOM: Error NotImplementedException: {0}", e.displayText());
+			extension_ptr->console->error("extDB2: SQL_CUSTOM: Error NotImplementedException: {0}", e.displayText());
 		#endif
-		extension_ptr->logger->error("extDB: SQL_CUSTOM: Error NotImplementedException: {0}", e.displayText());
+		extension_ptr->logger->error("extDB2: SQL_CUSTOM: Error NotImplementedException: {0}", e.displayText());
 		result = "[0,\"Error NotImplemented Exception\"]";
 	}
 	catch (Poco::Data::SQLite::DBLockedException& e)
 	{
 		status = false;
 		#ifdef TESTING
-			extension_ptr->console->error("extDB: SQL_CUSTOM: Error DBLockedException: {0}", e.displayText());
+			extension_ptr->console->error("extDB2: SQL_CUSTOM: Error DBLockedException: {0}", e.displayText());
 		#endif
-		extension_ptr->logger->error("extDB: SQL_CUSTOM: Error DBLockedException: {0}", e.displayText());
+		extension_ptr->logger->error("extDB2: SQL_CUSTOM: Error DBLockedException: {0}", e.displayText());
 		result = "[0,\"Error DBLocked Exception\"]";
 	}
 	catch (Poco::Data::MySQL::ConnectionException& e)
 	{
 		status = false;
 		#ifdef TESTING
-			extension_ptr->console->error("extDB: SQL_CUSTOM: Error ConnectionException: {0}", e.displayText());
+			extension_ptr->console->error("extDB2: SQL_CUSTOM: Error ConnectionException: {0}", e.displayText());
 		#endif
-		extension_ptr->logger->error("extDB: SQL_CUSTOM: Error ConnectionException: {0}", e.displayText());
+		extension_ptr->logger->error("extDB2: SQL_CUSTOM: Error ConnectionException: {0}", e.displayText());
 		result = "[0,\"Error Connection Exception\"]";
 	}
 	catch(Poco::Data::MySQL::StatementException& e)
 	{
 		status = false;
 		#ifdef TESTING
-			extension_ptr->console->error("extDB: SQL_CUSTOM: Error StatementException: {0}", e.displayText());
+			extension_ptr->console->error("extDB2: SQL_CUSTOM: Error StatementException: {0}", e.displayText());
 		#endif
-		extension_ptr->logger->error("extDB: SQL_CUSTOM: Error StatementException: {0}", e.displayText());
+		extension_ptr->logger->error("extDB2: SQL_CUSTOM: Error StatementException: {0}", e.displayText());
 		result = "[0,\"Error Statement Exception\"]";
+	}
+	catch (Poco::Data::ConnectionFailedException& e)
+	{
+		// Error
+		status = false;
+		#ifdef TESTING
+			extension_ptr->console->error("extDB2: SQL_CUSTOM: Error ConnectionFailedException: {0}", e.displayText());
+		#endif
+		extension_ptr->logger->error("extDB2: SQL_CUSTOM: Error ConnectionFailedException: {0}", e.displayText());
+		result = "[0,\"Error ConnectionFailedException\"]";
 	}
 	catch (Poco::Data::DataException& e)
 	{
 		status = false;
 		#ifdef TESTING
-			extension_ptr->console->error("extDB: SQL_CUSTOM: Error DataException: {0}", e.displayText());
+			extension_ptr->console->error("extDB2: SQL_CUSTOM: Error DataException: {0}", e.displayText());
 		#endif
-		extension_ptr->logger->error("extDB: SQL_CUSTOM: Error DataException: {0}", e.displayText());
+		extension_ptr->logger->error("extDB2: SQL_CUSTOM: Error DataException: {0}", e.displayText());
 		result = "[0,\"Error Data Exception\"]";
 	}
 	catch (Poco::Exception& e)
 	{
 		status = false;
 		#ifdef TESTING
-			extension_ptr->console->error("extDB: SQL_CUSTOM: Error Exception: {0}", e.displayText());
+			extension_ptr->console->error("extDB2: SQL_CUSTOM: Error Exception: {0}", e.displayText());
 		#endif
-		extension_ptr->logger->error("extDB: SQL_CUSTOM: Error Exception: {0}", e.displayText());
+		extension_ptr->logger->error("extDB2: SQL_CUSTOM: Error Exception: {0}", e.displayText());
 		result = "[0,\"Error Exception\"]";
 	}
 }
@@ -670,13 +669,39 @@ void SQL_CUSTOM::executeSQL(Poco::Data::Statement &sql_statement, std::string &r
 
 void SQL_CUSTOM::callPreparedStatement(std::string call_name, Custom_Call_UnorderedMap::const_iterator custom_calls_itr, std::vector< std::vector< std::string > > &all_processed_inputs, bool &status, std::string &result)
 {
+	Poco::Data::SessionPool::SessionDataPtr session_data_ptr;
 	try
 	{
-		Poco::Data::SessionPool::SessionDataPtr session_data_ptr;
 		Poco::Data::Session session = extension_ptr->getDBSession_mutexlock(*database_ptr, session_data_ptr);
 
 		std::unordered_map <std::string, Poco::Data::SessionPool::StatementCache>::iterator statement_cache_itr = session_data_ptr->statements_map.find(call_name);
-		if (statement_cache_itr == session_data_ptr->statements_map.end())
+		if (statement_cache_itr != session_data_ptr->statements_map.end())
+		{
+			// CACHE
+			for (std::vector<int>::size_type i = 0; i != statement_cache_itr->second.size(); ++i)
+			{
+				statement_cache_itr->second[i].bindClear();
+				for (auto &processed_input : all_processed_inputs[i])
+				{
+					statement_cache_itr->second[i], Poco::Data::Keywords::use(processed_input);
+				}
+				statement_cache_itr->second[i].bindFixup();
+
+				executeSQL(statement_cache_itr->second[i], result, status);
+				if (!status)
+				{
+					break;
+				}
+				else 
+				{
+					if (i == (statement_cache_itr->second.size() - 1))
+					{
+						getResult(custom_calls_itr, session, statement_cache_itr->second[i], result);
+					}
+				}
+			}
+		}
+		else
 		{
 			// NO CACHE
 
@@ -711,38 +736,10 @@ void SQL_CUSTOM::callPreparedStatement(std::string call_name, Custom_Call_Unorde
 				}
 			}
 		}
-		else
-		{
-			// CACHE
-			for (std::vector<int>::size_type i = 0; i != statement_cache_itr->second.size(); ++i)
-			{
-				statement_cache_itr->second[i].bindClear();
-				for (auto &processed_input : all_processed_inputs[i])
-				{
-					statement_cache_itr->second[i], Poco::Data::Keywords::use(processed_input);
-				}
-				statement_cache_itr->second[i].bindFixup();
-
-				executeSQL(statement_cache_itr->second[i], result, status);
-				if (!status)
-				{
-					break;
-				}
-				else 
-				{
-					if (i == (statement_cache_itr->second.size() - 1))
-					{
-						getResult(custom_calls_itr, session, statement_cache_itr->second[i], result);
-					}
-				}
-			}
-		}
 		if (!status)
 		{
-			if (session_data_ptr->statements_map.count(call_name) > 0)
-			{
-				session_data_ptr->statements_map.erase(call_name);
-			}
+			extension_ptr->console->error("extDB2: SQL_CUSTOM: Wiping Statements + Session");
+			session_data_ptr->statements_map.clear();
 		}
 	}
 	catch (Poco::Data::ConnectionFailedException& e)
@@ -750,19 +747,25 @@ void SQL_CUSTOM::callPreparedStatement(std::string call_name, Custom_Call_Unorde
 		// Error
 		status = false;
 		#ifdef TESTING
-			extension_ptr->console->error("extDB: SQL_CUSTOM: Error ConnectionFailedException: {0}", e.displayText());
+			extension_ptr->console->error("extDB2: SQL_CUSTOM: Error ConnectionFailedException: {0}", e.displayText());
 		#endif
-		extension_ptr->logger->error("extDB: SQL_CUSTOM: Error ConnectionFailedException: {0}", e.displayText());
+		extension_ptr->logger->error("extDB2: SQL_CUSTOM: Error ConnectionFailedException: {0}", e.displayText());
 		result = "[0,\"Error ConnectionFailedException\"]";
+		if (!session_data_ptr.isNull())
+		{
+ 			session_data_ptr->statements_map.clear();
+		}
 	}
 }
 
 
 void SQL_CUSTOM::callPreparedStatement(std::string call_name, Custom_Call_UnorderedMap::const_iterator custom_calls_itr, std::vector< std::vector<std::string> > &all_processed_inputs, std::vector<std::string> custom_inputs, bool &status, std::string &result)
 {
+	Poco::Data::SessionPool::SessionDataPtr session_data_ptr;
 	try
 	{
-		Poco::Data::Session session = extension_ptr->getDBSession_mutexlock(*database_ptr);	
+		Poco::Data::Session session = extension_ptr->getDBSession_mutexlock(*database_ptr, session_data_ptr);
+
 		std::string sql_str;
 
 		int i = -1;
@@ -790,15 +793,20 @@ void SQL_CUSTOM::callPreparedStatement(std::string call_name, Custom_Call_Unorde
 				getResult(custom_calls_itr, session, sql_statement, result);
 			}
 		}
+		if (!status)
+		{
+			extension_ptr->console->error("extDB2: SQL_CUSTOM: Clearing Cached Statements");
+			session_data_ptr->statements_map.clear();
+		}
 	}
 	catch (Poco::Data::ConnectionFailedException& e)
 	{
 		// Error
 		status = false;
 		#ifdef TESTING
-			extension_ptr->console->error("extDB: SQL_CUSTOM: Error ConnectionFailedException: {0}", e.displayText());
+			extension_ptr->console->error("extDB2: SQL_CUSTOM: Error ConnectionFailedException: {0}", e.displayText());
 		#endif
-		extension_ptr->logger->error("extDB: SQL_CUSTOM: Error ConnectionFailedException: {0}", e.displayText());
+		extension_ptr->logger->error("extDB2: SQL_CUSTOM: Error ConnectionFailedException: {0}", e.displayText());
 		result = "[0,\"Error ConnectionFailedException\"]";
 	}
 }
@@ -807,10 +815,10 @@ void SQL_CUSTOM::callPreparedStatement(std::string call_name, Custom_Call_Unorde
 bool SQL_CUSTOM::callProtocol(std::string input_str, std::string &result, const int unique_id)
 {
 	#ifdef TESTING
-		extension_ptr->console->info("extDB: SQL_CUSTOM: Trace: UniqueID: {0} Input: {1}", unique_id, input_str);
+		extension_ptr->console->info("extDB2: SQL_CUSTOM: Trace: UniqueID: {0} Input: {1}", unique_id, input_str);
 	#endif
 	#ifdef DEBUG_LOGGING
-		extension_ptr->logger->info("extDB: SQL_CUSTOM: Trace: UniqueID: {0} Input: {1}", unique_id, input_str);
+		extension_ptr->logger->info("extDB2: SQL_CUSTOM: Trace: UniqueID: {0} Input: {1}", unique_id, input_str);
 	#endif
 
 	Poco::StringTokenizer tokens(input_str, ":");
@@ -819,11 +827,11 @@ bool SQL_CUSTOM::callProtocol(std::string input_str, std::string &result, const 
 	{
 		// NO CALLNAME FOUND IN PROTOCOL
 		result = "[0,\"Error No Custom Call Not Found\"]";
-		extension_ptr->logger->warn("extDB: SQL_CUSTOM: Error No Custom Call Not Found: Input String {0}", input_str);
-		extension_ptr->logger->warn("extDB: SQL_CUSTOM: Error No Custom Call Not Found: Callname {0}", tokens[0]);
+		extension_ptr->logger->warn("extDB2: SQL_CUSTOM: Error No Custom Call Not Found: Input String {0}", input_str);
+		extension_ptr->logger->warn("extDB2: SQL_CUSTOM: Error No Custom Call Not Found: Callname {0}", tokens[0]);
 		#ifdef TESTING
-			extension_ptr->console->warn("extDB: SQL_CUSTOM: Error No Custom Call Not Found: Input String {0}", input_str);
-			extension_ptr->console->warn("extDB: SQL_CUSTOM: Error No Custom Call Not Found: Callname {0}", tokens[0]);
+			extension_ptr->console->warn("extDB2: SQL_CUSTOM: Error No Custom Call Not Found: Input String {0}", input_str);
+			extension_ptr->console->warn("extDB2: SQL_CUSTOM: Error No Custom Call Not Found: Callname {0}", tokens[0]);
 		#endif
 	}
 	else
@@ -832,11 +840,11 @@ bool SQL_CUSTOM::callProtocol(std::string input_str, std::string &result, const 
 		{
 			// BAD Number of Inputs
 			result = "[0,\"Error Incorrect Number of Inputs\"]";
-			extension_ptr->logger->warn("extDB: SQL_CUSTOM: Incorrect Number of Inputs: Input String {0}", input_str);
-			extension_ptr->logger->warn("extDB: SQL_CUSTOM: Incorrect Number of Inputs: Expected: {0} Got: {1}", (custom_calls_const_itr->second.number_of_inputs + custom_calls_const_itr->second.number_of_custom_inputs), (tokens.count() - 1));
+			extension_ptr->logger->warn("extDB2: SQL_CUSTOM: Incorrect Number of Inputs: Input String {0}", input_str);
+			extension_ptr->logger->warn("extDB2: SQL_CUSTOM: Incorrect Number of Inputs: Expected: {0} Got: {1}", (custom_calls_const_itr->second.number_of_inputs + custom_calls_const_itr->second.number_of_custom_inputs), (tokens.count() - 1));
 			#ifdef TESTING
-				extension_ptr->console->warn("extDB: SQL_CUSTOM: Incorrect Number of Inputs: Input String {0}", input_str);
-				extension_ptr->console->warn("extDB: SQL_CUSTOM: Incorrect Number of Inputs: Expected: {0} Got: {1}", (custom_calls_const_itr->second.number_of_inputs + custom_calls_const_itr->second.number_of_custom_inputs), (tokens.count() - 1));
+				extension_ptr->console->warn("extDB2: SQL_CUSTOM: Incorrect Number of Inputs: Input String {0}", input_str);
+				extension_ptr->console->warn("extDB2: SQL_CUSTOM: Incorrect Number of Inputs: Expected: {0} Got: {1}", (custom_calls_const_itr->second.number_of_inputs + custom_calls_const_itr->second.number_of_custom_inputs), (tokens.count() - 1));
 			#endif
 		}
 		else
@@ -896,8 +904,8 @@ bool SQL_CUSTOM::callProtocol(std::string input_str, std::string &result, const 
 								case 3: // Strip + Log + Error
 									status = false;
 								case 2: // Strip + Log
-									extension_ptr->logger->warn("extDB: SQL_CUSTOM: Error Bad Char Detected: Input: {0}", input_str);
-									extension_ptr->logger->warn("extDB: SQL_CUSTOM: Error Bad Char Detected: Token: {0}", sql_inputs_option.number);
+									extension_ptr->logger->warn("extDB2: SQL_CUSTOM: Error Bad Char Detected: Input: {0}", input_str);
+									extension_ptr->logger->warn("extDB2: SQL_CUSTOM: Error Bad Char Detected: Token: {0}", sql_inputs_option.number);
 								case 1: // Strip
 									result = "[0,\"Error Strip Char Found\"]";
 									break;
@@ -927,8 +935,8 @@ bool SQL_CUSTOM::callProtocol(std::string input_str, std::string &result, const 
 					if (sql_inputs_option.check)
 					{
 						status = Sqf::check(temp_str);
-						extension_ptr->logger->warn("extDB: SQL_CUSTOM: Sanitize Check Error: Input: {0}", input_str);
-						extension_ptr->logger->warn("extDB: SQL_CUSTOM: Sanitize Check Error: Value: {0}", temp_str);
+						extension_ptr->logger->warn("extDB2: SQL_CUSTOM: Sanitize Check Error: Input: {0}", input_str);
+						extension_ptr->logger->warn("extDB2: SQL_CUSTOM: Sanitize Check Error: Value: {0}", temp_str);
 						result = "[0,\"Error Values Input is not sanitized\"]";
 					}
 					processed_inputs.push_back(std::move(temp_str));
@@ -949,16 +957,16 @@ bool SQL_CUSTOM::callProtocol(std::string input_str, std::string &result, const 
 				if (status)
 				{
 					#ifdef TESTING
-						extension_ptr->console->info("extDB: SQL_CUSTOM: Trace: UniqueID: {0} Result: {1}", unique_id, result);
+						extension_ptr->console->info("extDB2: SQL_CUSTOM: Trace: UniqueID: {0} Result: {1}", unique_id, result);
 					#endif
 					#ifdef DEBUG_LOGGING
-						extension_ptr->logger->info("extDB: SQL_CUSTOM: Trace: UniqueID: {0} Result: {1}", unique_id, result);
+						extension_ptr->logger->info("extDB2: SQL_CUSTOM: Trace: UniqueID: {0} Result: {1}", unique_id, result);
 					#endif
 				}
 			}
 			if (!status)
 			{
-				extension_ptr->logger->warn("extDB: SQL_CUSTOM: Error Exception: UniqueID: {0} SQL: {1}", unique_id, input_str);
+				extension_ptr->logger->warn("extDB2: SQL_CUSTOM: Error Exception: UniqueID: {0} SQL: {1}", unique_id, input_str);
 			}
 		}
 	}
