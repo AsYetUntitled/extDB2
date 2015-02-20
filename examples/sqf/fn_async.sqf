@@ -36,7 +36,7 @@ while{_loop} do
 {
 	_queryResult = "extDB2" callExtension format["4:%1", _key];
 	if (_queryResult isEqualTo "[5]") then {
-		// extDB returned that result is Multi-Part Message
+		// extDB2 returned that result is Multi-Part Message
 		_queryResult = "";
 		while{true} do {
 			_pipe = "extDB2" callExtension format["5:%1", _key];
@@ -48,7 +48,7 @@ while{_loop} do
 	{
 		if (_queryResult isEqualTo "[3]") then
 		{
-			diag_log format ["extDB: uisleep [4]: %1", diag_tickTime];
+			diag_log format ["extDB2: uisleep [4]: %1", diag_tickTime];
 			uisleep 0.1;
 		} else {
 			_loop = false;
@@ -60,7 +60,7 @@ while{_loop} do
 _queryResult = call compile _queryResult;
 
 // Not needed, its SQF Code incase extDB ever returns error message i.e Database Died
-if ((_queryResult select 0) == 0) exitWith {diag_log format ["extDB: Protocol Error: %1", _queryResult]; []};
+if ((_queryResult select 0) == 0) exitWith {diag_log format ["extDB2: Protocol Error: %1", _queryResult]; []};
 _return = (_queryResult select 1);
 
 if(!_multiarr) then {

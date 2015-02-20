@@ -44,7 +44,7 @@ if ( isNil {uiNamespace getVariable "extDB_SQL_CUSTOM_ID"}) then
 	
 	diag_log format ["extDB2: Initalized %1 Protocol", _protocol];
 
-	// extDB Lock
+	// extDB2 Lock
 	"extDB2" callExtension "9:LOCK";
 	diag_log "extDB2: Locked";
 
