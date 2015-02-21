@@ -40,7 +40,7 @@ if ( isNil {uiNamespace getVariable "extDB_SQL_CUSTOM_ID"}) then
 
 	// extDB Load Protocol
 	_result = call compile ("extDB2" callExtension format["9:%1:ADD:%2:%3:%4", _database, _protocol, _extDB_SQL_CUSTOM_ID, _protocol_options]);
-	if ((_result select 0) == 0)) exitWith {diag_log format ["extDB2: Error Database Setup: %1", _result]; false};
+	if ((_result select 0) == 0) exitWith {diag_log format ["extDB2: Error Database Setup: %1", _result]; false};
 	
 	diag_log format ["extDB2: Initalized %1 Protocol", _protocol];
 
