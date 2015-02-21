@@ -1,0 +1,19 @@
+-------------------------------------------------------------------------------
+38: 
+	UPDATED: No Longer Creating VAC Ban Logs when Auto Ban is disable
+	
+	FIXED: Bug in Results Fetching when SQL Command is INSERT etc...
+
+-------------------------------------------------------------------------------
+37: 
+	UPDATED: Linux Builds now use same version of MySQL as Windows Builds
+	
+	FIXED: MySQL Bug when Connection fails between prepare + fetch.
+	FIXED: Exception Handling for Database Connection Failed
+	FIXED: Prepared Statement Cache, now cleared when there is an error
+
+-------------------------------------------------------------------------------
+36: 
+	UPDATED: Overhaul of extDB2 Code, https://github.com/Torndeco/extDB2/wiki/Changes-from-extDB
+	
+	FIXED: Exceptions Handling for Database Connection Lost
