@@ -47,6 +47,7 @@ along with this program. If not, see <http://www.gnu.org/licenses/>.
 #include <cstdlib>
 
 #include "rconworker.h"
+//#include "remoteserver.h"
 #include "steamworker.h"
 #include "uniqueid.h"
 
@@ -99,7 +100,7 @@ Ext::Ext(std::string dll_path)
 
 				if (!extDB_config_str.empty())
 				{
-					// CHECK DLL PATH FOR CONFIG
+					// CHECK DLL PATH FOR CONFIG)
 					for (boost::filesystem::directory_iterator it(extDB_config_str); it != boost::filesystem::directory_iterator(); ++it)
 					{
 						if (is_regular_file(it->path()))
@@ -153,17 +154,19 @@ Ext::Ext(std::string dll_path)
 		log_relative_path /= log_filename;
 
 
-		auto console_temp = spdlog::stdout_logger_mt("extDB Console logger");
-		auto logger_temp = spdlog::daily_logger_mt("extDB File Logger", log_relative_path.make_preferred().string(), true);
+		#ifdef TESTING
+			auto console_temp = spdlog::stdout_logger_mt("extDB Console logger");
+			console.swap(console_temp);
+		#endif
 
-		console.swap(console_temp);
+		auto logger_temp = spdlog::daily_logger_mt("extDB File Logger", log_relative_path.make_preferred().string(), true);
 		logger.swap(logger_temp);
 
 		spdlog::set_level(spdlog::level::info);
 		spdlog::set_pattern("%v");
 
 
-		logger->info("extDB2: Version: {0}", VERSION);
+		logger->info("extDB2: Version: {0}", EXTDB_VERSION);
 		#ifdef __GNUC__
 			#ifndef DEBUG_TESTING
 				logger->info("extDB2: Linux Version");
@@ -181,11 +184,18 @@ Ext::Ext(std::string dll_path)
 			#endif
 		#endif
 
-		#ifndef TESTING
+		#ifdef TESTING
+			logger->info("Welcome to extDB Test Application : Version {0}", EXTDB_VERSION);
+			logger->info("OutputSize is set to 80 for Test Application, just so it is readable");
+			logger->info("OutputSize for Arma3 is more like 10k in size ");
+			logger->info("To exit type 'quit'");
+			logger->info();
+			logger->info();
+		#else
 			logger->info("Message: Donated to extDB2 Develeopment ?");
 			logger->info("Message: All development for extDB2 is done on a Linux Dedicated Server");
-			logger->info("Message: Leave a message if there is a feature you would like to see added.");
 			logger->info("Message: Donate Link @ https://github.com/Torndeco/extdb2");
+			logger->info("Message: Leave a message if there is a feature you would like to see added.");
 			logger->info("Message: Thanks for all the people that have donated.");
 			logger->info("Message: Torndeco: 20/02/15");
 			logger->info();
@@ -197,19 +207,31 @@ Ext::Ext(std::string dll_path)
 
 		if (!conf_found)
 		{
-			console->critical("extDB2: Unable to find extdb-conf.ini");
+			#ifdef TESTING
+				console->critical("extDB2: Unable to find extdb-conf.ini");
+			#endif
 			logger->critical("extDB2: Unable to find extdb-conf.ini");
 			// Kill Server no config file found -- Evil
 			std::exit(EXIT_SUCCESS);
 		}
 		else
 		{
-			// Load extdb config
+			// Load extDB config
 			pConf = (new Poco::Util::IniFileConfiguration(extDB_config_path.make_preferred().string()));
 			#ifdef TESTING
 				console->info("extDB2: Found extdb-conf.ini");
 			#endif
 			logger->info("extDB2: Found extdb-conf.ini");
+
+			if ((pConf->getInt("Main.Version", 0) != EXTDB_CONF_VERSION))
+			{
+				#ifdef TESTING
+					console->critical("extDB2: Incompatiable Config Version: {0},  Required Version: {1}", (pConf->getInt("Main.Version", 0)), EXTDB_CONF_VERSION);
+				#endif
+				logger->critical("extDB2: Incompatiable Config Version: {0},  Required Version: {1}", (pConf->getInt("Main.Version", 0)), EXTDB_CONF_VERSION);
+				// Kill Server if wrong config version -- Evil
+				std::exit(EXIT_SUCCESS);
+			}
 
 			// Start Threads + ASIO
 			extDB_info.max_threads = pConf->getInt("Main.Threads", 0);
@@ -301,6 +323,8 @@ Ext::Ext(std::string dll_path)
 				}
 			#endif
 		}
+
+		spdlog::set_pattern("[%H:%M:%S %z] [Thread %t] %v");
 	}
 	catch (spdlog::spdlog_ex& e)
 	{
@@ -318,7 +342,9 @@ Ext::~Ext(void)
 
 void Ext::stop()
 {
-	console->info("extDB2: Stopping ...");
+	#ifdef TESTING
+		console->info("extDB2: Stopping ...");
+	#endif
 	logger->info("extDB2: Stopping ...");
 	io_work_ptr.reset();
 	//io_service.stop();
@@ -405,7 +431,6 @@ void Ext::connectRCon(char *output, const int &output_size, const std::string &r
 void Ext::rconCommand(std::string str)
 // Adds RCon Command to be sent to Server.
 {
-	console->warn("extDB2: running {0}, rconCommand {1}", extDB_connectors_info.rcon, str);
 	if (extDB_connectors_info.rcon) // Check if Rcon enabled
 	{
 		rcon_worker.addCommand(str);
@@ -957,7 +982,7 @@ void Ext::callExtenion(char *output, const int &output_size, const char *functio
 						{
 							if (tokens[1] == "VERSION")
 							{
-								std::strcpy(output, VERSION);
+								std::strcpy(output, EXTDB_VERSION);
 							}
 							else if (tokens[1] == "LOCK_STATUS")
 							{
@@ -999,7 +1024,7 @@ void Ext::callExtenion(char *output, const int &output_size, const char *functio
 								// LOCK / VERSION
 								else  if (tokens[1] == "VERSION")
 								{
-									std::strcpy(output, VERSION);
+									std::strcpy(output, EXTDB_VERSION);
 								}
 								else if (tokens[1] == "LOCK")
 								{
@@ -1109,6 +1134,7 @@ void Ext::callExtenion(char *output, const int &output_size, const char *functio
 		std::strcpy(output, "[0,\"Error\"]");
 		#ifdef TESTING
 			console->critical("extDB2: Error: {0}", e.displayText());
+			console->critical("extDB2: Error: Input String {0}", function);
 		#endif
 		logger->critical("extDB2: Error: {0}", e.displayText());
 		logger->critical("extDB2: Error: Input String {0}", function);
@@ -1116,7 +1142,7 @@ void Ext::callExtenion(char *output, const int &output_size, const char *functio
 }
 
 
-#ifdef TEST_APP
+#if defined(TEST_APP) && defined(TESTING)
 int main(int nNumberofArgs, char* pszArgs[])
 {
 	char result[80];
@@ -1125,15 +1151,6 @@ int main(int nNumberofArgs, char* pszArgs[])
 	Ext *extension;
 	std::string current_path;
 	extension = (new Ext(current_path));
-
-	spdlog::set_pattern("%v");
-	extension->console->info("Welcome to extDB Test Application : Version {0}", VERSION);
-	extension->console->info("OutputSize is set to 80 for Test Application, just so it is readable ");
-	extension->console->info("OutputSize for Arma3 is more like 10k in size ");
-	extension->console->info("To exit type 'quit'");
-	extension->console->info();
-	extension->console->info();
-	spdlog::set_pattern("[%H:%M:%S %z] [Thread %t] %v");
 
 	bool test = false;
 	int test_counter = 0;
