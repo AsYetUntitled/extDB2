@@ -28,7 +28,7 @@ along with this program. If not, see <http://www.gnu.org/licenses/>.
 #include "../spdlog/spdlog.h"
 
 
-#define EXTDB_VERSION "39"
+#define EXTDB_VERSION "40"
 #define EXTDB_CONF_VERSION 1
 
 class AbstractExt

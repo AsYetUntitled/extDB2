@@ -185,12 +185,12 @@ Ext::Ext(std::string dll_path)
 		#endif
 
 		#ifdef TESTING
-			logger->info("Welcome to extDB Test Application : Version {0}", EXTDB_VERSION);
-			logger->info("OutputSize is set to 80 for Test Application, just so it is readable");
-			logger->info("OutputSize for Arma3 is more like 10k in size ");
-			logger->info("To exit type 'quit'");
-			logger->info();
-			logger->info();
+			console->info("Welcome to extDB Test Application : Version {0}", EXTDB_VERSION);
+			console->info("OutputSize is set to 80 for Test Application, just so it is readable");
+			console->info("OutputSize for Arma3 is more like 10k in size ");
+			console->info("To exit type 'quit'");
+			console->info();
+			console->info();
 		#else
 			logger->info("Message: Donated to extDB2 Develeopment ?");
 			logger->info("Message: All development for extDB2 is done on a Linux Dedicated Server");
