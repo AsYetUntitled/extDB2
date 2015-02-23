@@ -55,7 +55,7 @@ void set_pattern(const std::string& format_string);
 void set_formatter(formatter_ptr f);
 
 //
-// Set global logging level for 
+// Set global logging level for
 //
 void set_level(level::level_enum log_level);
 
@@ -69,7 +69,7 @@ void set_level(level::level_enum log_level);
 //    async_overflow_policy::block_retry - if queue is full, block until queue has room for the new log entry.
 //    async_overflow_policy::discard_log_msg - never block and discard any new messages when queue  overflows.
 //
-// worker_warmup_cb (optional): 
+// worker_warmup_cb (optional):
 //     callback function that will be called in worker thread upon start (can be used to init stuff like thread affinity)
 //
 void set_async_mode(size_t queue_size, const async_overflow_policy overflow_policy = async_overflow_policy::block_retry, const std::function<void()>& worker_warmup_cb = nullptr);
@@ -84,10 +84,10 @@ std::shared_ptr<logger> rotating_logger_mt(const std::string& logger_name, const
 std::shared_ptr<logger> rotating_logger_st(const std::string& logger_name, const std::string& filename, size_t max_file_size, size_t max_files, bool force_flush = false);
 
 //
-// Create file logger which creates new file at midnight):
+// Create file logger which creates new file on the given time (default in  midnight):
 //
-std::shared_ptr<logger> daily_logger_mt(const std::string& logger_name, const std::string& filename, bool force_flush = false);
-std::shared_ptr<logger> daily_logger_st(const std::string& logger_name, const std::string& filename, bool force_flush = false);
+std::shared_ptr<logger> daily_logger_mt(const std::string& logger_name, const std::string& filename, int hour=0, int minute=0, bool force_flush = false);
+std::shared_ptr<logger> daily_logger_st(const std::string& logger_name, const std::string& filename, int hour=0, int minute=0, bool force_flush = false);
 
 
 //
