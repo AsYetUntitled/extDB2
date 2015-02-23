@@ -1810,9 +1810,6 @@ mysql_stmt_result_metadata(MYSQL_STMT *stmt)
 {
   DBUG_ENTER("mysql_stmt_result_metadata");
   
-  //MYSQL *mysql= stmt->mysql;
-  DBUG_ENTER("mysql_stmt_prepare");
-
   if (!(stmt->mysql))
   {
     /* mysql can be reset in mysql_close called from mysql_reconnect */

@@ -164,6 +164,10 @@ void ResultMetadata::init(MYSQL_STMT* stmt)
 	}
 
 	std::size_t count = mysql_num_fields(h);
+	if (count == 0)
+	{
+			 throw Poco::Data::MySQL::StatementException("Error Fetching Results");
+	}
 	MYSQL_FIELD* fields = mysql_fetch_fields(h);
 
 	std::size_t commonSize = 0;
