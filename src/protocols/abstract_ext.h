@@ -28,7 +28,8 @@ along with this program. If not, see <http://www.gnu.org/licenses/>.
 #include "../spdlog/spdlog.h"
 
 
-#define VERSION "38"
+#define EXTDB_VERSION "39"
+#define EXTDB_CONF_VERSION 1
 
 class AbstractExt
 {
@@ -65,7 +66,10 @@ class AbstractExt
 
 		Poco::AutoPtr<Poco::Util::IniFileConfiguration> pConf;
 
-		std::shared_ptr<spdlog::logger> console;
+		#ifdef TESTING
+			std::shared_ptr<spdlog::logger> console;
+		#endif
+
 		std::shared_ptr<spdlog::logger> logger;
 		std::shared_ptr<spdlog::logger> vacBans_logger;
 	
