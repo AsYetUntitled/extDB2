@@ -90,7 +90,7 @@ void IdManager::FreeId(int id)
 				else
 				{
 					free_.erase(it);
-					it_2++;
+					++it_2;
 					free_.insert(it_2, id_interval(id, free_interval.right()));
 				}
 			}
