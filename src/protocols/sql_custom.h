@@ -85,5 +85,5 @@ class SQL_CUSTOM: public AbstractProtocol
 		void executeSQL(Poco::Data::Statement &sql_statement, std::string &result, bool &status);
 
 		void getBEGUID(std::string &input_str, std::string &result);
-		void getResult(std::unordered_map<std::string, customCall>::const_iterator &custom_protocol_itr, Poco::Data::Session &session, Poco::Data::Statement &sql_statement, std::string &result);
+		void getResult(std::unordered_map<std::string, customCall>::const_iterator &custom_protocol_itr, Poco::Data::Session &session, Poco::Data::Statement &sql_statement, std::string &result, bool &status);
 };

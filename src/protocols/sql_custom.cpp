@@ -46,7 +46,7 @@ along with this program. If not, see <http://www.gnu.org/licenses/>.
 #include "../sanitize.h"
 
 
-#define REQUIREDVERSION 8
+#define EXTDB_SQL_CUSTOM_REQUIRED_VERSION 8
 
 
 bool SQL_CUSTOM::init(AbstractExt *extension, const std::string &database_id, const std::string init_str)
@@ -114,7 +114,7 @@ bool SQL_CUSTOM::init(AbstractExt *extension, const std::string &database_id, co
 		std::vector < std::string > custom_calls_list;
 		template_ini->keys(custom_calls_list);
 
-		if ((template_ini->getInt("Default.Version", 1)) == REQUIREDVERSION)
+		if ((template_ini->getInt("Default.Version", 1)) == EXTDB_SQL_CUSTOM_REQUIRED_VERSION)
 		{
 			int default_number_of_inputs = template_ini->getInt("Default.Number of Inputs", 0);
 			int default_number_of_custom_inputs = template_ini->getInt("Default.Number of Custom Inputs", 0);
@@ -354,9 +354,9 @@ bool SQL_CUSTOM::init(AbstractExt *extension, const std::string &database_id, co
 		{
 			status = false;
 			#ifdef TESTING
-				extension_ptr->console->warn("extDB2: SQL_CUSTOM: Incompatible Version: {0} Required: {1}", (template_ini->getInt("Default.Version", 1)), REQUIREDVERSION);
+				extension_ptr->console->warn("extDB2: SQL_CUSTOM: Incompatible Version: {0} Required: {1}", (template_ini->getInt("Default.Version", 1)), EXTDB_SQL_CUSTOM_REQUIRED_VERSION);
 			#endif
-			extension_ptr->logger->warn("extDB2: SQL_CUSTOM: Incompatible Version: {0} Required: {1}", (template_ini->getInt("Default.Version", 1)), REQUIREDVERSION);
+			extension_ptr->logger->warn("extDB2: SQL_CUSTOM: Incompatible Version: {0} Required: {1}", (template_ini->getInt("Default.Version", 1)), EXTDB_SQL_CUSTOM_REQUIRED_VERSION);
 		}
 	}
 	else
@@ -411,7 +411,7 @@ void SQL_CUSTOM::getBEGUID(std::string &input_str, std::string &result)
 }
 
 
-void SQL_CUSTOM::getResult(Custom_Call_UnorderedMap::const_iterator &custom_calls_itr, Poco::Data::Session &session, Poco::Data::Statement &sql_statement, std::string &result)
+void SQL_CUSTOM::getResult(Custom_Call_UnorderedMap::const_iterator &custom_calls_itr, Poco::Data::Session &session, Poco::Data::Statement &sql_statement, std::string &result, bool &status)
 {
 	try
 	{
@@ -696,7 +696,7 @@ void SQL_CUSTOM::callPreparedStatement(std::string call_name, Custom_Call_Unorde
 				{
 					if (i == (statement_cache_itr->second.size() - 1))
 					{
-						getResult(custom_calls_itr, session, statement_cache_itr->second[i], result);
+						getResult(custom_calls_itr, session, statement_cache_itr->second[i], result, status);
 					}
 				}
 			}
@@ -727,7 +727,7 @@ void SQL_CUSTOM::callPreparedStatement(std::string call_name, Custom_Call_Unorde
 				{
 					if ( it_sql_prepared_statements_vector+1 == custom_calls_itr->second.sql_prepared_statements.end() )
 					{
-						getResult(custom_calls_itr, session, sql_statement, result);
+						getResult(custom_calls_itr, session, sql_statement, result, status);
 					}
 					if (custom_calls_itr->second.preparedStatement_cache)
 					{
@@ -738,8 +738,24 @@ void SQL_CUSTOM::callPreparedStatement(std::string call_name, Custom_Call_Unorde
 		}
 		if (!status)
 		{
-			extension_ptr->console->error("extDB2: SQL_CUSTOM: Wiping Statements + Session");
+			#ifdef TESTING
+				extension_ptr->console->error("extDB2: SQL_CUSTOM: Wiping Statements + Session");
+			#endif
+			extension_ptr->logger->error("extDB2: SQL_CUSTOM: Wiping Statements + Session");
 			session_data_ptr->statements_map.clear();
+		}
+	}
+	catch (Poco::Data::MySQL::ConnectionException& e)
+	{
+		status = false;
+		#ifdef TESTING
+			extension_ptr->console->error("extDB2: SQL_CUSTOM: Error ConnectionException: {0}", e.displayText());
+		#endif
+		extension_ptr->logger->error("extDB2: SQL_CUSTOM: Error ConnectionException: {0}", e.displayText());
+		result = "[0,\"Error Connection Exception\"]";
+		if (!session_data_ptr.isNull())
+		{
+ 			session_data_ptr->statements_map.clear();
 		}
 	}
 	catch (Poco::Data::ConnectionFailedException& e)
@@ -778,7 +794,7 @@ void SQL_CUSTOM::callPreparedStatement(std::string call_name, Custom_Call_Unorde
 			for (auto replace_str : custom_inputs)
 			{
 				++x;
-				boost::replace_all(sql_str, replace_str, ("$CUSTOM_" + Poco::NumberFormatter::format(x) + "$")); 
+				boost::replace_all(sql_str, ("$CUSTOM_" + Poco::NumberFormatter::format(x) + "$"), replace_str); 
 			}
 			sql_statement << sql_str;
 
@@ -790,13 +806,29 @@ void SQL_CUSTOM::callPreparedStatement(std::string call_name, Custom_Call_Unorde
 			executeSQL(sql_statement, result, status);
 			if (status && (it_sql_prepared_statements_vector + 1 == custom_calls_itr->second.sql_prepared_statements.end()))
 			{
-				getResult(custom_calls_itr, session, sql_statement, result);
+				getResult(custom_calls_itr, session, sql_statement, result, status);
 			}
 		}
 		if (!status)
 		{
-			extension_ptr->console->error("extDB2: SQL_CUSTOM: Clearing Cached Statements");
+			#ifdef TESTING
+				extension_ptr->console->error("extDB2: SQL_CUSTOM: Clearing Any Cached Statements");
+			#endif
+			extension_ptr->logger->error("extDB2: SQL_CUSTOM: Clearing Any Cached Statements");
 			session_data_ptr->statements_map.clear();
+		}
+	}
+	catch (Poco::Data::MySQL::ConnectionException& e)
+	{
+		status = false;
+		#ifdef TESTING
+			extension_ptr->console->error("extDB2: SQL_CUSTOM: Error ConnectionException: {0}", e.displayText());
+		#endif
+		extension_ptr->logger->error("extDB2: SQL_CUSTOM: Error ConnectionException: {0}", e.displayText());
+		result = "[0,\"Error Connection Exception\"]";
+		if (!session_data_ptr.isNull())
+		{
+ 			session_data_ptr->statements_map.clear();
 		}
 	}
 	catch (Poco::Data::ConnectionFailedException& e)
@@ -808,6 +840,10 @@ void SQL_CUSTOM::callPreparedStatement(std::string call_name, Custom_Call_Unorde
 		#endif
 		extension_ptr->logger->error("extDB2: SQL_CUSTOM: Error ConnectionFailedException: {0}", e.displayText());
 		result = "[0,\"Error ConnectionFailedException\"]";
+		if (!session_data_ptr.isNull())
+		{
+ 			session_data_ptr->statements_map.clear();
+		}
 	}
 }
 
@@ -863,10 +899,10 @@ bool SQL_CUSTOM::callProtocol(std::string input_str, std::string &result, const 
 			else
 			{
 				auto itr = tokens.begin();
-				std::advance(itr, custom_calls_const_itr->second.number_of_inputs);
+				std::advance(itr, custom_calls_const_itr->second.number_of_inputs + 1);
 				inputs.insert(inputs.begin(), tokens.begin(), itr);
 
-				std::advance(itr, 1);
+				//std::advance(itr, 1);
 				custom_inputs.insert(custom_inputs.begin(), itr, tokens.end());
 
 				for (auto &custom_input : custom_inputs)
@@ -930,7 +966,6 @@ bool SQL_CUSTOM::callProtocol(std::string input_str, std::string &result, const 
 							temp_str = "\"" + temp_str + "\"";
 						}
 					}
-
 					// SANITIZE CHECK
 					if (sql_inputs_option.check)
 					{
@@ -943,6 +978,7 @@ bool SQL_CUSTOM::callProtocol(std::string input_str, std::string &result, const 
 				}
 				all_processed_inputs.push_back(std::move(processed_inputs));
 			}
+
 
 			if (status)
 			{
