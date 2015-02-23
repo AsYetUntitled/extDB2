@@ -1,4 +1,21 @@
 -------------------------------------------------------------------------------
+40:
+	UPDATED: Disabled Console Logger in Normal Builds
+
+	FIXED: Crashes when Database Connection fails during Fetching Result Info
+
+-------------------------------------------------------------------------------
+39:
+	ADDED: Added Version Check for extdb-conf.ini
+	ADDED: SQL_CUSTOM Dynamic SQL via $CUSTOM_x$
+
+	UPDATED: Disable all Console Output except for TESTING/TEST_APP Flags
+	UPDATED: SPDLOG Logging Code, Linux using SPDLOG_CLOCK_COARSE
+
+	FIXED: Steam VAC Auto Bans, now sends loadBans
+	FIXED: More SQL_CUSTOM Fixes for Database Exception Handling
+
+-------------------------------------------------------------------------------
 38: 
 	UPDATED: No Longer Creating VAC Ban Logs when Auto Ban is disable
 	
