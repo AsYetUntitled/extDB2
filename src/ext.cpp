@@ -737,7 +737,7 @@ void Ext::getMultiPartResult_mutexlock(const int &unique_id, char *output, const
 	else if (const_itr->second.message.empty()) // END of MSG
 	{
 		stored_results.erase(const_itr);
-		mgr.FreeId(unique_id);
+		mgr.FreeId(std::move(unique_id));
 		std::strcpy(output, "");
 	}
 	else // SEND MSG (Part)
@@ -852,8 +852,7 @@ void Ext::callExtenion(char *output, const int &output_size, const char *functio
 		else
 		{
 			// Async / Sync
-			const int async = Poco::NumberParser::parse(input_str.substr(0, 1));
-			switch (async)
+			switch (int(input_str[0] - '0'))
 			{
 				case 1: //ASYNC
 				{
@@ -926,6 +925,10 @@ void Ext::callExtenion(char *output, const int &output_size, const char *functio
 							std::strcpy(output, ("[2,\"" + Poco::NumberFormatter::format(unique_id) + "\"]").c_str());
 						}
 					}
+					break;
+				}
+				case 3: // GET -- TCPRemoteCode
+				{
 					break;
 				}
 				case 4: // GET -- Single-Part Message Format
