@@ -22,8 +22,10 @@ along with this program. If not, see <http://www.gnu.org/licenses/>.
 #include <boost/bind.hpp>
 #include <boost/filesystem.hpp>
 #include <boost/thread/thread.hpp>
-#include <boost/random/random_device.hpp>
-#include <boost/random/uniform_int_distribution.hpp>
+#ifdef _WIN32
+	#include <boost/random/random_device.hpp>
+	#include <boost/random/uniform_int_distribution.hpp>
+#endif
 #include <boost/regex.hpp>
 
 #include <Poco/Data/Session.h>
@@ -47,7 +49,7 @@ along with this program. If not, see <http://www.gnu.org/licenses/>.
 #include <cstdlib>
 
 #include "rconworker.h"
-//#include "remoteserver.h"
+#include "remoteserver.h"
 #include "steamworker.h"
 #include "uniqueid.h"
 
@@ -66,8 +68,6 @@ Ext::Ext(std::string dll_path)
 {
 	try
 	{
-		mgr.reset (new IdManager);
-
 		bool conf_found = false;
 		bool conf_randomized = false;
 
@@ -365,18 +365,6 @@ void Ext::stop()
 }
 
 
-std::string Ext::getExtensionPath()
-{
-	return extDB_info.path;
-}
-
-
-std::string Ext::getLogPath()
-{
-	return extDB_info.log_path;
-}
-
-
 Poco::Data::Session Ext::getDBSession_mutexlock(AbstractExt::DBConnectionInfo &database)
 // Gets available DB Session (mutex lock)
 {
@@ -542,7 +530,7 @@ void Ext::connectDatabase(char *output, const int &output_size, const std::strin
 
 					database->type = "SQLite";
 
-					boost::filesystem::path sqlite_path(getExtensionPath());
+					boost::filesystem::path sqlite_path(extDB_info.path);
 					sqlite_path /= "extDB";
 					sqlite_path /= "sqlite";
 					sqlite_path /= db_name;
@@ -723,7 +711,7 @@ void Ext::getSinglePartResult_mutexlock(const int &unique_id, char *output, cons
 		{
 			std::strcpy(output, const_itr->second.message.c_str());
 			stored_results.erase(const_itr);
-			mgr.get()->FreeId(unique_id);
+			mgr.FreeId(unique_id);
 		}
 	}
 }
@@ -749,7 +737,7 @@ void Ext::getMultiPartResult_mutexlock(const int &unique_id, char *output, const
 	else if (const_itr->second.message.empty()) // END of MSG
 	{
 		stored_results.erase(const_itr);
-		mgr.get()->FreeId(unique_id);
+		mgr.FreeId(unique_id);
 		std::strcpy(output, "");
 	}
 	else // SEND MSG (Part)
@@ -772,7 +760,7 @@ const int Ext::saveResult_mutexlock(const resultData &result_data)
 // Stores Result String and returns Unique ID, used by SYNC Calls where message > outputsize
 {
 	boost::lock_guard<boost::mutex> lock(mutex_results);
-	const int unique_id = mgr.get()->AllocateId();
+	const int unique_id = mgr.AllocateId();
 	stored_results[unique_id] = std::move(result_data);
 	stored_results[unique_id].wait = false;
 	return unique_id;
@@ -867,6 +855,31 @@ void Ext::callExtenion(char *output, const int &output_size, const char *functio
 			const int async = Poco::NumberParser::parse(input_str.substr(0, 1));
 			switch (async)
 			{
+				case 1: //ASYNC
+				{
+					// Protocol
+					const std::string::size_type found = input_str.find(":",2);
+
+					if (found==std::string::npos)  // Check Invalid Format
+					{
+						std::strcpy(output, "[0,\"Error Invalid Format\"]");
+						logger->error("extDB2: Invalid Format: {0}", input_str);
+					}
+					else if (found == (input_str_length - 1))
+					{
+						std::strcpy(output, "[0,\"Error Invalid Format\"]");
+						logger->error("extDB2: Invalid Format: {0}", input_str);
+					}
+					else
+					{
+						const std::string protocol = input_str.substr(2,(found-2));
+						// Data
+						const std::string data = input_str.substr(found+1);
+						io_service.post(boost::bind(&Ext::onewayCallProtocol, this, output_size, protocol, data));
+						std::strcpy(output, "[1]");
+					}
+					break;
+				}
 				case 2: //ASYNC + SAVE
 				{
 					// Protocol
@@ -896,7 +909,7 @@ void Ext::callExtenion(char *output, const int &output_size, const char *functio
 							{
 								boost::lock_guard<boost::mutex> lock(mutex_results);
 
-								unique_id = mgr.get()->AllocateId();
+								unique_id = mgr.AllocateId();
 								stored_results[unique_id].wait = true;
 								found_procotol = true;
 							}
@@ -925,31 +938,6 @@ void Ext::callExtenion(char *output, const int &output_size, const char *functio
 				{
 					const int unique_id = Poco::NumberParser::parse(input_str.substr(2));
 					getMultiPartResult_mutexlock(unique_id, output, output_size);
-					break;
-				}
-				case 1: //ASYNC
-				{
-					// Protocol
-					const std::string::size_type found = input_str.find(":",2);
-
-					if (found==std::string::npos)  // Check Invalid Format
-					{
-						std::strcpy(output, "[0,\"Error Invalid Format\"]");
-						logger->error("extDB2: Invalid Format: {0}", input_str);
-					}
-					else if (found == (input_str_length - 1))
-					{
-						std::strcpy(output, "[0,\"Error Invalid Format\"]");
-						logger->error("extDB2: Invalid Format: {0}", input_str);
-					}
-					else
-					{
-						const std::string protocol = input_str.substr(2,(found-2));
-						// Data
-						const std::string data = input_str.substr(found+1);
-						io_service.post(boost::bind(&Ext::onewayCallProtocol, this, output_size, protocol, data));
-						std::strcpy(output, "[1]");
-					}
 					break;
 				}
 				case 0: //SYNC
@@ -1019,6 +1007,21 @@ void Ext::callExtenion(char *output, const int &output_size, const char *functio
 									else
 									{
 										std::strcpy(output, ("[0,\"Steam Already Started\"]"));	
+									}
+								}
+								else if (tokens[1] == "START_REMOTE")
+								{
+									if (!extDB_connectors_info.remote)
+									{
+										if (pConf->getBool("RemoteAccess.Enable", false))
+										{
+											remote_server.init(this);
+											std::strcpy(output, ("[1]"));			
+										}
+										else
+										{
+											std::strcpy(output, ("[0,\"Remote Access is Disabled in extdb config\"]"));			
+										}
 									}
 								}
 								// LOCK / VERSION
@@ -1145,7 +1148,8 @@ void Ext::callExtenion(char *output, const int &output_size, const char *functio
 #if defined(TEST_APP) && defined(TESTING)
 int main(int nNumberofArgs, char* pszArgs[])
 {
-	char result[80];
+	int result_size = 80;
+	char result[81];
 	std::string input_str;
 
 	Ext *extension;
@@ -1167,7 +1171,7 @@ int main(int nNumberofArgs, char* pszArgs[])
 		}
 		else
 		{
-			extension->callExtenion(result, 80, input_str.c_str());
+			extension->callExtenion(result, result_size, input_str.c_str());
 			extension->console->info("extDB2: {0}", result);
 		}
 		while (test)
@@ -1179,11 +1183,11 @@ int main(int nNumberofArgs, char* pszArgs[])
 				break;
 			}
 			test_counter = test_counter + 1;
-			extension->callExtenion(result, 80, std::string("1:SQL:TEST:testing").c_str());
-			extension->callExtenion(result, 80, std::string("1:SQL:TEST2:testing").c_str());
-			extension->callExtenion(result, 80, std::string("1:SQL:TEST3:testing").c_str());
-			extension->callExtenion(result, 80, std::string("1:SQL:TEST4:testing").c_str());
-			extension->callExtenion(result, 80, std::string("1:SQL:TEST5:testing").c_str());
+			extension->callExtenion(result, result_size, std::string("1:SQL:TEST:testing").c_str());
+			extension->callExtenion(result, result_size, std::string("1:SQL:TEST2:testing").c_str());
+			extension->callExtenion(result, result_size, std::string("1:SQL:TEST3:testing").c_str());
+			extension->callExtenion(result, result_size, std::string("1:SQL:TEST4:testing").c_str());
+			extension->callExtenion(result, result_size, std::string("1:SQL:TEST5:testing").c_str());
 			extension->console->info("extDB2: {0}", result);			
 		}
 	}

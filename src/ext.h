@@ -25,6 +25,7 @@ along with this program. If not, see <http://www.gnu.org/licenses/>.
 #include <unordered_map>
 
 #include "rconworker.h"
+#include "remoteserver.h"
 #include "steamworker.h"
 #include "uniqueid.h"
 
@@ -43,9 +44,6 @@ class Ext: public AbstractExt
 		void rconCommand(std::string str);
 
 	protected:
-		std::string getExtensionPath();
-		std::string getLogPath();
-
 		const int saveResult_mutexlock(const resultData &result_data);
 		void saveResult_mutexlock(const int &unique_id, const resultData &result_data);
 
@@ -58,22 +56,17 @@ class Ext: public AbstractExt
 		void steamQuery(const int &unique_id, bool queryFriends, bool queryVacBans, std::vector<std::string> &steamIDs, bool wakeup);
 
 	private:
-		// extDB Info
-		struct extDBInfo
-		{
-			bool extDB_lock=false;
-			int max_threads;
-
-			std::string path;
-			std::string log_path;
-		};
-		extDBInfo extDB_info;
-
 		// RCon
 		RCONWORKER rcon_worker;
 
+		/// Remote Server
+		RemoteServer remote_server;
+
 		// Steam
 		STEAMWORKER steam_worker;
+
+		// Unique ID for key for ^^
+		IdManager mgr;
 
 		// ASIO Thread Queue
 		std::unique_ptr<boost::asio::io_service::work> io_work_ptr;
@@ -87,8 +80,6 @@ class Ext: public AbstractExt
 		std::unordered_map<int, resultData> stored_results;
 		boost::mutex mutex_results;  // Using Same Lock for Wait / Results / Plugins
 
-		// Unique ID for key for ^^
-		std::unique_ptr<IdManager> mgr;
 
 		// RCon
 		void connectRCon(char *output, const int &output_size, const std::string &rcon_conf);

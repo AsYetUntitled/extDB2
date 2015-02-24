@@ -92,7 +92,7 @@ bool SQL_CUSTOM::init(AbstractExt *extension, const std::string &database_id, co
 		return false;
 	}
 
-	boost::filesystem::path extension_path(extension_ptr->getExtensionPath());
+	boost::filesystem::path extension_path(extension_ptr->extDB_info.path);
 	extension_path /= "extDB";
 	extension_path /= "sql_custom";
 

@@ -40,6 +40,7 @@ class AbstractExt
 			std::string message;
 		};
 
+		// Database Connection Info
 		struct DBConnectionInfo
 		{
 			std::string type;
@@ -49,20 +50,41 @@ class AbstractExt
 			int idle_time;
 
 			// Database Session Pool
-			std::shared_ptr<Poco::Data::SessionPool> pool;
+			std::unique_ptr<Poco::Data::SessionPool> pool;
 			boost::mutex mutex_pool;
 		};
 
+		// extDB Connectors
 		struct extDBConnectors
 		{
-			bool steam=false;
-			bool rcon=false;
 			bool mysql=false;
 			bool sqlite=false;
+
+			bool steam=false;
+			bool rcon=false;
+			bool remote=false;
+
 			std::unordered_map<std::string, DBConnectionInfo> databases;
 		};
-
 		extDBConnectors extDB_connectors_info;
+
+		// extDB Info
+		struct extDBInfo
+		{
+			bool extDB_lock=false;
+			int max_threads;
+
+			std::string path;
+			std::string log_path;
+		};
+		extDBInfo extDB_info;
+
+		// RemoteAccess Info
+		struct remoteAccessInfo
+		{
+			std::string password;
+		};
+		remoteAccessInfo remote_access_info;
 
 		Poco::AutoPtr<Poco::Util::IniFileConfiguration> pConf;
 
@@ -78,9 +100,6 @@ class AbstractExt
 		virtual Poco::Data::Session getDBSession_mutexlock(DBConnectionInfo &database)=0;
 		virtual Poco::Data::Session  getDBSession_mutexlock(DBConnectionInfo &database, Poco::Data::SessionPool::SessionDataPtr &session_data_ptr)=0;
 		
-		virtual std::string getExtensionPath()=0;
-		virtual std::string getLogPath()=0;
-
 		virtual void rconCommand(std::string str)=0;
 		virtual void steamQuery(const int &unique_id, bool queryFriends, bool queryVacBans, std::vector<std::string> &steamIDs, bool wakeup)=0;
 };

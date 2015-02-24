@@ -28,9 +28,9 @@ bool LOG::init(AbstractExt *extension, const std::string &database_id, const std
 	{
 		try
 		{
-			boost::filesystem::path customlog(extension_ptr->getLogPath());
+			boost::filesystem::path customlog(extension_ptr->extDB_info.log_path);
 			customlog /= init_str;
-			if (customlog.parent_path().make_preferred().string() == extension_ptr->getLogPath())
+			if (customlog.parent_path().make_preferred().string() == extension_ptr->extDB_info.log_path)
 			{
 				auto logger_temp = spdlog::daily_logger_mt(init_str, customlog.make_preferred().string(), true);
 				logger.swap(logger_temp);
