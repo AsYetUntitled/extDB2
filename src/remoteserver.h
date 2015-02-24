@@ -41,16 +41,22 @@ public:
 	IdManager id_mgr;
 	boost::mutex id_mgr_mutex;
 
-private:
-	Poco::Net::TCPServerParams* pParams;
-	Poco::Net::TCPServer *tcp_server;
-
 	struct clients
 	{
 		std::vector<std::string> outputs;
 		std::shared_ptr<RemoteConnection> connection;
 	};
 	std::unordered_map<int, clients> clients_data;
+	boost::mutex clients_data_mutex;
+
+	boost::mutex inputs_mutex;
+	std::vector<std::string> inputs;
+	
+	std::atomic<bool> inputs_flag = false;
+
+private:
+	Poco::Net::TCPServerParams* pParams;
+	Poco::Net::TCPServer *tcp_server;
 };
 
 

@@ -61,7 +61,6 @@ class Ext: public AbstractExt
 
 		/// Remote Server
 		RemoteServer remote_server;
-		std::atomic<bool> remote_server_flag;
 
 		// Steam
 		STEAMWORKER steam_worker;

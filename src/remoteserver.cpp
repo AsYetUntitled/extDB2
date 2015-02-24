@@ -141,7 +141,7 @@ void RemoteConnection::mainLoop()
 {
 	int nBytes = -1;
 
-	Poco::Timespan timeOut(30, 0);
+	Poco::Timespan timeOut(5, 0);
 	char incommingBuffer[1500];
 	bool isOpen = true;
 
@@ -161,15 +161,16 @@ void RemoteConnection::mainLoop()
 	{
 		if (socket().poll(timeOut, Poco::Net::Socket::SELECT_READ) == false)
 		{
-			/*
-			#ifdef TESTING
-				extension_ptr->console->info("extDB2: Client Timed Out");
-			#endif
-			extension_ptr->logger->info("extDB2: Client Timed Out");
-			send_str = "Timed Out, Closing Connection";
-			socket().sendBytes(send_str.c_str(), send_str.size());
-			isOpen = false;
-			*/
+			boost::lock_guard<boost::mutex> lock(remoteServer_ptr->clients_data_mutex);
+			if (!remoteServer_ptr->clients_data[unique_id].outputs.empty())
+			{
+				for (auto &output : remoteServer_ptr->clients_data[unique_id].outputs)
+				{
+					send_str = output + "\n\r";
+					socket().sendBytes(send_str.c_str(), send_str.size());
+				}
+				remoteServer_ptr->clients_data[unique_id].outputs.clear();
+			}
 		}
 		else
 		{
@@ -216,7 +217,9 @@ void RemoteConnection::mainLoop()
 						}
 						else if (boost::iequals(recv_str, std::string("#SEND")) == 1)
 						{
-							//extension_ptr
+							boost::lock_guard<boost::mutex> lock(remoteServer_ptr->inputs_mutex);
+							remoteServer_ptr->inputs.push_back(send_str);
+							remoteServer_ptr->inputs_flag = true;
 						}
 						else if (boost::iequals(recv_str, std::string("#QUIT")) == 1)
 						{
@@ -259,8 +262,14 @@ void RemoteConnection::mainLoop()
 			}
 		}
 	}
-	boost::lock_guard<boost::mutex> lock(remoteServer_ptr->id_mgr_mutex);
-	remoteServer_ptr->id_mgr.FreeId(std::move(unique_id));
+	{
+		boost::lock_guard<boost::mutex> lock(remoteServer_ptr->clients_data_mutex);
+		remoteServer_ptr->clients_data.erase(unique_id);
+	}
+	{
+		boost::lock_guard<boost::mutex> lock(remoteServer_ptr->id_mgr_mutex);
+		remoteServer_ptr->id_mgr.FreeId(std::move(unique_id));
+	}
 }
 
 

@@ -355,7 +355,7 @@ void Ext::stop()
 	}
 	if (extDB_connectors_info.sqlite)
 	{
-		Poco::Data::SQLite::Connector::unregisterConnector();
+		//Poco::Data::SQLite::Connector::unregisterConnector();
 	}
 	if (extDB_connectors_info.rcon)
 	{
@@ -929,6 +929,14 @@ void Ext::callExtenion(char *output, const int &output_size, const char *functio
 				}
 				case 3: // GET -- TCPRemoteCode
 				{
+					if (remote_server.inputs_flag)
+					{
+						// TODO FETCH
+					}
+					else
+					{
+						std::strcpy(output, ("[1,""]"));
+					}
 					break;
 				}
 				case 4: // GET -- Single-Part Message Format
