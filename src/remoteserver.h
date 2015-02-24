@@ -26,6 +26,32 @@ along with this program. If not, see <http://www.gnu.org/licenses/>.
 #include <Poco/Net/StreamSocket.h>
 
 #include "protocols/abstract_ext.h"
+#include "uniqueid.h"
+
+class RemoteConnection;
+
+class RemoteServer
+{
+public:
+	void init(AbstractExt *extension);
+	void stop();
+
+	AbstractExt *extension_ptr;
+
+	IdManager id_mgr;
+	boost::mutex id_mgr_mutex;
+
+private:
+	Poco::Net::TCPServerParams* pParams;
+	Poco::Net::TCPServer *tcp_server;
+
+	struct clients
+	{
+		std::vector<std::string> outputs;
+		std::shared_ptr<RemoteConnection> connection;
+	};
+	std::unordered_map<int, clients> clients_data;
+};
 
 
 class RemoteConnection: public Poco::Net::TCPServerConnection
@@ -34,17 +60,20 @@ class RemoteConnection: public Poco::Net::TCPServerConnection
 	/// A string with the current date and time is sent back to the client.
 {
 public:
-	RemoteConnection(const Poco::Net::StreamSocket& s, AbstractExt *extension):
+	RemoteConnection(const Poco::Net::StreamSocket& s, RemoteServer *remoteServer) :
 		Poco::Net::TCPServerConnection(s),
-		extension_ptr(extension)
+		remoteServer_ptr(remoteServer),
+		extension_ptr(remoteServer->extension_ptr)
 	{
 	}
 
 	void run();
 	bool login();
+	void mainLoop();
 	
 private:
 	AbstractExt *extension_ptr;
+	RemoteServer *remoteServer_ptr;
 };
 
 
@@ -53,30 +82,16 @@ class RemoteConnectionFactory: public Poco::Net::TCPServerConnectionFactory
 	/// A factory for TimeServerConnection.
 {
 public:
-	RemoteConnectionFactory(AbstractExt *extension):
-		extension_ptr(extension)
+	RemoteConnectionFactory(RemoteServer *remoteServer) :
+		remoteServer_ptr(remoteServer)
 	{
 	}
 	
 	Poco::Net::TCPServerConnection* createConnection(const Poco::Net::StreamSocket& socket)
 	{
-		return new RemoteConnection(socket, extension_ptr);
+		return new RemoteConnection(socket, remoteServer_ptr);
 	}
 
 private:
-	AbstractExt *extension_ptr;
-};
-
-
-class RemoteServer
-{
-	public:
-		void init(AbstractExt *extension);
-		void stop();
-
-	private:
-		AbstractExt *extension_ptr;
-
-		Poco::Net::TCPServerParams* pParams;
-		Poco::Net::TCPServer *tcp_server;
+	RemoteServer *remoteServer_ptr;
 };
