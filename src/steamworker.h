@@ -80,11 +80,12 @@ class STEAMWORKER: public Poco::Runnable
 		
 		struct SteamVACBans
 		{
-			bool extDBBanned=false;
-			bool VACBanned;
 			int NumberOfVACBans;
 			int DaysSinceLastBan;
 			std::string steamID;
+
+			bool extDBBanned=false;
+			bool VACBanned;
 		};
 
 		struct SteamFriends
@@ -96,18 +97,19 @@ class STEAMWORKER: public Poco::Runnable
 		struct SteamQuery
 		{
 			int unique_id;
+			std::vector<std::string> steamIDs;
+
 			bool queryFriends;
 			bool queryVACBans;
-			std::vector<std::string> steamIDs;
 		};
 
 		struct RConBan
 		{
-			bool autoBan;
 			int NumberOfVACBans;
 			int DaysSinceLastBan;
 			std::string BanDuration;
 			std::string BanMessage;
+			bool autoBan;
 		};
 
 		std::vector<SteamQuery> query_queue;

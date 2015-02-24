@@ -61,17 +61,16 @@ class RCONWORKER: public Poco::Runnable
 			char cmd_char_workaround;
 			unsigned char packetCode;
 		};
-		
+		RconPacket rcon_packet;
+
 		struct RconLogin
 		{
 			char *password;
-			bool auto_reconnect;
-
-			int port;
 			std::string address;
-		};
+			int port;
 
-		RconPacket rcon_packet;
+			bool auto_reconnect;
+		};
 		RconLogin rcon_login;
 
 		Poco::Net::DatagramSocket dgs;
@@ -91,8 +90,8 @@ class RCONWORKER: public Poco::Runnable
 		std::atomic<bool> *rcon_run_flag;
 		bool logged_in = false;
 		
-		boost::recursive_mutex mutex_rcon_commands;
 		std::vector< std::string > rcon_commands;
+		boost::recursive_mutex mutex_rcon_commands;
 
 		// Functions
 		void connect();

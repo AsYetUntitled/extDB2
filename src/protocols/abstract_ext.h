@@ -36,8 +36,8 @@ class AbstractExt
 	public:
 		struct resultData
 		{
-			bool wait = true;
 			std::string message;
+			bool wait = true;
 		};
 
 		// Database Connection Info
@@ -57,25 +57,25 @@ class AbstractExt
 		// extDB Connectors
 		struct extDBConnectors
 		{
+			std::unordered_map<std::string, DBConnectionInfo> databases;
+
 			bool mysql=false;
 			bool sqlite=false;
 
 			bool steam=false;
 			bool rcon=false;
 			bool remote=false;
-
-			std::unordered_map<std::string, DBConnectionInfo> databases;
 		};
 		extDBConnectors extDB_connectors_info;
 
 		// extDB Info
 		struct extDBInfo
 		{
-			bool extDB_lock=false;
-			int max_threads;
-
 			std::string path;
 			std::string log_path;
+			
+			int max_threads;
+			bool extDB_lock=false;
 		};
 		extDBInfo extDB_info;
 
