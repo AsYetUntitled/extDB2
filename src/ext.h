@@ -91,6 +91,9 @@ class Ext: public AbstractExt
 		void getSinglePartResult_mutexlock(const int &unique_id, char *output, const int &output_size);
 		void getMultiPartResult_mutexlock(const int &unique_id, char *output, const int &output_size);
 		void sendResult_mutexlock(const std::string &result, char *output, const int &output_size);
+		
+		void getTCPRemote_mutexlock(char *output, const int &output_size);
+		void sendTCPRemote_mutexlock(std::string &input_str);
 
 		// Protocols
 		void addProtocol(char *output, const int &output_size, const std::string &database_id, const std::string &protocol, const std::string &protocol_name, const std::string &init_data);

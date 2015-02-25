@@ -777,6 +777,59 @@ void Ext::saveResult_mutexlock(const int &unique_id, const resultData &result_da
 }
 
 
+void Ext::getTCPRemote_mutexlock(char *output, const int &output_size)
+{
+	std::string result;
+	{
+		boost::lock_guard<boost::mutex> lock(remote_server.inputs_mutex);
+		if (!remote_server.inputs.empty())
+		{
+			result = remote_server.inputs[0];
+			remote_server.inputs.erase(remote_server.inputs.begin());
+		}
+	}
+
+	if (result.length() <= output_size)
+	{
+		std::strcpy(output, result.c_str());
+	}
+	else
+	{
+		resultData result_data;
+		result_data.message = std::move(result);
+		const int unique_id = saveResult_mutexlock(result_data);
+		std::strcpy(output, Poco::NumberFormatter::format(unique_id).c_str());
+	}
+}
+
+
+void Ext::sendTCPRemote_mutexlock(std::string &input_str)
+{
+	const std::string::size_type found = input_str.find(":", 2);
+
+	if ((found==std::string::npos) || (found == (input_str.size() - 1)))
+	{
+		logger->error("extDB2: Invalid Format: sendTCPRemote: {0}", input_str);
+	}
+	else
+	{
+		int unique_id;
+		if (Poco::NumberParser::tryParse(input_str.substr(2,(found-2)), unique_id))
+		{
+			boost::lock_guard<boost::mutex> lock(remote_server.clients_data_mutex);
+			if (remote_server.clients_data.count(unique_id) != 0)
+			{
+				remote_server.clients_data[unique_id].outputs.push_back(input_str.substr(found + 1));
+			}
+		}
+		else
+		{
+			logger->error("extDB2: Invalid Format: sendTCPRemote: {0}", input_str);
+		}
+	}
+}
+
+
 void Ext::syncCallProtocol(char *output, const int &output_size, const std::string &protocol, const std::string &data)
 // Sync callPlugin
 {
@@ -793,7 +846,7 @@ void Ext::syncCallProtocol(char *output, const int &output_size, const std::stri
 		resultData result_data;
 		result_data.message.reserve(output_size);
 		const_itr->second->callProtocol(data, result_data.message);
-		if (result_data.message.length() <= (output_size-6))
+		if (result_data.message.length() <= output_size)
 		{
 			std::strcpy(output, result_data.message.c_str());
 		}
@@ -859,12 +912,7 @@ void Ext::callExtenion(char *output, const int &output_size, const char *functio
 					// Protocol
 					const std::string::size_type found = input_str.find(":",2);
 
-					if (found==std::string::npos)  // Check Invalid Format
-					{
-						std::strcpy(output, "[0,\"Error Invalid Format\"]");
-						logger->error("extDB2: Invalid Format: {0}", input_str);
-					}
-					else if (found == (input_str_length - 1))
+					if ((found==std::string::npos) || (found == (input_str_length - 1)))
 					{
 						std::strcpy(output, "[0,\"Error Invalid Format\"]");
 						logger->error("extDB2: Invalid Format: {0}", input_str);
@@ -884,7 +932,7 @@ void Ext::callExtenion(char *output, const int &output_size, const char *functio
 					// Protocol
 					const std::string::size_type found = input_str.find(":",2);
 
-					if (found==std::string::npos)  // Check Invalid Format
+					if ((found==std::string::npos) || (found == (input_str_length - 1)))
 					{
 						std::strcpy(output, "[0,\"Error Invalid Format\"]");
 						logger->error("extDB2: Invalid Format: {0}", input_str);
@@ -927,18 +975,6 @@ void Ext::callExtenion(char *output, const int &output_size, const char *functio
 					}
 					break;
 				}
-				case 3: // GET -- TCPRemoteCode
-				{
-					if (remote_server.inputs_flag)
-					{
-						// TODO FETCH
-					}
-					else
-					{
-						std::strcpy(output, ("[1,""]"));
-					}
-					break;
-				}
 				case 4: // GET -- Single-Part Message Format
 				{
 					const int unique_id = Poco::NumberParser::parse(input_str.substr(2));
@@ -951,17 +987,30 @@ void Ext::callExtenion(char *output, const int &output_size, const char *functio
 					getMultiPartResult_mutexlock(unique_id, output, output_size);
 					break;
 				}
+				case 6: // GET -- TCPRemoteCode
+				{
+					if (remote_server.inputs_flag)
+					{
+						getTCPRemote_mutexlock(output, output_size);
+					}
+					else
+					{
+						std::strcpy(output, "");
+					}
+					break;
+				}
+				case 7: // SEND -- TCPRemoteCode
+				{
+					io_service.post(boost::bind(&Ext::sendTCPRemote_mutexlock, this, input_str.substr(2)));
+					std::strcpy(output, "[1]");
+					break;
+				}
 				case 0: //SYNC
 				{
 					// Protocol
 					const std::string::size_type found = input_str.find(":",2);
 
-					if (found==std::string::npos)  // Check Invalid Format
-					{
-						std::strcpy(output, "[0,\"Error Invalid Format\"]");
-						logger->error("extDB2: Invalid Format: {0}", input_str);
-					}
-					else if (found == (input_str_length - 1))
+					if ((found==std::string::npos) || (found == (input_str_length - 1)))
 					{
 						std::strcpy(output, "[0,\"Error Invalid Format\"]");
 						logger->error("extDB2: Invalid Format: {0}", input_str);

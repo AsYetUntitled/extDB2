@@ -49,8 +49,8 @@ public:
 	std::unordered_map<int, clients> clients_data;
 	boost::mutex clients_data_mutex;
 
-	boost::mutex inputs_mutex;
 	std::vector<std::string> inputs;
+	boost::mutex inputs_mutex;
 	
 	std::atomic<bool> inputs_flag = false;
 
