@@ -3,6 +3,7 @@
 	UPDATED: Disabled Console Logger in Normal Builds
 
 	FIXED: Crashes when Database Connection fails during Fetching Result Info
+	FIXED: AutoBans not sending LoadBans thx killerty69
 
 -------------------------------------------------------------------------------
 39:
