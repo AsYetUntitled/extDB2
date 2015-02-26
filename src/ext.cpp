@@ -830,49 +830,65 @@ void Ext::sendTCPRemote_mutexlock(std::string &input_str)
 }
 
 
-void Ext::syncCallProtocol(char *output, const int &output_size, const std::string &protocol, const std::string &data)
+void Ext::syncCallProtocol(char *output, const int &output_size, std::string &input_str, std::string::size_type &input_str_length)
 // Sync callPlugin
 {
-	auto const_itr = unordered_map_protocol.find(protocol);
-	if (const_itr == unordered_map_protocol.end())
+	const std::string::size_type found = input_str.find(":",2);
+
+	if ((found==std::string::npos) || (found == (input_str.size() - 1)))
 	{
-		std::strcpy(output, "[0,\"Error Unknown Protocol\"]");
+		std::strcpy(output, "[0,\"Error Invalid Format\"]");
+		logger->error("extDB2: Invalid Format: {0}", input_str);
 	}
 	else
 	{
-		// Checks if Result String will fit into arma output char
-		//   If <=, then sends output to arma
-		//   if >, then sends ID Message arma + stores rest. (mutex locks)
-		resultData result_data;
-		result_data.message.reserve(output_size);
-		const_itr->second->callProtocol(data, result_data.message);
-		if (result_data.message.length() <= output_size)
+		auto const_itr = unordered_map_protocol.find(input_str.substr(2,(found-2)));
+		if (const_itr == unordered_map_protocol.end())
 		{
-			std::strcpy(output, result_data.message.c_str());
+			std::strcpy(output, "[0,\"Error Unknown Protocol\"]");
 		}
 		else
 		{
-			const int unique_id = saveResult_mutexlock(result_data);
-			std::strcpy(output, ("[2,\"" + Poco::NumberFormatter::format(unique_id) + "\"]").c_str());
+			resultData result_data;
+			result_data.message.reserve(output_size);
+
+			const_itr->second->callProtocol(input_str.substr(found+1), result_data.message);
+			if (result_data.message.length() <= output_size)
+			{
+				std::strcpy(output, result_data.message.c_str());
+			}
+			else
+			{
+				const int unique_id = saveResult_mutexlock(result_data);
+				std::strcpy(output, ("[2,\"" + Poco::NumberFormatter::format(unique_id) + "\"]").c_str());
+			}
 		}
 	}
 }
 
 
-void Ext::onewayCallProtocol(const int &output_size, const std::string protocol, const std::string data)
+void Ext::onewayCallProtocol(const int &output_size, std::string &input_str)
 // ASync callProtocol
 {
-	auto const_itr = unordered_map_protocol.find(protocol);
-	if (const_itr != unordered_map_protocol.end())
+	const std::string::size_type found = input_str.find(":",2);
+	if ((found==std::string::npos) || (found == (input_str.size() - 1)))
 	{
-		resultData result_data;
-		result_data.message.reserve(output_size);
-		const_itr->second->callProtocol(data, result_data.message, 0);
+		logger->error("extDB2: Invalid Format: {0}", input_str);
+	}
+	else
+	{
+		auto const_itr = unordered_map_protocol.find(input_str.substr(2,(found-2)));
+		if (const_itr != unordered_map_protocol.end())
+		{
+			resultData result_data;
+			result_data.message.reserve(output_size);
+			const_itr->second->callProtocol(input_str.substr(found+1), result_data.message, 0);
+		}
 	}
 }
 
 
-void Ext::asyncCallProtocol(const int &output_size, const std::string protocol, const std::string data, const int unique_id)
+void Ext::asyncCallProtocol(const int &output_size, const std::string &protocol, const std::string &data, const int &unique_id)
 // ASync + Save callProtocol
 // We check if Protocol exists here, since its a thread (less time spent blocking arma) and it shouldnt happen anyways
 {
@@ -894,7 +910,7 @@ void Ext::callExtenion(char *output, const int &output_size, const char *functio
 			logger->info("extDB2: Extension Input from Server: {0}", std::string(function));
 		#endif
 
-		const std::string input_str(function);
+		std::string input_str(function);
 		std::string::size_type input_str_length = input_str.length();
 
 		if (input_str_length <= 2)
@@ -909,22 +925,7 @@ void Ext::callExtenion(char *output, const int &output_size, const char *functio
 			{
 				case 1: //ASYNC
 				{
-					// Protocol
-					const std::string::size_type found = input_str.find(":",2);
-
-					if ((found==std::string::npos) || (found == (input_str_length - 1)))
-					{
-						std::strcpy(output, "[0,\"Error Invalid Format\"]");
-						logger->error("extDB2: Invalid Format: {0}", input_str);
-					}
-					else
-					{
-						const std::string protocol = input_str.substr(2,(found-2));
-						// Data
-						const std::string data = input_str.substr(found+1);
-						io_service.post(boost::bind(&Ext::onewayCallProtocol, this, output_size, protocol, data));
-						std::strcpy(output, "[1]");
-					}
+					io_service.post(boost::bind(&Ext::onewayCallProtocol, this, output_size, input_str));
 					break;
 				}
 				case 2: //ASYNC + SAVE
@@ -940,9 +941,6 @@ void Ext::callExtenion(char *output, const int &output_size, const char *functio
 					else
 					{
 						const std::string protocol = input_str.substr(2,(found-2));
-						bool found_procotol = false;
-						int unique_id;
-
 						if (found == (input_str_length - 1))
 						{
 							std::strcpy(output, "[0,\"Error Invalid Format\"]");
@@ -954,23 +952,22 @@ void Ext::callExtenion(char *output, const int &output_size, const char *functio
 							// Do this so if someone manages to get server, the error message wont get stored in the result unordered map
 							if (unordered_map_protocol.find(protocol) != unordered_map_protocol.end())
 							{
-								boost::lock_guard<boost::mutex> lock(mutex_results);
+								int unique_id;
+								{
+									boost::lock_guard<boost::mutex> lock(mutex_results);
 
-								unique_id = mgr.AllocateId();
-								stored_results[unique_id].wait = true;
-								found_procotol = true;
+									unique_id = mgr.AllocateId();
+									stored_results[unique_id].wait = true;
+								}
+
+								io_service.post(boost::bind(&Ext::asyncCallProtocol, this, output_size, protocol, input_str.substr(found+1), unique_id));
+								std::strcpy(output, ("[2,\"" + Poco::NumberFormatter::format(unique_id) + "\"]").c_str());
 							}
 							else
 							{
 								std::strcpy(output, "[0,\"Error Unknown Protocol\"]");
 								logger->error("extDB2: Unknown Protocol: {0}", protocol);
 							}
-						}
-						// Only Add Job to Work Queue + Return ID if Protocol Name exists.
-						if (found_procotol)
-						{
-							io_service.post(boost::bind(&Ext::asyncCallProtocol, this, output_size, protocol, input_str.substr(found+1), unique_id));
-							std::strcpy(output, ("[2,\"" + Poco::NumberFormatter::format(unique_id) + "\"]").c_str());
 						}
 					}
 					break;
@@ -993,32 +990,16 @@ void Ext::callExtenion(char *output, const int &output_size, const char *functio
 					{
 						getTCPRemote_mutexlock(output, output_size);
 					}
-					else
-					{
-						std::strcpy(output, "");
-					}
 					break;
 				}
 				case 7: // SEND -- TCPRemoteCode
 				{
 					io_service.post(boost::bind(&Ext::sendTCPRemote_mutexlock, this, input_str.substr(2)));
-					std::strcpy(output, "[1]");
 					break;
 				}
 				case 0: //SYNC
 				{
-					// Protocol
-					const std::string::size_type found = input_str.find(":",2);
-
-					if ((found==std::string::npos) || (found == (input_str_length - 1)))
-					{
-						std::strcpy(output, "[0,\"Error Invalid Format\"]");
-						logger->error("extDB2: Invalid Format: {0}", input_str);
-					}
-					else
-					{
-						syncCallProtocol(output, output_size, input_str.substr(2,(found-2)), input_str.substr(found+1));
-					}
+					syncCallProtocol(output, output_size, input_str, input_str_length);
 					break;
 				}
 				case 9: // SYSTEM CALLS / SETUP

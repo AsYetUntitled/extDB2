@@ -97,7 +97,7 @@ class Ext: public AbstractExt
 
 		// Protocols
 		void addProtocol(char *output, const int &output_size, const std::string &database_id, const std::string &protocol, const std::string &protocol_name, const std::string &init_data);
-		void syncCallProtocol(char *output, const int &output_size, const std::string &protocol, const std::string &data);
-		void onewayCallProtocol(const int &output_size, const std::string protocol, const std::string data);
-		void asyncCallProtocol(const int &output_size, const std::string protocol, const std::string data, const int unique_id);
+		void syncCallProtocol(char *output, const int &output_size, std::string &input_str, std::string::size_type &input_str_length);
+		void onewayCallProtocol(const int &output_size, std::string &input_str);
+		void asyncCallProtocol(const int &output_size, const std::string &protocol, const std::string &data, const int &unique_id);
 };
