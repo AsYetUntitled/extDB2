@@ -33,6 +33,7 @@ SET(SOURCES
 	../src/uniqueid.cpp
 	../src/sanitize.cpp
 	../src/rconworker.cpp
+	../src/remoteserver.cpp
 	../src/steamworker.cpp
 	../src/protocols/abstract_protocol.cpp
 	../src/protocols/sql_custom.cpp
