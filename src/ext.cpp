@@ -202,9 +202,6 @@ Ext::Ext(std::string dll_path)
 			logger->info();
 		#endif
 
-		spdlog::set_pattern("[%H:%M:%S %z] [Thread %t] %v");
-
-
 		if (!conf_found)
 		{
 			#ifdef TESTING
@@ -324,6 +321,8 @@ Ext::Ext(std::string dll_path)
 			#endif
 		}
 
+		logger->info();
+		logger->info();
 		spdlog::set_pattern("[%H:%M:%S %z] [Thread %t] %v");
 	}
 	catch (spdlog::spdlog_ex& e)
@@ -685,7 +684,7 @@ void Ext::addProtocol(char *output, const int &output_size, const std::string &d
 }
 
 
-void Ext::getSinglePartResult_mutexlock(const int &unique_id, char *output, const int &output_size)
+void Ext::getSinglePartResult_mutexlock(char *output, const int &output_size, const int &unique_id)
 // Gets Result String from unordered map array -- Result Formt == Single-Message
 //   If <=, then sends output to arma, and removes entry from unordered map array
 //   If >, sends [5] to indicate MultiPartResult
@@ -717,7 +716,7 @@ void Ext::getSinglePartResult_mutexlock(const int &unique_id, char *output, cons
 }
 
 
-void Ext::getMultiPartResult_mutexlock(const int &unique_id, char *output, const int &output_size)
+void Ext::getMultiPartResult_mutexlock(char *output, const int &output_size, const int &unique_id)
 // Gets Result String from unordered map array  -- Result Format = Multi-Message 
 //   If length of String = 0, sends arma "", and removes entry from unordered map array
 //   If <=, then sends output to arma
@@ -786,6 +785,10 @@ void Ext::getTCPRemote_mutexlock(char *output, const int &output_size)
 		{
 			result = remote_server.inputs[0];
 			remote_server.inputs.erase(remote_server.inputs.begin());
+			if (remote_server.inputs.empty())
+			{
+				remote_server.inputs_flag = false;
+			}
 		}
 	}
 
@@ -902,7 +905,6 @@ void Ext::asyncCallProtocol(const int &output_size, const std::string &protocol,
 
 
 void Ext::callExtenion(char *output, const int &output_size, const char *function)
-// Arma CallExtension
 {
 	try
 	{
@@ -975,13 +977,13 @@ void Ext::callExtenion(char *output, const int &output_size, const char *functio
 				case 4: // GET -- Single-Part Message Format
 				{
 					const int unique_id = Poco::NumberParser::parse(input_str.substr(2));
-					getSinglePartResult_mutexlock(unique_id, output, output_size);
+					getSinglePartResult_mutexlock(output, output_size, unique_id);
 					break;
 				}
 				case 5: // GET -- Multi-Part Message Format
 				{
 					const int unique_id = Poco::NumberParser::parse(input_str.substr(2));
-					getMultiPartResult_mutexlock(unique_id, output, output_size);
+					getMultiPartResult_mutexlock(output, output_size, unique_id);
 					break;
 				}
 				case 6: // GET -- TCPRemoteCode
@@ -994,7 +996,7 @@ void Ext::callExtenion(char *output, const int &output_size, const char *functio
 				}
 				case 7: // SEND -- TCPRemoteCode
 				{
-					io_service.post(boost::bind(&Ext::sendTCPRemote_mutexlock, this, input_str.substr(2)));
+					io_service.post(boost::bind(&Ext::sendTCPRemote_mutexlock, this, input_str));
 					break;
 				}
 				case 0: //SYNC
@@ -1190,7 +1192,7 @@ void Ext::callExtenion(char *output, const int &output_size, const char *functio
 int main(int nNumberofArgs, char* pszArgs[])
 {
 	int result_size = 80;
-	char result[81];
+	char result[81] = {0};
 	std::string input_str;
 
 	Ext *extension;
@@ -1201,6 +1203,7 @@ int main(int nNumberofArgs, char* pszArgs[])
 	int test_counter = 0;
 	for (;;)
 	{
+		result[0] = '\0';
 		std::getline(std::cin, input_str);
 		if (boost::iequals(input_str, "Quit") == 1)
 		{

@@ -118,6 +118,9 @@ bool RemoteConnection::login()
 				}
 				else
 				{
+					send_str = "Password: ";
+					socket().sendBytes(send_str.c_str(), send_str.size());
+
 					++failed_attempt;
 					if (failed_attempt > 3)
 					{
@@ -218,7 +221,7 @@ void RemoteConnection::mainLoop()
 						else if (boost::iequals(recv_str, std::string("#SEND")) == 1)
 						{
 							boost::lock_guard<boost::mutex> lock(remoteServer_ptr->inputs_mutex);
-							std::string temp_str = Poco::NumberFormatter::format(unique_id) + ":" + send_str;
+							std::string temp_str = Poco::NumberFormatter::format(unique_id) + ":" + store_str;
 							remoteServer_ptr->inputs.push_back(temp_str);
 							remoteServer_ptr->inputs_flag = true;
 						}
@@ -252,12 +255,19 @@ void RemoteConnection::mainLoop()
 							socket().sendBytes(send_str.c_str(), send_str.size());
 						}
 					}
+					else
+					{
+						if (store_receive)
+						{
+							store_str = store_str + "\n" + recv_str;
+						}
+					}
 				}
 				else
 				{
 					if (store_receive)
 					{
-						store_str += recv_str;
+						store_str = store_str + "\n" + recv_str;
 					}
 				}
 			}

@@ -2,7 +2,8 @@
 
 #include "ext.h"
 
-namespace {
+namespace
+{
 	Ext *extension;
 };
 
@@ -45,18 +46,14 @@ namespace {
 	{
 		switch (ul_reason_for_call)
 		{
-		case DLL_PROCESS_ATTACH:
-			WCHAR path[MAX_PATH+1];
-			GetModuleFileNameW ((HINSTANCE)&__ImageBase, path, (MAX_PATH + 1));
-			extension = new Ext(boost::filesystem::path (path).string());
-			break;
-		case DLL_THREAD_ATTACH:
-			break;
-		case DLL_THREAD_DETACH:
-			break;
-		case DLL_PROCESS_DETACH:
-			extension->stop();
-			break;
+			case DLL_PROCESS_ATTACH:
+				WCHAR path[MAX_PATH+1];
+				GetModuleFileNameW ((HINSTANCE)&__ImageBase, path, (MAX_PATH + 1));
+				extension = new Ext(boost::filesystem::path (path).string());
+				break;
+			case DLL_PROCESS_DETACH:
+				extension->stop();
+				break;
 		}
 		return TRUE;
 	}
