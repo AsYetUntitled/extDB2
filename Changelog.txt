@@ -1,4 +1,10 @@
 -------------------------------------------------------------------------------
+41:
+	ADDED: Remote Raw TCP communicate with extDB2
+
+	FIXED: Missing ] from SQL_RAW when query results was empty
+
+-------------------------------------------------------------------------------
 40:
 	UPDATED: Disabled Console Logger in Normal Builds
 
