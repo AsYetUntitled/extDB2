@@ -391,6 +391,29 @@ void Ext::steamQuery(const int &unique_id, bool queryFriends, bool queryVacBans,
 }
 
 
+void Ext::connectRemote(char *output, const int &output_size, const std::string &remote_conf)
+// Start RCon
+{
+	if (pConf->getBool(remote_conf + ".Enable", false))
+	{
+		if (!extDB_connectors_info.remote)
+		{
+			remote_server.init(this, remote_conf);
+			extDB_connectors_info.remote = true;
+			std::strcpy(output, ("[1]"));
+		}
+		else
+		{
+			std::strcpy(output, ("[0,\"RemoteAccess Already Started\"]"));
+		}
+	}
+	else
+	{
+		std::strcpy(output, ("[0,\"RemoteAccess Disabled in Config\"]"));
+	}
+}
+
+
 void Ext::connectRCon(char *output, const int &output_size, const std::string &rcon_conf)
 // Start RCon
 {
@@ -787,7 +810,7 @@ void Ext::getTCPRemote_mutexlock(char *output, const int &output_size)
 			remote_server.inputs.erase(remote_server.inputs.begin());
 			if (remote_server.inputs.empty())
 			{
-				remote_server.inputs_flag = false;
+				*(remote_server.inputs_flag) = false;
 			}
 		}
 	}
@@ -988,7 +1011,7 @@ void Ext::callExtenion(char *output, const int &output_size, const char *functio
 				}
 				case 6: // GET -- TCPRemoteCode
 				{
-					if (remote_server.inputs_flag)
+					if (*(remote_server.inputs_flag))
 					{
 						getTCPRemote_mutexlock(output, output_size);
 					}
@@ -1052,21 +1075,6 @@ void Ext::callExtenion(char *output, const int &output_size, const char *functio
 										std::strcpy(output, ("[0,\"Steam Already Started\"]"));	
 									}
 								}
-								else if (tokens[1] == "START_REMOTE")
-								{
-									if (!extDB_connectors_info.remote)
-									{
-										if (pConf->getBool("RemoteAccess.Enable", false))
-										{
-											remote_server.init(this);
-											std::strcpy(output, ("[1]"));			
-										}
-										else
-										{
-											std::strcpy(output, ("[0,\"Remote Access is Disabled in extdb config\"]"));			
-										}
-									}
-								}
 								// LOCK / VERSION
 								else  if (tokens[1] == "VERSION")
 								{
@@ -1098,6 +1106,10 @@ void Ext::callExtenion(char *output, const int &output_size, const char *functio
 								if (tokens[1] == "START_RCON")
 								{
 									connectRCon(output, output_size, tokens[2]);
+								}
+								else if (tokens[1] == "START_REMOTE")
+								{
+									connectRemote(output, output_size, tokens[2]);
 								}
 								else if (tokens[1] == "DATABASE")
 								{

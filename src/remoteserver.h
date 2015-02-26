@@ -33,7 +33,7 @@ class RemoteConnection;
 class RemoteServer
 {
 public:
-	void init(AbstractExt *extension);
+	void init(AbstractExt *extension, const std::string &remote_conf);
 	void stop();
 
 	AbstractExt *extension_ptr;
@@ -52,7 +52,7 @@ public:
 	std::vector<std::string> inputs;
 	boost::mutex inputs_mutex;
 	
-	std::atomic<bool> inputs_flag = false;
+	std::atomic<bool> *inputs_flag;
 
 private:
 	Poco::Net::TCPServerParams* pParams;

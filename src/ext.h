@@ -83,6 +83,9 @@ class Ext: public AbstractExt
 
 		// RCon
 		void connectRCon(char *output, const int &output_size, const std::string &rcon_conf);
+
+		// Remote
+		void connectRemote(char *output, const int &output_size, const std::string &remote_conf);
 		
 		// Database
 		void connectDatabase(char *output, const int &output_size, const std::string &database_conf, const std::string &database_id);

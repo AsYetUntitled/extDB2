@@ -28,8 +28,8 @@ along with this program. If not, see <http://www.gnu.org/licenses/>.
 #include "../spdlog/spdlog.h"
 
 
-#define EXTDB_VERSION "40"
-#define EXTDB_CONF_VERSION 1
+#define EXTDB_VERSION "41"
+#define EXTDB_CONF_VERSION 2
 
 class AbstractExt
 {

@@ -21,18 +21,19 @@ along with this program. If not, see <http://www.gnu.org/licenses/>.
 #include "remoteserver.h"
 
 
-void RemoteServer::init(AbstractExt *extension)
+void RemoteServer::init(AbstractExt *extension, const std::string &remote_conf)
 {
 	extension_ptr = extension;
+	*inputs_flag = false;
 
 	pParams = new Poco::Net::TCPServerParams();
-	pParams->setMaxThreads(extension_ptr->pConf->getInt("RemoteAccess.MaxThreads", 4));
-	pParams->setMaxQueued(extension_ptr->pConf->getInt("RemoteAccess.MaxQueued", 4));
-	pParams->setThreadIdleTime(extension_ptr->pConf->getInt("RemoteAccess.IdleTime", 120));
+	pParams->setMaxThreads(extension_ptr->pConf->getInt(remote_conf + ".MaxThreads", 4));
+	pParams->setMaxQueued(extension_ptr->pConf->getInt(remote_conf + ".MaxQueued", 4));
+	pParams->setThreadIdleTime(extension_ptr->pConf->getInt(remote_conf + ".IdleTime", 120));
 
-	int port = extension_ptr->pConf->getInt("RemoteAccess.Port", 2301);
+	int port = extension_ptr->pConf->getInt(remote_conf + ".Port", 2300);
 
-	extension_ptr->remote_access_info.password = extension_ptr->pConf->getString("RemoteAccess.Password", "");
+	extension_ptr->remote_access_info.password = extension_ptr->pConf->getString(remote_conf + ".Password", "");
 
 	Poco::Net::ServerSocket s(port);
 	tcp_server = new Poco::Net::TCPServer(new RemoteConnectionFactory(this), s, pParams);
@@ -223,7 +224,7 @@ void RemoteConnection::mainLoop()
 							boost::lock_guard<boost::mutex> lock(remoteServer_ptr->inputs_mutex);
 							std::string temp_str = Poco::NumberFormatter::format(unique_id) + ":" + store_str;
 							remoteServer_ptr->inputs.push_back(temp_str);
-							remoteServer_ptr->inputs_flag = true;
+							*remoteServer_ptr->inputs_flag = true;
 						}
 						else if (boost::iequals(recv_str, std::string("#QUIT")) == 1)
 						{
