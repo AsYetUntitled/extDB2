@@ -178,11 +178,8 @@ bool SQL_RAW::callProtocol(std::string input_str, std::string &result, const int
 				{
 					result += "],[";
 				}
-				else
-				{
-					result += "]";
-				}
 			}
+			result += "]";
 		}
 		result += "]]";
 		#ifdef TESTING
