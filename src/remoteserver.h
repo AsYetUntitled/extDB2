@@ -33,7 +33,8 @@ class RemoteConnection;
 class RemoteServer
 {
 public:
-	void init(AbstractExt *extension, const std::string &remote_conf);
+	void init(AbstractExt *extension);
+	void setup(const std::string &remote_conf);
 	void stop();
 
 	AbstractExt *extension_ptr;

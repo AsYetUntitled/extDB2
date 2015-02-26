@@ -294,6 +294,7 @@ Ext::Ext(std::string dll_path)
 
  			// Initialize so have atomic setup correctly
 			rcon_worker.init(logger);
+			remote_server.init(this);
 
 			// Initialize so have atomic setup correctly + Setup VAC Ban Logger
 			steam_worker.init(this, extDB_info.path, current_dateTime);
@@ -398,7 +399,7 @@ void Ext::connectRemote(char *output, const int &output_size, const std::string 
 	{
 		if (!extDB_connectors_info.remote)
 		{
-			remote_server.init(this, remote_conf);
+			remote_server.setup(remote_conf);
 			extDB_connectors_info.remote = true;
 			std::strcpy(output, ("[1]"));
 		}

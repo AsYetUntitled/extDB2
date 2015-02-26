@@ -21,11 +21,15 @@ along with this program. If not, see <http://www.gnu.org/licenses/>.
 #include "remoteserver.h"
 
 
-void RemoteServer::init(AbstractExt *extension, const std::string &remote_conf)
+void RemoteServer::init(AbstractExt *extension)
 {
 	extension_ptr = extension;
-	*inputs_flag = false;
+	inputs_flag = new std::atomic<bool>(false);
+}
 
+
+void RemoteServer::setup(const std::string &remote_conf)
+{
 	pParams = new Poco::Net::TCPServerParams();
 	pParams->setMaxThreads(extension_ptr->pConf->getInt(remote_conf + ".MaxThreads", 4));
 	pParams->setMaxQueued(extension_ptr->pConf->getInt(remote_conf + ".MaxQueued", 4));
