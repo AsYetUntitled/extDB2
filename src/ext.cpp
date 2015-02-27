@@ -952,6 +952,7 @@ void Ext::callExtenion(char *output, const int &output_size, const char *functio
 				case 1: //ASYNC
 				{
 					io_service.post(boost::bind(&Ext::onewayCallProtocol, this, output_size, input_str));
+					std::strcpy(output, "[1]");
 					break;
 				}
 				case 2: //ASYNC + SAVE
@@ -1041,7 +1042,7 @@ void Ext::callExtenion(char *output, const int &output_size, const char *functio
 							}
 							else if (tokens[1] == "LOCK_STATUS")
 							{
-								std::strcpy(output, ("[1]"));
+								std::strcpy(output, "[1]");
 							}
 							else
 							{
