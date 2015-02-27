@@ -126,8 +126,9 @@ void MISC::getBEGUID(std::string &input_str, std::string &result)
 
 		std::stringstream bestring;
 		bestring << "BE";
-		for (int i = 0; i < sizeof(parts); i++) {
-			bestring << char(parts[i]);
+		for (auto &part: parts)
+		{
+			bestring << char(part);
 		}
 
 		boost::lock_guard<boost::mutex> lock(mutex_md5);

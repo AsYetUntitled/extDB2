@@ -389,7 +389,7 @@ void SQL_CUSTOM::getBEGUID(std::string &input_str, std::string &result)
 
 			do
 			{
-				parts[++i] = steamID & 0xFFu;
+				parts[i++] = steamID & 0xFFu;
 			} while (steamID >>= 8);
 
 			std::stringstream bestring;
