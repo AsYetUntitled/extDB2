@@ -660,35 +660,48 @@ void Ext::addProtocol(char *output, const int &output_size, const std::string &d
 	else
 	{
 		bool status = true;
-		if (boost::iequals(protocol, std::string("SQL_CUSTOM")) == 1)
+		if (database_id.empty())
 		{
-			unordered_map_protocol[protocol_name] = std::unique_ptr<AbstractProtocol> (new SQL_CUSTOM());
-		}
-		else if (boost::iequals(protocol, std::string("SQL_RAW")) == 1)
-		{
-			unordered_map_protocol[protocol_name] = std::unique_ptr<AbstractProtocol> (new SQL_RAW());
-		}
-		else if (boost::iequals(protocol, std::string("RCON")) == 1)
-		{
-			unordered_map_protocol[protocol_name] = std::unique_ptr<AbstractProtocol> (new RCON());
-		}
-		else if (boost::iequals(protocol, std::string("VAC")) == 1)
-		{
-			unordered_map_protocol[protocol_name] = std::unique_ptr<AbstractProtocol> (new STEAM());
-		}
-		else if (boost::iequals(protocol, std::string("MISC")) == 1)
-		{
-			unordered_map_protocol[protocol_name] = std::unique_ptr<AbstractProtocol> (new MISC());
-		}
-		else if (boost::iequals(protocol, std::string("LOG")) == 1)
-		{
-			unordered_map_protocol[protocol_name] = std::unique_ptr<AbstractProtocol> (new LOG());
+			if (boost::iequals(protocol, std::string("RCON")) == 1)
+			{
+				unordered_map_protocol[protocol_name] = std::unique_ptr<AbstractProtocol> (new RCON());
+			}
+			else if (boost::iequals(protocol, std::string("VAC")) == 1)
+			{
+				unordered_map_protocol[protocol_name] = std::unique_ptr<AbstractProtocol> (new STEAM());
+			}
+			else if (boost::iequals(protocol, std::string("MISC")) == 1)
+			{
+				unordered_map_protocol[protocol_name] = std::unique_ptr<AbstractProtocol> (new MISC());
+			}
+			else if (boost::iequals(protocol, std::string("LOG")) == 1)
+			{
+				unordered_map_protocol[protocol_name] = std::unique_ptr<AbstractProtocol> (new LOG());
+			}
+			else
+			{
+				status = false;
+				std::strcpy(output, "[0,\"Error Unknown Protocol\"]");
+				logger->warn("extDB2: Failed to Load Unknown Protocol: {0}", protocol);
+				logger->warn("extDB2:     Database Protocols now use ADD_DB instead of ADD");
+			}
 		}
 		else
 		{
-			status = false;
-			std::strcpy(output, "[0,\"Error Unknown Protocol\"]");
-			logger->warn("extDB2: Failed to Load Unknown Protocol: {0}", protocol);
+			if (boost::iequals(protocol, std::string("SQL_CUSTOM")) == 1)
+			{
+				unordered_map_protocol[protocol_name] = std::unique_ptr<AbstractProtocol> (new SQL_CUSTOM());
+			}
+			else if (boost::iequals(protocol, std::string("SQL_RAW")) == 1)
+			{
+				unordered_map_protocol[protocol_name] = std::unique_ptr<AbstractProtocol> (new SQL_RAW());
+			}
+			else
+			{
+				status = false;
+				std::strcpy(output, "[0,\"Error Unknown Protocol\"]");
+				logger->warn("extDB2: Failed to Load Unknown Protocol: {0}", protocol);
+			}
 		}
 
 		if (status)
@@ -706,6 +719,43 @@ void Ext::addProtocol(char *output, const int &output_size, const std::string &d
 		}
 	}
 }
+
+
+void Ext::addDBProtocol(char *output, const int &output_size, const std::string &database_id, const std::string &protocol, const std::string &protocol_name, const std::string &init_data)
+{
+	boost::lock_guard<boost::mutex> lock(mutex_unordered_map_protocol);
+	if (unordered_map_protocol.find(protocol_name) != unordered_map_protocol.end())
+	{
+		std::strcpy(output, "[0,\"Error Protocol Name Already Taken\"]");
+		logger->warn("extDB2: Error Protocol Name Already Taken: {0}", protocol_name);
+	}
+	else
+	{
+		bool status = true;
+
+		else
+		{
+			status = false;
+			std::strcpy(output, "[0,\"Error Unknown DB Protocol\"]");
+			logger->warn("extDB2: Failed to Load Unknown DB Protocol: {0}", protocol);
+		}
+
+		if (status)
+		{
+			if (unordered_map_protocol[protocol_name].get()->init(this, database_id, init_data))
+			{
+				std::strcpy(output, "[1]");
+			}
+			else
+			{
+				unordered_map_protocol.erase(protocol_name);
+				std::strcpy(output, "[0,\"Failed to Load DB Protocol\"]");
+				logger->warn("extDB2: Failed to Load DB Protocol: {0}", protocol);
+			}
+		}
+	}
+}
+
 
 
 void Ext::getSinglePartResult_mutexlock(char *output, const int &output_size, const int &unique_id)
@@ -1132,7 +1182,7 @@ void Ext::callExtenion(char *output, const int &output_size, const char *functio
 								}
 								else if (tokens[1] == "ADD")
 								{
-									addProtocol(output, output_size, "", tokens[2], tokens[3], "");	
+									addProtocol(output, output_size, "", tokens[2], tokens[3], ""); // ADD No Options
 								}
 								else
 								{
@@ -1145,7 +1195,11 @@ void Ext::callExtenion(char *output, const int &output_size, const char *functio
 								//ADD PROTOCOL
 								if (tokens[1] == "ADD")
 								{
-									addProtocol(output, output_size, tokens[2], tokens[3], tokens[4], "");
+									addProtocol(output, output_size, "", tokens[2], tokens[3], tokens[4]); // ADD + Init Options
+								}
+								else if (tokens[1] == "ADD_DB")
+								{
+									addProtocol(output, output_size, tokens[2], tokens[3], tokens[4], ""); // ADD Database Protocol + No Options
 								}
 								else
 								{
@@ -1155,9 +1209,9 @@ void Ext::callExtenion(char *output, const int &output_size, const char *functio
 								}
 								break;
 							case 6:
-								if (tokens[1] == "ADD")
+								if (tokens[1] == "ADD_DB")
 								{
-									addProtocol(output, output_size, tokens[2], tokens[3], tokens[4], tokens[5]);
+									addProtocol(output, output_size, tokens[2], tokens[3], tokens[4], tokens[5]); // ADD Database Protocol + Options
 								}
 								else
 								{
