@@ -28,7 +28,6 @@ along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 #include <boost/crc.hpp>
 #include <boost/thread/thread.hpp>
-#include <boost/thread/recursive_mutex.hpp>
 
 #include <Poco/Net/DatagramSocket.h>
 #include <Poco/Net/SocketAddress.h>
@@ -54,6 +53,59 @@ along with this program. If not, see <http://www.gnu.org/licenses/>.
 #include <unordered_map>
 
 #include "rconworker.h"
+
+
+ void RCONWORKER::init(std::shared_ptr<spdlog::logger> ext_logger)
+{
+	rcon_run_flag = new std::atomic<bool>(false);
+	rcon_login_flag = new std::atomic<bool>(false);
+	logger.swap(ext_logger);
+}
+
+
+void RCONWORKER::createKeepAlive()
+{
+	std::ostringstream cmdStream;
+	cmdStream.put(0xFFu);
+	cmdStream.put(0x01);
+	cmdStream.put(0x00); // Seq Number
+	cmdStream.put('\0');
+
+	std::string cmd = cmdStream.str();
+	crc32.reset();
+	crc32.process_bytes(cmd.data(), cmd.length());
+	long int crcVal = crc32.checksum();
+
+	std::stringstream hexStream;
+	hexStream << std::setfill('0') << std::setw(sizeof(int)*2);
+	hexStream << std::hex << crcVal;
+	std::string crcAsHex = hexStream.str();
+
+	unsigned char reversedCrc[4];
+	unsigned int x;
+
+	std::stringstream converterStream;
+	for (int i = 0; i < 4; i++)
+	{
+		converterStream << std::hex << crcAsHex.substr(6-(2*i),2).c_str();
+		converterStream >> x;
+		converterStream.clear();
+		reversedCrc[i] = x;
+	}
+
+	// Create Packet
+	std::stringstream cmdPacketStream;
+	cmdPacketStream.put(0x42); // B
+	cmdPacketStream.put(0x45); // E
+	cmdPacketStream.put(reversedCrc[0]); // 4-byte Checksum
+	cmdPacketStream.put(reversedCrc[1]);
+	cmdPacketStream.put(reversedCrc[2]);
+	cmdPacketStream.put(reversedCrc[3]);
+	cmdPacketStream << cmd;
+	cmdPacketStream.str();
+
+	keepAlivePacket = cmdPacketStream.str();
+}
 
 
 void RCONWORKER::sendPacket()
@@ -113,51 +165,6 @@ void RCONWORKER::sendPacket()
 }
 
 
-void RCONWORKER::createKeepAlive()
-{
-	std::ostringstream cmdStream;
-	cmdStream.put(0xFFu);
-	cmdStream.put(0x01);
-	cmdStream.put(0x00); // Seq Number
-	cmdStream.put('\0');
-
-	std::string cmd = cmdStream.str();
-	crc32.reset();
-	crc32.process_bytes(cmd.data(), cmd.length());
-	long int crcVal = crc32.checksum();
-
-	std::stringstream hexStream;
-	hexStream << std::setfill('0') << std::setw(sizeof(int)*2);
-	hexStream << std::hex << crcVal;
-	std::string crcAsHex = hexStream.str();
-
-	unsigned char reversedCrc[4];
-	unsigned int x;
-
-	std::stringstream converterStream;
-	for (int i = 0; i < 4; i++)
-	{
-		converterStream << std::hex << crcAsHex.substr(6-(2*i),2).c_str();
-		converterStream >> x;
-		converterStream.clear();
-		reversedCrc[i] = x;
-	}
-
-	// Create Packet
-	std::stringstream cmdPacketStream;
-	cmdPacketStream.put(0x42); // B
-	cmdPacketStream.put(0x45); // E
-	cmdPacketStream.put(reversedCrc[0]); // 4-byte Checksum
-	cmdPacketStream.put(reversedCrc[1]);
-	cmdPacketStream.put(reversedCrc[2]);
-	cmdPacketStream.put(reversedCrc[3]);
-	cmdPacketStream << cmd;
-	cmdPacketStream.str();
-
-	keepAlivePacket = cmdPacketStream.str();
-}
-
-
 void RCONWORKER::extractData(int pos, std::string &result)
 {
 	std::stringstream ss;
@@ -169,9 +176,68 @@ void RCONWORKER::extractData(int pos, std::string &result)
 }
 
 
+void RCONWORKER::updateLogin(std::string address, int port, std::string password)
+{
+	createKeepAlive();
+
+	rcon_login.address = address;
+	rcon_login.port = port;
+	char *passwd = new char[password.size() + 1];
+	std::strcpy(passwd, password.c_str());
+	rcon_login.password = passwd;	
+}
+
+
+void RCONWORKER::connect()
+{
+	*rcon_login_flag = false;
+	*rcon_run_flag = true;
+
+	// Login Packet
+	rcon_packet.cmd = rcon_login.password;
+	rcon_packet.packetCode = 0x00;
+	sendPacket();
+	logger->info("Rcon: Sent Login Info");
+	
+	// Reset Timer
+	rcon_timer.start();
+}
+
+
+bool RCONWORKER::status()
+{
+	return *rcon_login_flag;
+}
+
+
+void RCONWORKER::run()
+{
+	Poco::Net::SocketAddress sa(rcon_login.address, rcon_login.port);
+	dgs.connect(sa);
+	connect();
+	mainLoop();
+}
+
+
+void RCONWORKER::addCommand(std::string command)
+{
+	if (*rcon_run_flag)
+	{
+		boost::lock_guard<boost::mutex> lock(mutex_rcon_commands);
+		rcon_commands.push_back(std::move(command));
+	}
+}
+
+
+void RCONWORKER::disconnect()
+{
+	*rcon_run_flag = false;	
+}
+
+
 void RCONWORKER::mainLoop()
 {
-	logged_in = false;
+	*rcon_login_flag = false;
 
 	int elapsed_seconds;
 	int sequenceNum;
@@ -186,31 +252,28 @@ void RCONWORKER::mainLoop()
 		{
 			buffer_size = dgs.receiveBytes(buffer, sizeof(buffer)-1);
 			buffer[buffer_size] = '\0';
+			rcon_timer.restart();
 
 			if (buffer[7] == 0x00)
 			{
 				if (buffer[8] == 0x01)
 				{
 					logger->warn("Rcon: Logged In");
-					logged_in = true;
-					rcon_timer.restart();
+					*rcon_login_flag = true;
 				}
 				else
 				{
 					// Login Failed
 					logger->warn("Rcon: Failed Login... Disconnecting");
-					logged_in = false;
+					*rcon_login_flag = false;
 					disconnect();
 					break;
 				}
 			}
-			else if ((buffer[7] == 0x01) && logged_in)
+			else if ((buffer[7] == 0x01) && *rcon_login_flag)
 			{
 				// Rcon Server Ack Message Received
 				sequenceNum = buffer[8];
-				
-				// Reset Timer
-				rcon_timer.restart();
 				
 				if (!((buffer[9] == 0x00) && (buffer_size > 9)))
 				{
@@ -272,12 +335,10 @@ void RCONWORKER::mainLoop()
 			}
 			else if (buffer[7] == 0x02)
 			{
-				if (!logged_in)
+				if (!*rcon_login_flag)
 				{
 					// Already Logged In 
-					logged_in = true;
-					// Reset Timer
-					rcon_timer.restart();
+					*rcon_login_flag = true;
 				}
 				else
 				{
@@ -292,16 +353,13 @@ void RCONWORKER::mainLoop()
 					rcon_packet.packetCode = 0x02;
 					rcon_packet.cmd_char_workaround = buffer[8];
 					sendPacket();
-					
-					// Reset Timer
-					rcon_timer.restart();
 				}
 			}
 
-			if (logged_in)
+			if (*rcon_login_flag)
 			{
 				// Checking for Commands to Send
-				boost::lock_guard<boost::recursive_mutex> lock(mutex_rcon_commands);
+				boost::lock_guard<boost::mutex> lock(mutex_rcon_commands);
 				for (auto &rcon_command : rcon_commands)
 				{
 					char *cmd = new char[rcon_command.size()+1];
@@ -325,7 +383,7 @@ void RCONWORKER::mainLoop()
 			{
 				if (!*rcon_run_flag)
 				{
-					boost::lock_guard<boost::recursive_mutex> lock(mutex_rcon_commands);
+					boost::lock_guard<boost::mutex> lock(mutex_rcon_commands);
 					if (rcon_commands.empty())
 					{
 						break;
@@ -363,10 +421,10 @@ void RCONWORKER::mainLoop()
 						logger->info("Keep Alive Sent");
 					#endif
 				}
-				else if (logged_in)
+				else if (*rcon_login_flag)
 				{
 					// Checking for Commands to Send
-					boost::lock_guard<boost::recursive_mutex> lock(mutex_rcon_commands);
+					boost::lock_guard<boost::mutex> lock(mutex_rcon_commands);
 
 					for (auto &rcon_command : rcon_commands)
 					{
@@ -395,65 +453,4 @@ void RCONWORKER::mainLoop()
 			disconnect();
 		}
 	}
-}
-
-
-void RCONWORKER::addCommand(std::string command)
-{
-	if (*rcon_run_flag)
-	{
-		boost::lock_guard<boost::recursive_mutex> lock(mutex_rcon_commands);
-		rcon_commands.push_back(std::move(command));
-	}
-}
-
-
-void RCONWORKER::run()
-{
-	Poco::Net::SocketAddress sa(rcon_login.address, rcon_login.port);
-	dgs.connect(sa);
-
-	connect();
-	mainLoop();
-}
-
-
-void RCONWORKER::connect()
-{
-	logged_in = false;
-	*rcon_run_flag = true;
-
-	// Login Packet
-	rcon_packet.cmd = rcon_login.password;
-	rcon_packet.packetCode = 0x00;
-	sendPacket();
-	logger->info("Rcon: Sent Login Info");
-	
-	// Reset Timer
-	rcon_timer.start();
-}
-
-
-void RCONWORKER::disconnect()
-{
-	*rcon_run_flag = false;	
-}
-
-
-void RCONWORKER::init(std::shared_ptr<spdlog::logger> ext_logger)
-{
-	rcon_run_flag = new std::atomic<bool>(false);
-	logger.swap(ext_logger);
-
-	createKeepAlive();
-}
-
-
-void RCONWORKER::updateLogin(std::string address, int port, std::string password)
-{
-	rcon_login.address = address;
-	rcon_login.port = port;
-	char *passwd = new char[password.size() + 1];
-	std::strcpy(passwd, password.c_str());
-	rcon_login.password = passwd;	
 }

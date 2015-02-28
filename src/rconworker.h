@@ -24,7 +24,6 @@ along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 #include <boost/crc.hpp>
 #include <boost/thread/thread.hpp>
-#include <boost/thread/recursive_mutex.hpp>
 
 #include <Poco/Net/DatagramSocket.h>
 #include <Poco/Net/SocketAddress.h>
@@ -48,6 +47,7 @@ class RCONWORKER: public Poco::Runnable
 		
 		void run();
 		void disconnect();
+		bool status();
 		
 		void addCommand(std::string command);
 
@@ -88,10 +88,10 @@ class RCONWORKER: public Poco::Runnable
 		
 		// Mutex Locks
 		std::atomic<bool> *rcon_run_flag;
-		bool logged_in = false;
+		std::atomic<bool> *rcon_login_flag;
 		
 		std::vector< std::string > rcon_commands;
-		boost::recursive_mutex mutex_rcon_commands;
+		boost::mutex mutex_rcon_commands;
 
 		// Functions
 		void connect();

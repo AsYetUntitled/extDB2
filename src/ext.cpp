@@ -415,26 +415,26 @@ void Ext::connectRemote(char *output, const int &output_size, const std::string 
 }
 
 
-void Ext::connectRCon(char *output, const int &output_size, const std::string &rcon_conf)
+void Ext::connectRcon(char *output, const int &output_size, const std::string &rcon_conf)
 // Start RCon
 {
-	if (pConf->hasOption(rcon_conf + ".Port"))
+	if (extDB_connectors_info.rcon)
 	{
-		if (!extDB_connectors_info.rcon)
-		{
-			rcon_worker.updateLogin(pConf->getString((rcon_conf + ".Address"), "127.0.0.1"), pConf->getInt((rcon_conf + ".Port"), 2302), pConf->getString((rcon_conf + ".Password"), "password"));
-			extDB_connectors_info.rcon = true;
-			rcon_worker_thread.start(rcon_worker);
-			std::strcpy(output, ("[1]"));
-		}
-		else
-		{
-			std::strcpy(output, ("[0,\"RCon Already Started\"]"));
-		}
+		std::strcpy(output, ("[0,\"Rcon is Already Running\"]"));
 	}
 	else
 	{
-		std::strcpy(output, ("[0,\"No Config Option Found\"]"));
+		if (pConf->hasOption(rcon_conf + ".Port"))
+		{
+			rcon_worker.updateLogin(pConf->getString((rcon_conf + ".Address"), "127.0.0.1"), pConf->getInt((rcon_conf + ".Port"), 2302), pConf->getString((rcon_conf + ".Password"), "password"));
+			rcon_worker_thread.start(rcon_worker);
+			std::strcpy(output, "[1]");
+			extDB_connectors_info.rcon = true;
+		}
+		else
+		{
+			std::strcpy(output, ("[0,\"No Config Option Found\"]"));
+		}		
 	}
 }
 
@@ -683,7 +683,6 @@ void Ext::addProtocol(char *output, const int &output_size, const std::string &d
 				status = false;
 				std::strcpy(output, "[0,\"Error Unknown Protocol\"]");
 				logger->warn("extDB2: Failed to Load Unknown Protocol: {0}", protocol);
-				logger->warn("extDB2:     Database Protocols now use ADD_DB instead of ADD");
 			}
 		}
 		else
@@ -719,43 +718,6 @@ void Ext::addProtocol(char *output, const int &output_size, const std::string &d
 		}
 	}
 }
-
-
-void Ext::addDBProtocol(char *output, const int &output_size, const std::string &database_id, const std::string &protocol, const std::string &protocol_name, const std::string &init_data)
-{
-	boost::lock_guard<boost::mutex> lock(mutex_unordered_map_protocol);
-	if (unordered_map_protocol.find(protocol_name) != unordered_map_protocol.end())
-	{
-		std::strcpy(output, "[0,\"Error Protocol Name Already Taken\"]");
-		logger->warn("extDB2: Error Protocol Name Already Taken: {0}", protocol_name);
-	}
-	else
-	{
-		bool status = true;
-
-		else
-		{
-			status = false;
-			std::strcpy(output, "[0,\"Error Unknown DB Protocol\"]");
-			logger->warn("extDB2: Failed to Load Unknown DB Protocol: {0}", protocol);
-		}
-
-		if (status)
-		{
-			if (unordered_map_protocol[protocol_name].get()->init(this, database_id, init_data))
-			{
-				std::strcpy(output, "[1]");
-			}
-			else
-			{
-				unordered_map_protocol.erase(protocol_name);
-				std::strcpy(output, "[0,\"Failed to Load DB Protocol\"]");
-				logger->warn("extDB2: Failed to Load DB Protocol: {0}", protocol);
-			}
-		}
-	}
-}
-
 
 
 void Ext::getSinglePartResult_mutexlock(char *output, const int &output_size, const int &unique_id)
@@ -1094,6 +1056,17 @@ void Ext::callExtenion(char *output, const int &output_size, const char *functio
 							{
 								std::strcpy(output, "[1]");
 							}
+							else if (tokens[1] == "RCON_STATUS")
+							{
+								if (rcon_worker.status())
+								{
+									std::strcpy(output, "[1]");
+								}
+								else
+								{
+									std::strcpy(output, "[0]");
+								}
+							}
 							else
 							{
 								// Invalid Format
@@ -1141,6 +1114,17 @@ void Ext::callExtenion(char *output, const int &output_size, const char *functio
 								{
 									std::strcpy(output, "[0]");
 								}
+								else if (tokens[1] == "RCON_STATUS")
+								{
+									if (rcon_worker.status())
+									{
+										std::strcpy(output, "[1]");
+									}
+									else
+									{
+										std::strcpy(output, "[0]");
+									}
+								}
 								else if (tokens[1] == "OUTPUTSIZE")
 								{
 									std::string outputsize_str(Poco::NumberFormatter::format(output_size));
@@ -1157,13 +1141,13 @@ void Ext::callExtenion(char *output, const int &output_size, const char *functio
 								// RCON
 								if (tokens[1] == "START_RCON")
 								{
-									connectRCon(output, output_size, tokens[2]);
+									connectRcon(output, output_size, tokens[2]);
 								}
 								else if (tokens[1] == "START_REMOTE")
 								{
 									connectRemote(output, output_size, tokens[2]);
 								}
-								else if (tokens[1] == "DATABASE")
+								else if (tokens[1] == "ADD_DATABASE")
 								{
 									connectDatabase(output, output_size, tokens[2], tokens[2]);
 								}
@@ -1176,11 +1160,11 @@ void Ext::callExtenion(char *output, const int &output_size, const char *functio
 								break;
 							case 4:
 								// DATABASE
-								if (tokens[1] == "DATABASE")
+								if (tokens[1] == "ADD_DATABASE")
 								{
 									connectDatabase(output, output_size, tokens[2], tokens[3]);
 								}
-								else if (tokens[1] == "ADD")
+								else if (tokens[1] == "ADD_PROTOCOL")
 								{
 									addProtocol(output, output_size, "", tokens[2], tokens[3], ""); // ADD No Options
 								}
@@ -1193,11 +1177,11 @@ void Ext::callExtenion(char *output, const int &output_size, const char *functio
 								break;
 							case 5:
 								//ADD PROTOCOL
-								if (tokens[1] == "ADD")
+								if (tokens[1] == "ADD_PROTOCOL")
 								{
 									addProtocol(output, output_size, "", tokens[2], tokens[3], tokens[4]); // ADD + Init Options
 								}
-								else if (tokens[1] == "ADD_DB")
+								else if (tokens[1] == "ADD_DATABASE_PROTOCOL")
 								{
 									addProtocol(output, output_size, tokens[2], tokens[3], tokens[4], ""); // ADD Database Protocol + No Options
 								}
@@ -1209,7 +1193,7 @@ void Ext::callExtenion(char *output, const int &output_size, const char *functio
 								}
 								break;
 							case 6:
-								if (tokens[1] == "ADD_DB")
+								if (tokens[1] == "ADD_DATABASE_PROTOCOL")
 								{
 									addProtocol(output, output_size, tokens[2], tokens[3], tokens[4], tokens[5]); // ADD Database Protocol + Options
 								}
