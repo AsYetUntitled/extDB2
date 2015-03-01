@@ -30,7 +30,7 @@ if ( isNil {uiNamespace getVariable "extDB_SQL_CUSTOM_ID"}) then
 	//if ((parseNumber _result) < 20) exitWith {diag_log "Error: extDB version 20 or Higher Required";};
 
 	// extDB Connect to Database
-	_result = call compile ("extDB2" callExtension format["9:DATABASE:%1", _database]);
+	_result = call compile ("extDB2" callExtension format["9:ADD_DATABASE:%1", _database]);
 	if (_result select 0 == 0) exitWith {diag_log format ["extDB2: Error Database: %1", _result]; false};
 	diag_log "extDB2: Connected to Database";
 
@@ -39,7 +39,7 @@ if ( isNil {uiNamespace getVariable "extDB_SQL_CUSTOM_ID"}) then
 	extDB_SQL_CUSTOM_ID = compileFinal _extDB_SQL_CUSTOM_ID;
 
 	// extDB Load Protocol
-	_result = call compile ("extDB2" callExtension format["9:ADD:%1:%2:%3:%4", _database, _protocol, _extDB_SQL_CUSTOM_ID, _protocol_options]);
+	_result = call compile ("extDB2" callExtension format["9:ADD_DATABASE_PROTOCOL:%1:%2:%3:%4", _database, _protocol, _extDB_SQL_CUSTOM_ID, _protocol_options]);
 	if ((_result select 0) == 0) exitWith {diag_log format ["extDB2: Error Database Setup: %1", _result]; false};
 	
 	diag_log format ["extDB2: Initalized %1 Protocol", _protocol];
