@@ -64,7 +64,7 @@ bool RCON::callProtocol(std::string input_str, std::string &result, const int un
 		{
 			command = input_str.substr(0, found-1);
 		}
-		if ((std::find(allowed_commands.begin(), allowed_commands.end(), command) == allowed_commands.end()) && )
+		if (std::find(allowed_commands.begin(), allowed_commands.end(), command) == allowed_commands.end())
 		{
 			result ="[0,\"RCon Command Not Allowed\"]";
 			#ifdef TESTING

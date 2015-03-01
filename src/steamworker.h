@@ -26,6 +26,7 @@ along with this program. If not, see <http://www.gnu.org/licenses/>.
 #include <Poco/DigestEngine.h>
 
 #include <Poco/AbstractCache.h>
+#include <Poco/DateTime.h>
 #include <Poco/ExpireCache.h>
 #include <Poco/SharedPtr.h>
 
