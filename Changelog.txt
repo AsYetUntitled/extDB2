@@ -1,4 +1,19 @@
 -------------------------------------------------------------------------------
+44:
+	CHANGED: System Commands, Logic was broken slightly should only take afew seconds to update sqf code
+		9:ADD_DATABASE:<DATABASE>
+		9:ADD_DATABASE:<DATABASE>:<DATABASE_NAME>
+
+		9:ADD_PROTOCOL:<PROTOCOL>:<PROTOCOL_NAME>
+		9:ADD_PROTOCOL:<PROTOCOL>:<PROTOCOL_NAME>:<OPTIONS>
+
+		9:ADD_DATABASE_PROTOCOL:<DATABASE_NAME>:<PROTOCOL>:<PROTOCOL_NAME>
+		9:ADD_DATABASE_PROTOCOL:<DATABASE_NAME>:<PROTOCOL>:<PROTOCOL_NAME>:<OPTIONS>
+
+	FIXED: RCON Whitelisting Commands (still need to fixup ability to whitelist #exec commands fully)
+
+
+-------------------------------------------------------------------------------
 43:
 	FIXED: Re-added [1] Return for 1:   for simplier fn_async code
 
