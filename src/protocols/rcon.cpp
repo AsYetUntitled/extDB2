@@ -16,6 +16,7 @@ along with this program. If not, see <http://www.gnu.org/licenses/>.
 */
 
 #include <Poco/StringTokenizer.h>
+#include <boost/algorithm/string.hpp>
 
 #include "rcon.h"
 
@@ -48,18 +49,22 @@ bool RCON::callProtocol(std::string input_str, std::string &result, const int un
 		extension_ptr->logger->info("extDB2: RCON: Trace: Input: {0}", input_str);
 	#endif
 
-	Poco::StringTokenizer tokens(input_str, ":");
-	if (tokens.count() < 2)
+	boost::trim(input_str);
+
+	if (allowed_commands.size() > 0)
 	{
-		result = "[0,\"RCon Syntax Error\"]";
-		#ifdef TESTING
-			extension_ptr->console->warn("extDB2: RCON: Syntax Error: Input: {0}", input_str);
-		#endif
-		extension_ptr->logger->warn("extDB2: RCON: Syntax Error: Input: {0}", input_str);
-	}
-	else
-	{
-		if ((std::find(allowed_commands.begin(), allowed_commands.end(), tokens[0]) == allowed_commands.end()) && (allowed_commands.size() > 0))
+		const std::string::size_type found = input_str.find(" ");
+		std::string command;
+
+		if (found==std::string::npos)
+		{
+			command = input_str;
+		}
+		else
+		{
+			command = input_str.substr(0, found-1);
+		}
+		if ((std::find(allowed_commands.begin(), allowed_commands.end(), command) == allowed_commands.end()) && )
 		{
 			result ="[0,\"RCon Command Not Allowed\"]";
 			#ifdef TESTING
@@ -73,5 +78,11 @@ bool RCON::callProtocol(std::string input_str, std::string &result, const int un
 			extension_ptr->rconCommand(input_str);
 		}
 	}
+	else
+	{
+		result = "[1]"; 
+		extension_ptr->rconCommand(input_str);
+	}
+
 	return true;
 }
