@@ -73,6 +73,7 @@ class AbstractExt
 		{
 			std::string path;
 			std::string log_path;
+			bool logger_flush=false;
 			
 			int max_threads;
 			bool extDB_lock=false;

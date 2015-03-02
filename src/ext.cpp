@@ -160,7 +160,6 @@ Ext::Ext(std::string dll_path)
 		boost::filesystem::create_directories(log_relative_path);
 		log_relative_path /= log_filename;
 
-		bool logger_flush = true;
 		if (conf_found)
 		{
 			pConf = (new Poco::Util::IniFileConfiguration(extDB_config_path.make_preferred().string()));
@@ -169,10 +168,10 @@ Ext::Ext(std::string dll_path)
 				std::size_t q_size = 1048576; //queue size must be power of 2
 				spdlog::set_async_mode(q_size);
 			}
-			logger_flush = pConf->getBool("Log.Flush", true);
+			extDB_info.logger_flush = pConf->getBool("Log.Flush", true);
 		}
 
-		auto logger_temp = spdlog::rotating_logger_mt("extDB File Logger", log_relative_path.make_preferred().string(), 1048576 * 100, 3, logger_flush);
+		auto logger_temp = spdlog::rotating_logger_mt("extDB File Logger", log_relative_path.make_preferred().string(), 1048576 * 100, 3, extDB_info.logger_flush);
 		logger.swap(logger_temp);
 
 		spdlog::set_level(spdlog::level::info);

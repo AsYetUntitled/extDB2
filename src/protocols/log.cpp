@@ -32,7 +32,7 @@ bool LOG::init(AbstractExt *extension, const std::string &database_id, const std
 			customlog /= init_str;
 			if (customlog.parent_path().make_preferred().string() == extension_ptr->extDB_info.log_path)
 			{
-				auto logger_temp = spdlog::daily_logger_mt(init_str, customlog.make_preferred().string(), true);
+				auto logger_temp = spdlog::rotating_logger_mt(init_str, customlog.make_preferred().string(), 1048576 * 100, 3, extension_ptr->extDB_info.logger_flush);
 				logger.swap(logger_temp);
 				status = true;
 			}
