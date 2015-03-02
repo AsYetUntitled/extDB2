@@ -29,7 +29,7 @@ along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 
 #define EXTDB_VERSION "45"
-#define EXTDB_CONF_VERSION 2
+#define EXTDB_CONF_VERSION 3
 
 class AbstractExt
 {

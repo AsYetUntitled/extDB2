@@ -139,6 +139,13 @@ Ext::Ext(std::string dll_path)
 		}
 
 		// Initialize Loggers
+		//		Console Logger
+		#ifdef TESTING
+			auto console_temp = spdlog::stdout_logger_mt("extDB Console logger");
+			console.swap(console_temp);
+		#endif
+
+		//		File Logger
 		Poco::DateTime current_dateTime;
 		std::string log_filename = Poco::DateTimeFormatter::format(current_dateTime, "%H-%M-%S.log");
 
@@ -153,13 +160,19 @@ Ext::Ext(std::string dll_path)
 		boost::filesystem::create_directories(log_relative_path);
 		log_relative_path /= log_filename;
 
+		bool logger_flush = true;
+		if (conf_found)
+		{
+			pConf = (new Poco::Util::IniFileConfiguration(extDB_config_path.make_preferred().string()));
+			if (boost::iequals(pConf->getString("Log.Mode", "sync"), "async") == 1)
+			{
+				std::size_t q_size = 1048576; //queue size must be power of 2
+				spdlog::set_async_mode(q_size);
+			}
+			logger_flush = pConf->getBool("Log.Flush", true);
+		}
 
-		#ifdef TESTING
-			auto console_temp = spdlog::stdout_logger_mt("extDB Console logger");
-			console.swap(console_temp);
-		#endif
-
-		auto logger_temp = spdlog::daily_logger_mt("extDB File Logger", log_relative_path.make_preferred().string(), true);
+		auto logger_temp = spdlog::rotating_logger_mt("extDB File Logger", log_relative_path.make_preferred().string(), 1048576 * 100, 3, logger_flush);
 		logger.swap(logger_temp);
 
 		spdlog::set_level(spdlog::level::info);
@@ -213,8 +226,6 @@ Ext::Ext(std::string dll_path)
 		}
 		else
 		{
-			// Load extDB config
-			pConf = (new Poco::Util::IniFileConfiguration(extDB_config_path.make_preferred().string()));
 			#ifdef TESTING
 				console->info("extDB2: Found extdb-conf.ini");
 			#endif
@@ -284,12 +295,6 @@ Ext::Ext(std::string dll_path)
 			for (int i = 0; i < extDB_info.max_threads; ++i)
 			{
 				threads.create_thread(boost::bind(&boost::asio::io_service::run, &io_service));
-			}
-
-			if (boost::iequals(pConf->getString("Log.Mode", "sync"), "async") == 1)
-			{
-				std::size_t q_size = 1048576; //queue size must be power of 2
-				spdlog::set_async_mode(q_size);
 			}
 
  			// Initialize so have atomic setup correctly
