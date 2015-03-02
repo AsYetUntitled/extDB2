@@ -165,8 +165,8 @@ bool SQL_CUSTOM::init(AbstractExt *extension, const std::string &database_id, co
 
 				custom_calls[call_name].number_of_inputs = template_ini->getInt(call_name + ".Number of Inputs", default_number_of_inputs);
 				custom_calls[call_name].number_of_custom_inputs = template_ini->getInt(call_name + ".Number of Custom Inputs", default_number_of_custom_inputs);
-				custom_calls[call_name].preparedStatement_cache = template_ini->getBool("Default.Prepared Statement Cache", default_preparedStatement_cache);
-				custom_calls[call_name].returnInsertID = template_ini->getBool("Default.Return InsertID", default_returnInsertID);
+				custom_calls[call_name].preparedStatement_cache = template_ini->getBool(call_name + ".Prepared Statement Cache", default_preparedStatement_cache);
+				custom_calls[call_name].returnInsertID = template_ini->getBool(call_name + ".Return InsertID", default_returnInsertID);
 
 				if (template_ini->has(call_name + ".Strip Chars Action"))
 				{
