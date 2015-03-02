@@ -417,7 +417,7 @@ void SQL_CUSTOM::getResult(Custom_Call_UnorderedMap::const_iterator &custom_call
 	{
 		if (custom_calls_itr->second.returnInsertID)
 		{
-			if (session.isConnected())
+			if (!session.isConnected())
 			{
 				result = "[1,[-1,["; // Return -1 If Session Died
 			}
