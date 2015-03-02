@@ -147,7 +147,7 @@ Ext::Ext(std::string dll_path)
 
 		//		File Logger
 		Poco::DateTime current_dateTime;
-		std::string log_filename = Poco::DateTimeFormatter::format(current_dateTime, "%H-%M-%S.log");
+		std::string log_filename = Poco::DateTimeFormatter::format(current_dateTime, "%H-%M-%S");
 
 		boost::filesystem::path log_relative_path;
 		log_relative_path = boost::filesystem::path(extDB_info.path);
