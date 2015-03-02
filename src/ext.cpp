@@ -163,11 +163,8 @@ Ext::Ext(std::string dll_path)
 		if (conf_found)
 		{
 			pConf = (new Poco::Util::IniFileConfiguration(extDB_config_path.make_preferred().string()));
-			if (boost::iequals(pConf->getString("Log.Mode", "sync"), "async") == 1)
-			{
-				std::size_t q_size = 1048576; //queue size must be power of 2
-				spdlog::set_async_mode(q_size);
-			}
+			std::size_t q_size = 1048576;
+			spdlog::set_async_mode(q_size);
 			extDB_info.logger_flush = pConf->getBool("Log.Flush", true);
 		}
 
