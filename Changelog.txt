@@ -1,4 +1,8 @@
 -------------------------------------------------------------------------------
+46:
+	FIXED: Windows Lockup
+
+-------------------------------------------------------------------------------
 45:
 	FIXED: SQL_CUSTOM: Return ID
 	FIXED: SQL_CUSTOM: Callname: Prepared Statement override
