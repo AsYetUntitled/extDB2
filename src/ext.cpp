@@ -211,9 +211,7 @@ Ext::Ext(std::string dll_path)
 
 		if (!conf_found)
 		{
-			#ifdef TESTING
-				console->critical("extDB2: Unable to find extdb-conf.ini");
-			#endif
+			std::cout << "extDB2: Unable to find extdb-conf.ini" << std::endl << std::flush;
 			logger->critical("extDB2: Unable to find extdb-conf.ini");
 			// Kill Server no config file found -- Evil
 			std::exit(EXIT_SUCCESS);
@@ -227,10 +225,8 @@ Ext::Ext(std::string dll_path)
 
 			if ((pConf->getInt("Main.Version", 0) != EXTDB_CONF_VERSION))
 			{
-				#ifdef TESTING
-					console->critical("extDB2: Incompatiable Config Version: {0},  Required Version: {1}", (pConf->getInt("Main.Version", 0)), EXTDB_CONF_VERSION);
-				#endif
 				logger->critical("extDB2: Incompatiable Config Version: {0},  Required Version: {1}", (pConf->getInt("Main.Version", 0)), EXTDB_CONF_VERSION);
+				std::cout << "extDB2: extDB2: Incompatiable Config Version" << std::endl << std::flush;
 				// Kill Server if wrong config version -- Evil
 				std::exit(EXIT_SUCCESS);
 			}
@@ -327,7 +323,7 @@ Ext::Ext(std::string dll_path)
 	}
 	catch (spdlog::spdlog_ex& e)
 	{
-		std::cout << "SPDLOG ERROR: " <<  e.what() << std::endl;
+		std::cout << "SPDLOG ERROR: " <<  e.what() << std::endl << std::flush;
 		std::exit(EXIT_FAILURE);
 	}
 }
@@ -1224,7 +1220,7 @@ void Ext::callExtenion(char *output, const int &output_size, const char *functio
 	catch (spdlog::spdlog_ex& e)
 	{
 		std::strcpy(output, "[0,\"Error LOGGER\"]");
-		std::cout << "SPDLOG ERROR: " <<  e.what() << std::endl;
+		std::cout << "SPDLOG ERROR: " <<  e.what() << std::endl << std::flush;
 	}
 	catch (Poco::Exception& e)
 	{
