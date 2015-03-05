@@ -237,6 +237,10 @@ bool SQL_CUSTOM::init(AbstractExt *extension, const std::string &database_id, co
 									{
 										outputs_options.string = true;
 									}
+									else if (boost::iequals(options_tokens[x], std::string("BOOL")) == 1)
+									{
+										outputs_options.boolean = true;
+									}
 									else if (boost::iequals(options_tokens[x], std::string("BeGUID")) == 1)
 									{
 										outputs_options.beguid = true;
@@ -318,6 +322,10 @@ bool SQL_CUSTOM::init(AbstractExt *extension, const std::string &database_id, co
 								else if (boost::iequals(sub_token_input, std::string("BeGUID")) == 1)
 								{
 									inputs_options.beguid = true;
+								}
+								else if (boost::iequals(sub_token_input, std::string("BOOL")) == 1)
+								{
+									inputs_options.boolean = true;
 								}
 								else if (boost::iequals(sub_token_input, std::string("Check")) == 1)
 								{
@@ -471,14 +479,11 @@ void SQL_CUSTOM::getResult(Custom_Call_UnorderedMap::const_iterator &custom_call
 					{
 						temp_str.clear();
 					}
-					else
-					{
-						temp_str = rs[col].convert<std::string>();
-					}
 					
 					// NO OUTPUT OPTIONS 
 					if (col >= sql_output_options_size)
 					{
+						temp_str = rs[col].convert<std::string>();
 						// DEFAULT BEHAVIOUR
 						if (temp_str.empty())
 						{
@@ -492,6 +497,30 @@ void SQL_CUSTOM::getResult(Custom_Call_UnorderedMap::const_iterator &custom_call
 					else
 					{
 					// OUTPUT OPTIONS
+						// BOOL
+						if (custom_calls_itr->second.sql_outputs_options[col].boolean)
+						{
+							if (rs[col].isInteger())
+							{
+								if (rs[col].convert<int>() > 0)
+								{
+									temp_str = "true";
+								}
+								else
+								{
+									temp_str = "false";
+								}
+							}
+							else
+							{
+								temp_str = "false";
+							}
+						}
+						else
+						{
+							temp_str = rs[col].convert<std::string>();							
+						}
+
 						// BEGUID
 						if (custom_calls_itr->second.sql_outputs_options[col].beguid)
 						{
@@ -925,7 +954,8 @@ bool SQL_CUSTOM::callProtocol(std::string input_str, std::string &result, const 
 				{
 					std::string temp_str = inputs[sql_inputs_option.number];
 					// INPUT Options
-						// Strip
+
+					// Strip
 					if (sql_inputs_option.strip)
 					{
 						for (auto &strip_char : custom_calls_const_itr->second.strip_chars)
@@ -948,12 +978,27 @@ bool SQL_CUSTOM::callProtocol(std::string input_str, std::string &result, const 
 							}
 						}
 					}
-						// BEGUID					
+
+					// BOOL
+					if (sql_inputs_option.boolean)
+					{
+						if (boost::iequals(temp_str, std::string("True")) == 1)
+						{
+							temp_str = "1";
+						}
+						else
+						{
+							temp_str = "0";
+						}
+					}
+
+					// BEGUID					
 					if (sql_inputs_option.beguid)
 					{
 						getBEGUID(temp_str, temp_str);
 					}
-						// STRING
+
+					// STRING
 					if (sql_inputs_option.string)
 					{
 						if (temp_str.empty())
@@ -966,6 +1011,7 @@ bool SQL_CUSTOM::callProtocol(std::string input_str, std::string &result, const 
 							temp_str = "\"" + temp_str + "\"";
 						}
 					}
+
 					// SANITIZE CHECK
 					if (sql_inputs_option.check)
 					{

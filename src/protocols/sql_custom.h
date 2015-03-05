@@ -47,6 +47,7 @@ class SQL_CUSTOM: public AbstractProtocol
 			int number = -1;
 
 			bool check;
+			bool boolean = false;
 			bool beguid = false;
 
 			bool string = false;
