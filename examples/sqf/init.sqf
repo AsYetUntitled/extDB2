@@ -11,7 +11,7 @@
 		2: STRING Optional Protocol Options i.e db_conf name for DB_CUSTOM
 */
 
-private["_database","_protocol","_protocol_options","_return","_result","_extDB_SQL_CUSTOM_ID"];
+private["_database","_protocol","_protocol_options","_return","_result","_random_number","_extDB_SQL_CUSTOM_ID"];
 
 _database = [_this,0,"",[""]] call BIS_fnc_param;
 _protocol = [_this,1,"",[""]] call BIS_fnc_param;
@@ -31,17 +31,18 @@ if ( isNil {uiNamespace getVariable "extDB_SQL_CUSTOM_ID"}) then
 
 	// extDB Connect to Database
 	_result = call compile ("extDB2" callExtension format["9:ADD_DATABASE:%1", _database]);
-	if (_result select 0 == 0) exitWith {diag_log format ["extDB2: Error Database: %1", _result]; false};
+	if (_result select 0 isEqualTo 0) exitWith {diag_log format ["extDB2: Error Database: %1", _result]; false};
 	diag_log "extDB2: Connected to Database";
 
 	// Generate Randomized Protocol Name
-	_extDB_SQL_CUSTOM_ID = str(round(random(999999)));
+	_random_number = round(random(999999));
+	_extDB_SQL_CUSTOM_ID = str(_random_number);
 	extDB_SQL_CUSTOM_ID = compileFinal _extDB_SQL_CUSTOM_ID;
 
 	// extDB Load Protocol
 	_result = call compile ("extDB2" callExtension format["9:ADD_DATABASE_PROTOCOL:%1:%2:%3:%4", _database, _protocol, _extDB_SQL_CUSTOM_ID, _protocol_options]);
-	if ((_result select 0) == 0) exitWith {diag_log format ["extDB2: Error Database Setup: %1", _result]; false};
-	
+	if ((_result select 0) isEqualTo 0) exitWith {diag_log format ["extDB2: Error Database Setup: %1", _result]; false};
+
 	diag_log format ["extDB2: Initalized %1 Protocol", _protocol];
 
 	// extDB2 Lock

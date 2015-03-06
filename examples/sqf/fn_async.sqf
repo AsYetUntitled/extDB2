@@ -22,7 +22,7 @@ _multiarr = [_this,2,false,[false]] call BIS_fnc_param;
 
 _key = "extDB2" callExtension format["%1:%2:%3",_mode, (call extDB_SQL_CUSTOM_ID), _queryStmt];
 
-if(_mode == 1) exitWith {true};
+if(_mode isEqualTo 1) exitWith {true};
 
 _key = call compile format["%1",_key];
 _key = _key select 1;
@@ -40,7 +40,7 @@ while{_loop} do
 		_queryResult = "";
 		while{true} do {
 			_pipe = "extDB2" callExtension format["5:%1", _key];
-			if(_pipe == "") exitWith {_loop = false};
+			if(_pipe isEqualTo "") exitWith {_loop = false};
 			_queryResult = _queryResult + _pipe;
 		};
 	}
@@ -60,7 +60,7 @@ while{_loop} do
 _queryResult = call compile _queryResult;
 
 // Not needed, its SQF Code incase extDB ever returns error message i.e Database Died
-if ((_queryResult select 0) == 0) exitWith {diag_log format ["extDB2: Protocol Error: %1", _queryResult]; []};
+if ((_queryResult select 0) isEqualTo 0) exitWith {diag_log format ["extDB2: Protocol Error: %1", _queryResult]; []};
 _return = (_queryResult select 1);
 
 if(!_multiarr) then {
