@@ -950,19 +950,19 @@ bool SQL_CUSTOM::callProtocol(std::string input_str, std::string &result, const 
 			for(auto &sql_inputs_options : custom_calls_const_itr->second.sql_inputs_options)
 			{
 				std::vector< std::string > processed_inputs;
-				for(auto &sql_inputs_option : sql_inputs_options)
+				for(auto &sql_input_option : sql_inputs_options)
 				{
-					std::string temp_str = inputs[sql_inputs_option.number];
+					std::string temp_str = inputs[sql_input_option.number];
 					// INPUT Options
 
 					// Strip
-					if (sql_inputs_option.strip)
+					if (sql_input_option.strip)
 					{
 						for (auto &strip_char : custom_calls_const_itr->second.strip_chars)
 						{
 							boost::erase_all(temp_str, std::string(1, strip_char));
 						}
-						if (temp_str != inputs[sql_inputs_option.number])
+						if (temp_str != inputs[sql_input_option.number])
 						{
 							strip_chars_detected = true;
 							switch (custom_calls_const_itr->second.strip_chars_action)
@@ -971,7 +971,7 @@ bool SQL_CUSTOM::callProtocol(std::string input_str, std::string &result, const 
 									status = false;
 								case 2: // Strip + Log
 									extension_ptr->logger->warn("extDB2: SQL_CUSTOM: Error Bad Char Detected: Input: {0}", input_str);
-									extension_ptr->logger->warn("extDB2: SQL_CUSTOM: Error Bad Char Detected: Token: {0}", sql_inputs_option.number);
+									extension_ptr->logger->warn("extDB2: SQL_CUSTOM: Error Bad Char Detected: Token: {0}", sql_input_option.number);
 								case 1: // Strip
 									result = "[0,\"Error Strip Char Found\"]";
 									break;
@@ -980,7 +980,7 @@ bool SQL_CUSTOM::callProtocol(std::string input_str, std::string &result, const 
 					}
 
 					// BOOL
-					if (sql_inputs_option.boolean)
+					if (sql_input_option.boolean)
 					{
 						if (boost::iequals(temp_str, std::string("True")) == 1)
 						{
@@ -993,13 +993,13 @@ bool SQL_CUSTOM::callProtocol(std::string input_str, std::string &result, const 
 					}
 
 					// BEGUID					
-					if (sql_inputs_option.beguid)
+					if (sql_input_option.beguid)
 					{
 						getBEGUID(temp_str, temp_str);
 					}
 
 					// STRING
-					if (sql_inputs_option.string)
+					if (sql_input_option.string)
 					{
 						if (temp_str.empty())
 						{
@@ -1013,7 +1013,7 @@ bool SQL_CUSTOM::callProtocol(std::string input_str, std::string &result, const 
 					}
 
 					// SANITIZE CHECK
-					if (sql_inputs_option.check)
+					if (sql_input_option.check)
 					{
 						status = Sqf::check(temp_str);
 						extension_ptr->logger->warn("extDB2: SQL_CUSTOM: Sanitize Check Error: Input: {0}", input_str);

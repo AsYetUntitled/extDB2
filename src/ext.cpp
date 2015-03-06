@@ -201,7 +201,7 @@ Ext::Ext(std::string dll_path)
 		#else
 			logger->info("Message: Donated to extDB2 Develeopment ?");
 			logger->info("Message: All development for extDB2 is done on a Linux Dedicated Server");
-			logger->info("Message: Donate Link @ https://github.com/Torndeco/extdb2");
+			logger->info("Message: Donate Link https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=2SUEFTGABTAM2");
 			logger->info("Message: Leave a message if there is a feature you would like to see added.");
 			logger->info("Message: Thanks for all the people that have donated.");
 			logger->info("Message: Torndeco: 20/02/15");
