@@ -40,7 +40,7 @@ _parse =
 	if (_clientID isEqualTo "") then
 	{
 		_result = _this call _fetch;
-		_data = _this call _parse;
+		_data = _result call _parse;
 	};
 	_data
 };
