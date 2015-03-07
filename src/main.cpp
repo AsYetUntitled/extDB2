@@ -1,5 +1,5 @@
-#include <boost/filesystem.hpp>
 
+#include <boost/filesystem.hpp>
 #include "ext.h"
 
 namespace
@@ -66,6 +66,6 @@ namespace
 	void __stdcall RVExtension(char *output, int outputSize, const char *function)
 	{
 		outputSize -= 1;
-		extension->callExtenion(output,outputSize,function);
+		extension->callExtenion(output, outputSize, function);
 	};
 #endif

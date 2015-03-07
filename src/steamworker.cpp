@@ -210,7 +210,7 @@ std::vector<std::string> STEAMWORKER::generateSteamIDStrings(std::vector<std::st
 	if (!steamIDs_str.empty())
 	{
 		steamIDs_str.pop_back();
-		steamIDs_list.push_back(steamIDs_str);
+		steamIDs_list.push_back(std::move(steamIDs_str));
 	}
 	return steamIDs_list;
 }

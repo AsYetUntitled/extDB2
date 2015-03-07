@@ -518,14 +518,14 @@ void SQL_CUSTOM::getResult(Custom_Call_UnorderedMap::const_iterator &custom_call
 						}
 						else
 						{
-							temp_str = rs[col].convert<std::string>();							
+							temp_str = rs[col].convert<std::string>();
+							// BEGUID
+							if (custom_calls_itr->second.sql_outputs_options[col].beguid)
+							{
+								getBEGUID(temp_str, temp_str);
+							}
 						}
 
-						// BEGUID
-						if (custom_calls_itr->second.sql_outputs_options[col].beguid)
-						{
-							getBEGUID(temp_str, temp_str);
-						}
 						// STRING
 						if (custom_calls_itr->second.sql_outputs_options[col].string)
 						{
@@ -571,19 +571,20 @@ void SQL_CUSTOM::getResult(Custom_Call_UnorderedMap::const_iterator &custom_call
 			}
 			result += "]";
 		}
-		if (custom_calls_itr->second.returnInsertID)
-		{
-			result += "]]]";
-		}
-		else
-		{
-			result += "]]";
-		}
-		
-
 		if (!(sanitize_value_check))
 		{
 			result = "[0,\"Error Value Failed Sanitize Check\"]";
+		}
+		else
+		{
+			if (custom_calls_itr->second.returnInsertID)
+			{
+				result += "]]]";
+			}
+			else
+			{
+				result += "]]";
+			}
 		}
 	}
 	catch (Poco::NotImplementedException& e)
@@ -760,7 +761,7 @@ void SQL_CUSTOM::callPreparedStatement(std::string call_name, Custom_Call_Unorde
 					}
 					if (custom_calls_itr->second.preparedStatement_cache)
 					{
-						session_data_ptr->statements_map[call_name].push_back(sql_statement);
+						session_data_ptr->statements_map[call_name].push_back(std::move(sql_statement));
 					}
 				}
 			}
@@ -991,12 +992,12 @@ bool SQL_CUSTOM::callProtocol(std::string input_str, std::string &result, const 
 							temp_str = "0";
 						}
 					}
-
 					// BEGUID					
-					if (sql_input_option.beguid)
+					else if (sql_input_option.beguid)
 					{
 						getBEGUID(temp_str, temp_str);
 					}
+
 
 					// STRING
 					if (sql_input_option.string)

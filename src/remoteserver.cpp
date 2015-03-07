@@ -227,7 +227,7 @@ void RemoteConnection::mainLoop()
 						{
 							boost::lock_guard<boost::mutex> lock(remoteServer_ptr->inputs_mutex);
 							std::string temp_str = Poco::NumberFormatter::format(unique_id) + ":" + store_str;
-							remoteServer_ptr->inputs.push_back(temp_str);
+							remoteServer_ptr->inputs.push_back(std::move(temp_str));
 							*remoteServer_ptr->inputs_flag = true;
 						}
 						else if (boost::iequals(recv_str, std::string("#QUIT")) == 1)
