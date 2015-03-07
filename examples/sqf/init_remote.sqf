@@ -19,33 +19,34 @@ _fetch =
 		_queryResult = _queryResult + _pipe;
 	};
 	_queryResult
-}
+};
 
 _parse =
 {
 	private ["_clientID", "_code", "_data", "_result"];
-	_clientID = -1;
+	_clientID = "";
 	_code = "";
+	_code_length = (count _this) - 1;
+	for "_index" from 0 to _code_length
 	{
-		if (_x isEqualTo ":") exitWith
+		if (_index select [_index,1]) isEqualTo ":" exitWith
 		{
-			_clientID = _result select [0, (_forEachIndex - 1)];
-			_code = _result select [_forEachIndex +1, (count(_result) -1)]
-		}
-	} forEach _this;
+			_clientID = _result select [0, (_index-1)];
+			_code = _result select [_index+1, _code_length];
+		};
+	};
 
 	_data = [_clientID, _code];
-	if (_clientID isEqualTo -1) then
+	if (_clientID isEqualTo "") then
 	{
 		_result = _this call _fetch;
 		_data = _this call _parse;
 	};
 	_data
-}
+};
 
 
 private ["_result", "_data", "_code"];
-
 while {true} do
 {
 	_result = "extDB2" callExtension "6:0";
