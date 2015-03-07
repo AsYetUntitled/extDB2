@@ -29,10 +29,10 @@ _parse =
 	_code_length = (count _this) - 1;
 	for "_index" from 0 to _code_length
 	{
-		if (_index select [_index,1]) isEqualTo ":" exitWith
+		if ((_this select [_index,1]) isEqualTo ":") exitWith
 		{
-			_clientID = _result select [0, (_index-1)];
-			_code = _result select [_index+1, _code_length];
+			_clientID = _this select [0, (_index-1)];
+			_code = _this select [_index+1, _code_length];
 		};
 	};
 
@@ -57,7 +57,7 @@ while {true} do
 	else
 	{
 		_data = _result call _parse;  		// _data = [_clientID, _data]
-		_code = compile _data select 1;
+		_code = compile (_data select 1);
 		(_data select 0) spawn _code;  // Pass ClientID to code so it can return results via extension
 		uisleep 5;
 	};
