@@ -26,7 +26,7 @@ along with this program. If not, see <http://www.gnu.org/licenses/>.
 	#include <boost/random/random_device.hpp>
 	#include <boost/random/uniform_int_distribution.hpp>
 #endif
-#include <boost/regex.hpp>
+#include <regex>
 
 #include <Poco/Data/Session.h>
 #include <Poco/Data/SessionPool.h>
@@ -96,7 +96,7 @@ Ext::Ext(std::string dll_path)
 				extDB_config_path = extDB_config_path.parent_path();
 				extDB_config_str = extDB_config_path.make_preferred().string();
 
-				boost::regex expression("extdb-conf.*ini");
+				std::regex expression("extdb-conf.*ini");
 
 				if (!extDB_config_str.empty())
 				{
@@ -105,7 +105,7 @@ Ext::Ext(std::string dll_path)
 					{
 						if (is_regular_file(it->path()))
 						{
-							if(boost::regex_search(it->path().string(), expression))
+							if(std::regex_search(it->path().string(), expression))
 							{
 								conf_found = true;
 								conf_randomized = true;
@@ -124,7 +124,7 @@ Ext::Ext(std::string dll_path)
 					{
 						if (is_regular_file(it->path()))
 						{
-							if(boost::regex_search(it->path().string(), expression))
+							if(std::regex_search(it->path().string(), expression))
 							{
 								conf_found = true;
 								conf_randomized = true;
