@@ -323,7 +323,7 @@ Ext::Ext(std::string dll_path)
 	}
 	catch (spdlog::spdlog_ex& e)
 	{
-		std::cout << "SPDLOG ERROR: " <<  e.what() << std::endl << std::flush;
+		std::cout << "SPDLOG ERROR: " << e.what() << std::endl;
 		std::exit(EXIT_FAILURE);
 	}
 }
