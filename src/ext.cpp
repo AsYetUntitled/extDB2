@@ -935,7 +935,7 @@ void Ext::asyncCallProtocol(const int &output_size, const std::string &protocol,
 }
 
 
-void Ext::callExtenion(char *output, const int &output_size, const char *function)
+void Ext::callExtension(char *output, const int &output_size, const char *function)
 {
 	try
 	{
