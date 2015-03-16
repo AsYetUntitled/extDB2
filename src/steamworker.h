@@ -114,7 +114,7 @@ class STEAMWORKER: public Poco::Runnable
 		};
 
 		std::vector<SteamQuery> query_queue;
-		boost::mutex mutex_query_queue;
+		std::mutex mutex_query_queue;
 		
 		std::string STEAM_api_key;
 		RConBan rconBanSettings;
@@ -127,7 +127,7 @@ class STEAMWORKER: public Poco::Runnable
 		std::vector<std::string> generateSteamIDStrings(std::vector<std::string> &steamIDs);
 
 		Poco::MD5Engine md5;
-		boost::mutex mutex_md5;
+		std::mutex mutex_md5;
 
 		std::atomic<bool> *steam_run_flag;
 

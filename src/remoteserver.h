@@ -40,7 +40,7 @@ public:
 	AbstractExt *extension_ptr;
 
 	IdManager id_mgr;
-	boost::mutex id_mgr_mutex;
+	std::mutex id_mgr_mutex;
 
 	struct clients
 	{
@@ -48,10 +48,10 @@ public:
 		std::shared_ptr<RemoteConnection> connection;
 	};
 	std::unordered_map<int, clients> clients_data;
-	boost::mutex clients_data_mutex;
+	std::mutex clients_data_mutex;
 
 	std::vector<std::string> inputs;
-	boost::mutex inputs_mutex;
+	std::mutex inputs_mutex;
 	
 	std::atomic<bool> *inputs_flag;
 

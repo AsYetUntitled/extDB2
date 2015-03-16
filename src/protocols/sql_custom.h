@@ -40,7 +40,7 @@ class SQL_CUSTOM: public AbstractProtocol
 		AbstractExt::DBConnectionInfo *database_ptr;
 		
 		Poco::MD5Engine md5;
-		boost::mutex mutex_md5;
+		std::mutex mutex_md5;
 
 		struct Value_Options
 		{

@@ -51,7 +51,7 @@ class AbstractExt
 
 			// Database Session Pool
 			std::unique_ptr<Poco::Data::SessionPool> pool;
-			boost::mutex mutex_pool;
+			std::mutex mutex_pool;
 		};
 
 		// extDB Connectors
