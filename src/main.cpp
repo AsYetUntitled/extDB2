@@ -1,6 +1,8 @@
 
 #include <boost/filesystem.hpp>
+
 #include "ext.h"
+
 
 namespace
 {
@@ -32,7 +34,7 @@ namespace
 	void RVExtension(char *output, int outputSize, const char *function)
 	{
 		outputSize -= 1;
-		extension->callExtenion(output, outputSize, function);
+		extension->callExtension(output, outputSize, function);
 	};
 
 #elif _MSC_VER
