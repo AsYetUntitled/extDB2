@@ -17,53 +17,52 @@ You should have received a copy of the GNU General Public License
 along with this program. If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include <boost/config/warning_disable.hpp>
-#include <boost/spirit/include/qi.hpp>
+
+#include "sanitize.h"
 
 #include <string>
 #include <vector>
 
-#include "sanitize.h"
+#include <boost/config/warning_disable.hpp>
+#include <boost/spirit/include/qi.hpp>
 
-namespace 
+
+template <typename Iterator, typename Skipper>
+	struct SqfValueParser : boost::spirit::qi::grammar<Iterator, Sqf::Value(), Skipper>
 {
-	template <typename Iterator, typename Skipper>
-		struct SqfValueParser : boost::spirit::qi::grammar<Iterator, Sqf::Value(), Skipper>
+	SqfValueParser() : SqfValueParser::base_type(start,"Sqf::Value")
 	{
-		SqfValueParser() : SqfValueParser::base_type(start,"Sqf::Value")
-		{
-			quoted_string = boost::spirit::qi::lexeme['"' >> *(boost::spirit::ascii::char_ - '"') >> '"'] | boost::spirit::qi::lexeme["'" >> *(boost::spirit::ascii::char_ - "'") >> "'"];
-			quoted_string.name("quoted_string");
+		quoted_string = boost::spirit::qi::lexeme['"' >> *(boost::spirit::ascii::char_ - '"') >> '"'] | boost::spirit::qi::lexeme["'" >> *(boost::spirit::ascii::char_ - "'") >> "'"];
+		quoted_string.name("quoted_string");
 
-			start = strict_double |
-				(boost::spirit::qi::int_ >> !boost::spirit::qi::digit) |
-				boost::spirit::qi::long_long |
-				boost::spirit::qi::bool_ |
-				quoted_string |
-				(boost::spirit::qi::lit("any") >> boost::spirit::qi::attr(static_cast<void*>(nullptr))) |
-				(boost::spirit::qi::lit("[") >> -(start % ",") >> boost::spirit::qi::lit("]"));
-		}
+		start = strict_double |
+			(boost::spirit::qi::int_ >> !boost::spirit::qi::digit) |
+			boost::spirit::qi::long_long |
+			boost::spirit::qi::bool_ |
+			quoted_string |
+			(boost::spirit::qi::lit("any") >> boost::spirit::qi::attr(static_cast<void*>(nullptr))) |
+			(boost::spirit::qi::lit("[") >> -(start % ",") >> boost::spirit::qi::lit("]"));
+	}
 
-		boost::spirit::qi::rule<Iterator, std::string()> quoted_string;
-		boost::spirit::qi::real_parser< double, boost::spirit::qi::strict_real_policies<double> > strict_double;
-		boost::spirit::qi::rule<Iterator, Sqf::Value(), Skipper> start;
-	};
+	boost::spirit::qi::rule<Iterator, std::string()> quoted_string;
+	boost::spirit::qi::real_parser< double, boost::spirit::qi::strict_real_policies<double> > strict_double;
+	boost::spirit::qi::rule<Iterator, Sqf::Value(), Skipper> start;
+};
 
-	template <typename Iterator, typename Skipper>
-	struct SqfParametersParser : boost::spirit::qi::grammar<Iterator, Sqf::Parameters(), Skipper>
+template <typename Iterator, typename Skipper>
+struct SqfParametersParser : boost::spirit::qi::grammar<Iterator, Sqf::Parameters(), Skipper>
+{
+	
+	SqfValueParser<Iterator,Skipper> val_parser;
+	boost::spirit::qi::rule<Iterator,  Sqf::Value(), Skipper> one_value;
+	boost::spirit::qi::rule<Iterator, Sqf::Parameters(), Skipper> start;
+	
+	SqfParametersParser() : SqfParametersParser::base_type(start,"Sqf::Parameters")
 	{
-		
-		SqfValueParser<Iterator,Skipper> val_parser;
-		boost::spirit::qi::rule<Iterator,  Sqf::Value(), Skipper> one_value;
-		boost::spirit::qi::rule<Iterator, Sqf::Parameters(), Skipper> start;
-		
-		SqfParametersParser() : SqfParametersParser::base_type(start,"Sqf::Parameters")
-		{
-			val_parser.name("one_value");
-			start = *(val_parser);
-		}
-	};
-}
+		val_parser.name("one_value");
+		start = *(val_parser);
+	}
+};
 
 namespace Sqf
 {
@@ -88,30 +87,3 @@ namespace Sqf
 		}
 	};
 }
-
-
-#ifdef TEST_SANITIZE_APP
-int main(int nNumberofArgs, char* pszArgs[])
-{
-	std::string input_str;
-	for (;;) {
-		std::getline(std::cin, input_str);
-		if (input_str == "quit")
-		{
-			break;
-		}
-		else
-		{
-			if (Sqf::check(input_str))
-			{
-				std::cout << "extDB: True: " << input_str << std::endl;
-			}
-			else
-			{
-				std::cout << "extDB: False: " << input_str << std::endl;
-			}
-		}
-	}
-	return 0;
-}
-#endif

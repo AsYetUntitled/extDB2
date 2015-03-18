@@ -22,6 +22,9 @@ From Frank https://gist.github.com/Fank/11127158
 
 #include "steamworker.h"
 
+#include <string>
+#include <thread>
+
 #include <boost/algorithm/string.hpp>
 #include <boost/filesystem.hpp>
 #include <boost/property_tree/ptree.hpp>
@@ -43,33 +46,32 @@ From Frank https://gist.github.com/Fank/11127158
 #include <Poco/Types.h>
 #include <Poco/Exception.h>
 
-#include <string>
 
 
 // --------------------------------------------------------------------------------------
 // --------------------------------------------------------------------------------------
 
-void STEAMGET::init(AbstractExt *extension)
+void SteamGet::init(AbstractExt *extension)
 {
 	extension_ptr = extension;
 	session = new Poco::Net::HTTPClientSession("api.steampowered.com", 80);
 }
 
 
-void STEAMGET::update(std::string &input_str, boost::property_tree::ptree &ptree)
+void SteamGet::update(std::string &input_str, boost::property_tree::ptree &ptree)
 {
 	path = input_str;
 	pt = &ptree;
 }
 
 
-int STEAMGET::getResponse()
+int SteamGet::getResponse()
 {
 	return response;
 }
 
 
-void STEAMGET::run()
+void SteamGet::run()
 {
 	response = 0;
 	Poco::Net::HTTPRequest request(Poco::Net::HTTPRequest::HTTP_GET, path, Poco::Net::HTTPMessage::HTTP_1_1);
@@ -103,13 +105,13 @@ void STEAMGET::run()
 }
 
 
-void STEAMGET::abort()
+void SteamGet::abort()
 {
 	session->abort();
 }
 
 
-void STEAMGET::stop()
+void SteamGet::stop()
 {
 	session->reset();
 }
@@ -119,7 +121,7 @@ void STEAMGET::stop()
 // --------------------------------------------------------------------------------------
 
 
-void STEAMWORKER::init(AbstractExt *extension, std::string &extension_path, Poco::DateTime &current_dateTime)
+void SteamWorker::init(AbstractExt *extension, std::string &extension_path, Poco::DateTime &current_dateTime)
 {
 	extension_ptr = extension;
 	steam_run_flag = new std::atomic<bool>(false);
@@ -155,13 +157,13 @@ void STEAMWORKER::init(AbstractExt *extension, std::string &extension_path, Poco
 }
 
 
-void STEAMWORKER::stop()
+void SteamWorker::stop()
 {
 	*steam_run_flag = false;
 }
 
 
-std::string STEAMWORKER::convertSteamIDtoBEGUID(const std::string &input_str)
+std::string SteamWorker::convertSteamIDtoBEGUID(const std::string &input_str)
 // From Frank https://gist.github.com/Fank/11127158
 // Modified to use libpoco
 {
@@ -185,7 +187,7 @@ std::string STEAMWORKER::convertSteamIDtoBEGUID(const std::string &input_str)
 }
 
 
-std::vector<std::string> STEAMWORKER::generateSteamIDStrings(std::vector<std::string> &steamIDs)
+std::vector<std::string> SteamWorker::generateSteamIDStrings(std::vector<std::string> &steamIDs)
 // Steam Only Allows 100 SteamIDs at a time
 {
 	std::string steamIDs_str;
@@ -216,7 +218,7 @@ std::vector<std::string> STEAMWORKER::generateSteamIDStrings(std::vector<std::st
 }
 
 
-void STEAMWORKER::updateSteamBans(std::vector<std::string> &steamIDs)
+void SteamWorker::updateSteamBans(std::vector<std::string> &steamIDs)
 {
 	bool loadBans = false;
 
@@ -305,7 +307,7 @@ void STEAMWORKER::updateSteamBans(std::vector<std::string> &steamIDs)
 }
 
 
-void STEAMWORKER::updateSteamFriends(std::vector<std::string> &steamIDs)
+void SteamWorker::updateSteamFriends(std::vector<std::string> &steamIDs)
 {
 	// Lose Duplicate steamIDs for Steam WEB API Query
 	std::sort(steamIDs.begin(), steamIDs.end());
@@ -377,7 +379,7 @@ void STEAMWORKER::updateSteamFriends(std::vector<std::string> &steamIDs)
 }
 
 
-void STEAMWORKER::addQuery(const int &unique_id, bool queryFriends, bool queryVacBans, std::vector<std::string> &steamIDs)
+void SteamWorker::addQuery(const int &unique_id, bool queryFriends, bool queryVacBans, std::vector<std::string> &steamIDs)
 {
 	if (*steam_run_flag)
 	{
@@ -399,7 +401,7 @@ void STEAMWORKER::addQuery(const int &unique_id, bool queryFriends, bool queryVa
 }
 
 
-void STEAMWORKER::run()
+void SteamWorker::run()
 {
 	std::string result;
 	std::vector<SteamQuery> query_queue_copy;

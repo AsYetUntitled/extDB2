@@ -18,6 +18,13 @@ along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 #include "sql_custom.h"
 
+#include <algorithm>
+#include <thread>
+
+#include <boost/algorithm/string.hpp>
+#include <boost/algorithm/string/erase.hpp>
+#include <boost/filesystem.hpp>
+
 #include <Poco/Data/MetaColumn.h>
 #include <Poco/Data/RecordSet.h>
 #include <Poco/Data/Session.h>
@@ -27,7 +34,6 @@ along with this program. If not, see <http://www.gnu.org/licenses/>.
 #include <Poco/Data/SQLite/Connector.h>
 #include <Poco/Data/SQLite/SQLiteException.h>
 
-#include <Poco/Exception.h>
 #include <Poco/String.h>
 #include <Poco/StringTokenizer.h>
 #include <Poco/Util/AbstractConfiguration.h>
@@ -36,17 +42,9 @@ along with this program. If not, see <http://www.gnu.org/licenses/>.
 #include <Poco/DigestEngine.h>
 #include <Poco/MD5Engine.h>
 
-#include <boost/algorithm/string.hpp>
-#include <boost/algorithm/string/erase.hpp>
-#include <boost/filesystem.hpp>
-#include <boost/thread/thread.hpp>
-
-#include <algorithm>
+#include <Poco/Exception.h>
 
 #include "../sanitize.h"
-
-
-#define EXTDB_SQL_CUSTOM_REQUIRED_VERSION 8
 
 
 bool SQL_CUSTOM::init(AbstractExt *extension, const std::string &database_id, const std::string init_str)
@@ -734,7 +732,6 @@ void SQL_CUSTOM::callPreparedStatement(std::string call_name, Custom_Call_Unorde
 		else
 		{
 			// NO CACHE
-
 			int i = -1;
 			for (std::vector< std::string >::const_iterator it_sql_prepared_statements_vector = custom_calls_itr->second.sql_prepared_statements.begin(); it_sql_prepared_statements_vector != custom_calls_itr->second.sql_prepared_statements.end(); ++it_sql_prepared_statements_vector)
 			{

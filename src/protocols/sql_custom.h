@@ -18,16 +18,16 @@ along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 #pragma once
 
-#include <boost/thread/thread.hpp>
+#include <thread>
+#include <unordered_map>
 
 #include <Poco/DynamicAny.h>
 #include <Poco/StringTokenizer.h>
 #include <Poco/MD5Engine.h>
 
-#include <unordered_map>
-
-#include "abstract_ext.h"
 #include "abstract_protocol.h"
+
+#define EXTDB_SQL_CUSTOM_REQUIRED_VERSION 8
 
 
 class SQL_CUSTOM: public AbstractProtocol

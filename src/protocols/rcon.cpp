@@ -15,10 +15,13 @@ You should have received a copy of the GNU General Public License
 along with this program. If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include <Poco/StringTokenizer.h>
-#include <boost/algorithm/string.hpp>
 
 #include "rcon.h"
+
+#include <boost/algorithm/string.hpp>
+
+#include <Poco/StringTokenizer.h>
+
 
 
 bool RCON::init(AbstractExt *extension,  const std::string &database_id, const std::string init_str)

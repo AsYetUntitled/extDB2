@@ -18,6 +18,8 @@ along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 #include "sql_raw.h"
 
+#include <boost/algorithm/string.hpp>
+
 #include <Poco/Data/MetaColumn.h>
 #include <Poco/Data/RecordSet.h>
 #include <Poco/Data/Session.h>
@@ -28,8 +30,6 @@ along with this program. If not, see <http://www.gnu.org/licenses/>.
 #include <Poco/Data/SQLite/SQLiteException.h>
 
 #include <Poco/Exception.h>
-
-#include <boost/algorithm/string.hpp>
 
 
 bool SQL_RAW::init(AbstractExt *extension, const std::string &database_id, const std::string init_str)

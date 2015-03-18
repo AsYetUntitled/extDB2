@@ -22,24 +22,22 @@ along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 #pragma once
 
+#include <atomic>
+#include <thread>
+
 #include <boost/crc.hpp>
-#include <boost/thread/thread.hpp>
 
 #include <Poco/Net/DatagramSocket.h>
 #include <Poco/Net/SocketAddress.h>
 #include <Poco/Net/NetException.h>
 
+#include <Poco/ExpireCache.h>
 #include <Poco/Stopwatch.h>
 
-#include <Poco/ExpireCache.h>
-
-#include "spdlog/spdlog.h"
-#include "protocols/abstract_ext.h"
-
-#include <atomic>
+#include "abstract_ext.h"
 
 
-class RCONWORKER: public Poco::Runnable
+class RconWorker: public Poco::Runnable
 {
 	public:
 		void init(std::shared_ptr<spdlog::logger> console);

@@ -25,7 +25,6 @@ along with this program. If not, see <http://www.gnu.org/licenses/>.
 #include <Poco/MD4Engine.h>
 #include <Poco/MD5Engine.h>
 
-#include "abstract_ext.h"
 #include "abstract_protocol.h"
 
 

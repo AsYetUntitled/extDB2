@@ -18,10 +18,10 @@ along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 #pragma once
 
-#include "abstract_ext.h"
-#include "abstract_protocol.h"
 
 #include <boost/filesystem.hpp>
+
+#include "abstract_protocol.h"
 
 
 class LOG: public AbstractProtocol

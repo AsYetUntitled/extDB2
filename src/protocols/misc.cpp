@@ -20,10 +20,14 @@ From Frank https://gist.github.com/Fank/11127158
 
 */
 
+#include "misc.h"
+
+#include <cstdlib>
+#include <thread>
+
 #include <boost/crc.hpp>
 #include <boost/random/random_device.hpp>
 #include <boost/random/uniform_int_distribution.hpp>
-#include <boost/thread/thread.hpp>
 
 #include <Poco/DateTime.h>
 #include <Poco/DateTimeFormatter.h>
@@ -34,11 +38,6 @@ From Frank https://gist.github.com/Fank/11127158
 #include <Poco/MD5Engine.h>
 #include <Poco/StringTokenizer.h>
 #include <Poco/Timespan.h>
-
-#include <cstdlib>
-
-#include "abstract_ext.h"
-#include "misc.h"
 
 
 bool MISC::init(AbstractExt *extension, const std::string &database_id, const std::string init_str)

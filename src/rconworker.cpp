@@ -1,5 +1,5 @@
 /*
-Copyright (C) 2012 Prithu "bladez" Parker <https://github.com/bladez-/RCONWORKER>
+Copyright (C) 2012 Prithu "bladez" Parker <https://github.com/bladez-/bercon>
 Copyright (C) 2014 Declan Ireland <http://github.com/torndeco/extDB>
 
 This program is free software: you can redistribute it and/or modify
@@ -19,43 +19,44 @@ along with this program. If not, see <http://www.gnu.org/licenses/>.
  * Changed Code to use Poco Net Library & Poco Checksums
 */
 
+
+#include "rconworker.h"
+
+#include <atomic>
+#include <cstring>
+#include <iomanip>
+#include <iostream>
+#include <sstream>
+#include <thread>
+#include <unordered_map>
+
 #ifdef RCON_APP
 	#include <boost/program_options.hpp>
 	#include <fstream>
 #else
-	#include "protocols/abstract_ext.h"
+	#include "abstract_ext.h"
 #endif
 
 #include <boost/crc.hpp>
-#include <boost/thread/thread.hpp>
-
-#include <Poco/Net/DatagramSocket.h>
-#include <Poco/Net/SocketAddress.h>
-#include <Poco/Net/NetException.h>
-#include <Poco/Timestamp.h>
-#include <Poco/DateTimeFormatter.h>
-
-#include <Poco/Exception.h>
-#include <Poco/Stopwatch.h>
 
 #include <Poco/AbstractCache.h>
 #include <Poco/ExpireCache.h>
 #include <Poco/SharedPtr.h>
 
+#include <Poco/Net/DatagramSocket.h>
+#include <Poco/Net/SocketAddress.h>
+#include <Poco/Net/NetException.h>
+
 #include <Poco/NumberFormatter.h>
+#include <Poco/Timestamp.h>
+#include <Poco/DateTimeFormatter.h>
+#include <Poco/Stopwatch.h>
 #include <Poco/Thread.h>
 
-#include <atomic>
-#include <sstream>
-#include <iomanip>
-#include <iostream>
-#include <cstring>
-#include <unordered_map>
-
-#include "rconworker.h"
+#include <Poco/Exception.h>
 
 
- void RCONWORKER::init(std::shared_ptr<spdlog::logger> ext_logger)
+void RconWorker::init(std::shared_ptr<spdlog::logger> ext_logger)
 {
 	rcon_run_flag = new std::atomic<bool>(false);
 	rcon_login_flag = new std::atomic<bool>(false);
@@ -63,7 +64,7 @@ along with this program. If not, see <http://www.gnu.org/licenses/>.
 }
 
 
-void RCONWORKER::createKeepAlive()
+void RconWorker::createKeepAlive()
 {
 	std::ostringstream cmdStream;
 	cmdStream.put(0xFFu);
@@ -108,7 +109,7 @@ void RCONWORKER::createKeepAlive()
 }
 
 
-void RCONWORKER::sendPacket()
+void RconWorker::sendPacket()
 {
 	std::ostringstream cmdStream;
 	cmdStream.put(0xFFu);
@@ -165,7 +166,7 @@ void RCONWORKER::sendPacket()
 }
 
 
-void RCONWORKER::extractData(int pos, std::string &result)
+void RconWorker::extractData(int pos, std::string &result)
 {
 	std::stringstream ss;
 	for(size_t i = pos; i < buffer_size; ++i)
@@ -176,7 +177,7 @@ void RCONWORKER::extractData(int pos, std::string &result)
 }
 
 
-void RCONWORKER::updateLogin(std::string address, int port, std::string password)
+void RconWorker::updateLogin(std::string address, int port, std::string password)
 {
 	createKeepAlive();
 
@@ -188,7 +189,7 @@ void RCONWORKER::updateLogin(std::string address, int port, std::string password
 }
 
 
-void RCONWORKER::connect()
+void RconWorker::connect()
 {
 	*rcon_login_flag = false;
 	*rcon_run_flag = true;
@@ -204,13 +205,13 @@ void RCONWORKER::connect()
 }
 
 
-bool RCONWORKER::status()
+bool RconWorker::status()
 {
 	return *rcon_login_flag;
 }
 
 
-void RCONWORKER::run()
+void RconWorker::run()
 {
 	Poco::Net::SocketAddress sa(rcon_login.address, rcon_login.port);
 	dgs.connect(sa);
@@ -219,7 +220,7 @@ void RCONWORKER::run()
 }
 
 
-void RCONWORKER::addCommand(std::string command)
+void RconWorker::addCommand(std::string command)
 {
 	if (*rcon_run_flag)
 	{
@@ -229,13 +230,13 @@ void RCONWORKER::addCommand(std::string command)
 }
 
 
-void RCONWORKER::disconnect()
+void RconWorker::disconnect()
 {
 	*rcon_run_flag = false;	
 }
 
 
-void RCONWORKER::mainLoop()
+void RconWorker::mainLoop()
 {
 	*rcon_login_flag = false;
 

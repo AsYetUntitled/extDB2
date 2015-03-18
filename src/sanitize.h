@@ -24,6 +24,8 @@ along with this program. If not, see <http://www.gnu.org/licenses/>.
 #include <Poco/Types.h>
 #include <boost/variant.hpp>
 
+#include <vector>
+
 
 namespace Sqf
 {
