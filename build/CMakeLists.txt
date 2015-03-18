@@ -89,6 +89,11 @@ if (TESTING)
 	message(STATUS "Testing flag is enabled.")
 endif()
 
+if(${WIN32})
+else()
+        set(CMAKE_FIND_LIBRARY_SUFFIXES ".a")
+endif()
+
 
 # BOOST
 set(Boost_USE_STATIC_LIBS ON)
@@ -98,14 +103,12 @@ if(${WIN32})
 	add_definitions(-D _WIN32_WINNT=0x0600)
 endif()
 
-
 find_package(Boost REQUIRED COMPONENTS chrono date_time filesystem program_options random regex system thread)
 if(Boost_FOUND)
 	include_directories(${Boost_INCLUDE_DIRS})
 else()
 	message(FATAL_ERROR "\nBOOST not found\n Please Set BOOST_ROOT & BOOST_LIBRARYDIR")
 endif()
-
 
 # POCO
 if(${WIN32})
@@ -119,13 +122,17 @@ else()
 	message(FATAL_ERROR "\nPOCO not found\n Please Set POCO_ROOT")
 endif()
 
-
 # MySQL
 include(FindMySQL)
 if(MYSQL_FOUND)
 	include_directories(${MYSQL_INCLUDE_DIR})
 else()
 	message(FATAL_ERROR "\nMYSQL not found")
+endif()
+
+if(${WIN32})
+else()
+	set(CMAKE_FIND_LIBRARY_SUFFIXES ".so")
 endif()
 
 # Look for Intel Threading Building Blocks (TBB)
@@ -146,16 +153,16 @@ if(${WIN32})
 	SET_TARGET_PROPERTIES(${EXECUTABLE_NAME} PROPERTIES LINK_FLAGS " /MANIFEST:NO /ERRORREPORT:NONE")
 else()
 	# Linux 
-	target_link_libraries(${EXECUTABLE_NAME} -Wl,-Bdynamic ${TBB_MALLOC_LIBRARY} pthread, -Wl,-Bstatic ${Boost_LIBRARIES} ${POCO_LIBRARIES} ${MYSQL_LIBRARY})
-	set(CMAKE_CXX_FLAGS "-std=c++0x ${CMAKE_CXX_FLAGS}")
+	target_link_libraries(${EXECUTABLE_NAME} -Wl,-Bstatic ${Boost_LIBRARIES} ${POCO_LIBRARIES} ${MYSQL_LIBRARY}  -Wl,-Bdynamic -ldl -pthread ${TBB_MALLOC_LIBRARY})
+	set(CMAKE_CXX_FLAGS "-std=c++0x -static-libstdc++ -static-libgcc ${CMAKE_CXX_FLAGS}")
 
-#	if (NOT((COMPILE_TEST_APPLICATION) OR (COMPILE_RCON_APPLICATION) OR (COMPILE_TEST_SANITIZE_APPLICATION)))
-#		ADD_CUSTOM_COMMAND(
-#			TARGET ${EXECUTABLE_NAME}
-#			POST_BUILD
-#			COMMAND ${CMAKE_COMMAND} -E rename libextDB2.so extDB2.so
-#		)
-#	endif()
+	if (NOT((COMPILE_TEST_APPLICATION) OR (COMPILE_RCON_APPLICATION) OR (COMPILE_TEST_SANITIZE_APPLICATION)))
+		ADD_CUSTOM_COMMAND(
+			TARGET ${EXECUTABLE_NAME}
+			POST_BUILD
+			COMMAND ${CMAKE_COMMAND} -E rename libextDB2.so extDB2.so
+		)
+	endif()
 endif()
 
 mark_as_advanced(CMAKE_INSTALL_PREFIX)
