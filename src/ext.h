@@ -40,7 +40,7 @@ class Ext: public AbstractExt
 		Ext(std::string path);
 		~Ext();
 		void stop();	
-		void callExtenion(char *output, const int &output_size, const char *function);
+		void callExtension(char *output, const int &output_size, const char *function);
 		void rconCommand(std::string str);
 
 	protected:

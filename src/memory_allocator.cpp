@@ -13,7 +13,7 @@
 // Code is from Intel threading building blocks
 
 
-void* operator new (size_t size) throw (std::bad_alloc)
+void* operator new (size_t size) //throw (std::bad_alloc)
 {
 	if (size == 0) size = 1;
 	void* ptr = scalable_malloc(size);
@@ -24,7 +24,7 @@ void* operator new (size_t size) throw (std::bad_alloc)
 	return ptr;	
 }
 
-void* operator new[] (size_t size) throw (std::bad_alloc)
+void* operator new[] (size_t size) //throw (std::bad_alloc)
 {
 	void* ptr = scalable_malloc(size);
 	if (ptr == NULL)
@@ -34,7 +34,7 @@ void* operator new[] (size_t size) throw (std::bad_alloc)
 	return ptr;	
 }
 
-void* operator new (size_t size, const std::nothrow_t&) throw ()
+void* operator new (size_t size, const std::nothrow_t&) //throw ()
 {	
 	if (size == 0) size = 1;
 	void* ptr = scalable_malloc(size);
@@ -48,7 +48,7 @@ void* operator new (size_t size, const std::nothrow_t&) throw ()
 	}
 }
 
-void* operator new[] (size_t size, const std::nothrow_t&) throw ()
+void* operator new[] (size_t size, const std::nothrow_t&) // throw ()
 {
 	void* ptr = scalable_malloc(size);
 	if (ptr == NULL)
@@ -61,7 +61,7 @@ void* operator new[] (size_t size, const std::nothrow_t&) throw ()
 	}
 }
 
-void operator delete (void* ptr) throw ()
+void operator delete (void* ptr) //throw ()
 {
 	if (ptr != NULL)
 	{
@@ -69,12 +69,12 @@ void operator delete (void* ptr) throw ()
 	}
 }
 
-void operator delete[] (void* ptr) throw ()
+void operator delete[] (void* ptr) //throw ()
 {
 	operator delete (ptr);
 }
 
-void operator delete (void* ptr, const std::nothrow_t&) throw ()
+void operator delete (void* ptr, const std::nothrow_t&) //throw ()
 {
 	if (ptr != NULL)
 	{
@@ -82,7 +82,7 @@ void operator delete (void* ptr, const std::nothrow_t&) throw ()
 	}
 }
 
-void operator delete[] (void* ptr, const std::nothrow_t&) throw ()
+void operator delete[] (void* ptr, const std::nothrow_t&) //throw ()
 {
 	operator delete(ptr);
 }

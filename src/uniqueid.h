@@ -1,34 +1,29 @@
-//http://stackoverflow.com/questions/2620218/fastest-container-or-algorithm-for-unique-reusable-ids-in-c
-
-
 #pragma once
 
-#include <boost/numeric/interval.hpp>
-#include <limits>
-#include <set>
-#include <string>
+/*
+A better implementation could explicitly check for 0 and -1
+that havespecial meaning in extdb.
 
+and then make sure the id was not still in use... but 2**31 is a big number.
+*/
 
-class id_interval 
-{
-	public:
-		id_interval(int ll, int uu) : value_(ll,uu)  {}
-		bool operator < (const id_interval&) const;
-		int left() const { return value_.lower(); }
-		int right() const {  return value_.upper(); }
-
-	private:
-		boost::numeric::interval<int> value_;
-};
-
-class IdManager 
+class IdManager
 {
 	public:
 		IdManager();
-		int AllocateId();          // Allocates an id
-		void FreeId(int id);       // Frees an id so it can be used again
-
+		int AllocateId() {
+			return current++;
+		};
+		void FreeId(int) {};
 	private: 
-		typedef std::set<id_interval> id_intervals_t;
-		id_intervals_t free_;
+		long current = 9816;
 };
+
+/*
+The previous version, based on
+http://stackoverflow.com/questions/2620218/fastest-container-or-algorithm-for-unique-reusable-ids-in-c
+is appropriate for cases where those additional requirements are present.
+
+Also, I'm setting the start explicitly rather than ask an unseeded PRNG.
+The exact number is different.
+*/
