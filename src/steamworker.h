@@ -18,9 +18,12 @@ along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 #pragma once
 
+#include <cstdlib>
+#include <iostream>
+#include <thread>
+
 #include <boost/property_tree/ptree.hpp>
 #include <boost/property_tree/json_parser.hpp>
-#include <boost/thread/thread.hpp>
 
 #include <Poco/MD5Engine.h>
 #include <Poco/DigestEngine.h>
@@ -32,15 +35,10 @@ along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 #include <Poco/Net/HTTPClientSession.h>
 
-#include <cstdlib>
-#include <iostream>
-
-#include "protocols/abstract_ext.h"
+#include "abstract_ext.h"
 
 
-
-
-class STEAMGET: public Poco::Runnable
+class SteamGet: public Poco::Runnable
 {
 	public:
 		void init(AbstractExt *extension);
@@ -67,7 +65,7 @@ class STEAMGET: public Poco::Runnable
 };
 
 
-class STEAMWORKER: public Poco::Runnable
+class SteamWorker: public Poco::Runnable
 {
 	public:
 		void run();
@@ -131,5 +129,5 @@ class STEAMWORKER: public Poco::Runnable
 
 		std::atomic<bool> *steam_run_flag;
 
-		STEAMGET steam_get;
+		SteamGet steam_get;
 };
