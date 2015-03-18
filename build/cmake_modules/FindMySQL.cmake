@@ -7,17 +7,19 @@
 
 FIND_PATH(MYSQL_INCLUDE_DIR NAMES mysql.h
   PATHS
-  /usr/local/include/mysql
   /usr/include/mysql
+  /usr/local/include/mysql
+  /usr/local/mysql/include
   "C:/Program Files (x86)/MySQL/include"
   C:/MySQL/include
 )
 
-FIND_PATH(MYSQL_LIB_DIR NAMES mysqlclient.lib  mysqlclient.so libmysqlclient.so
+FIND_PATH(MYSQL_LIB_DIR NAMES mysqlclient.lib  mysqlclient.a libmysqlclient.a
   PATHS
   /usr/lib
   /usr/lib/i386-linux-gnu
   /usr/local/lib
+  /usr/local/mysql/lib
   "C:/Program Files (x86)/MySQL/lib"
   C:/MySQL/lib
 )
@@ -25,13 +27,13 @@ FIND_PATH(MYSQL_LIB_DIR NAMES mysqlclient.lib  mysqlclient.so libmysqlclient.so
 SET(MYSQL_NAMES mysqlclient mysqlclient_r)
 FIND_LIBRARY(MYSQL_LIBRARY
   NAMES ${MYSQL_NAMES}
-  PATHS /usr/lib /usr/local/lib "C:/Program Files (x86)/MySQL/lib" C:/MySQL/lib
+  PATHS /usr/lib /usr/local/lib /usr/local/mysql/lib "C:/Program Files (x86)/MySQL/lib" C:/MySQL/lib
   PATH_SUFFIXES mysql
 )
 
 IF (MYSQL_INCLUDE_DIR AND MYSQL_LIBRARY)
   SET(MYSQL_FOUND TRUE)
-  SET( MYSQL_LIBRARIES ${MYSQL_LIBRARY} )
+  SET(MYSQL_LIBRARIES ${MYSQL_LIBRARY} )
 ELSE (MYSQL_INCLUDE_DIR AND MYSQL_LIBRARY)
   SET(MYSQL_FOUND FALSE)
   SET( MYSQL_LIBRARIES )

@@ -15,6 +15,15 @@ set(CMAKE_CONFIGURATION_TYPES Release CACHE TYPE
 INTERNAL FORCE )
 set(CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake_modules" ${CMAKE_MODULE_PATH})
 
+#Check for 32bit vs. 64bit system
+if (CMAKE_SIZEOF_VOID_P EQUAL 8) #64bit
+	message(STATUS "Warning: You are on a 64-bit system, make sure you are pulling in the appropriate 32-bit libraries.")
+elseif (CMAKE_SIZEOF_VOID_P EQUAL 4) #32bit
+	message(STATUS "You are on a 32-bit system.")
+else()
+	message(STATUS "CMake wasn't able to identify if you are on 32-bit or 64-bit...")
+endif()
+
 # Logging defaults to OFF
 SET(DEBUG_LOGGING FALSE CACHE BOOL "Enables or disables Debug Logging.")
 # Compile test application defaults to OFF
@@ -30,12 +39,13 @@ SET(COMPILE_TEST_SANITIZE_APPLICATION FALSE CACHE BOOL "Enables or disables test
 SET(SOURCES
 	../src/memory_allocator.cpp
 	../src/ext.cpp
-	../src/uniqueid.cpp
 	../src/sanitize.cpp
 	../src/rconworker.cpp
+	../src/redisworker.cpp
 	../src/remoteserver.cpp
 	../src/steamworker.cpp
 	../src/protocols/abstract_protocol.cpp
+	../src/protocols/redis_raw.cpp
 	../src/protocols/sql_custom.cpp
 	../src/protocols/sql_raw.cpp
 	../src/protocols/log.cpp
@@ -81,19 +91,21 @@ endif()
 
 
 # BOOST
+set(Boost_USE_STATIC_LIBS ON)
+set(Boost_USE_MULTITHREADED ON)
+set(Boost_USE_STATIC_RUNTIME ON)
 if(${WIN32})
-	set(Boost_USE_STATIC_LIBS ON)
-	set(Boost_USE_MULTITHREADED ON)
-	set(Boost_USE_STATIC_RUNTIME ON)
 	add_definitions(-D _WIN32_WINNT=0x0600)
 endif()
+
+
 find_package(Boost REQUIRED COMPONENTS chrono date_time filesystem program_options random regex system thread)
 if(Boost_FOUND)
 	include_directories(${Boost_INCLUDE_DIRS})
-	target_link_libraries(${EXECUTABLE_NAME} ${Boost_LIBRARIES})
 else()
 	message(FATAL_ERROR "\nBOOST not found\n Please Set BOOST_ROOT & BOOST_LIBRARYDIR")
 endif()
+
 
 # POCO
 if(${WIN32})
@@ -103,16 +115,15 @@ include(FindPOCO)
 if(POCO_FOUND)
 	include_directories(${POCO_INCLUDE_DIR} ${POCO_Crypto_INCLUDE_DIR} ${POCO_Data_INCLUDE_DIR})
 	include_directories(${POCO_Data_SQLite_INCLUDE_DIR} ${POCO_Data_MYSQL_INCLUDE_DIR} ${POCO_Net_INCLUDE_DIR} ${POCO_Util_INCLUDE_DIR})
-	target_link_libraries(${EXECUTABLE_NAME} ${POCO_LIBRARIES})
 else()
 	message(FATAL_ERROR "\nPOCO not found\n Please Set POCO_ROOT")
 endif()
+
 
 # MySQL
 include(FindMySQL)
 if(MYSQL_FOUND)
 	include_directories(${MYSQL_INCLUDE_DIR})
-	target_link_libraries(${EXECUTABLE_NAME} ${MYSQL_LIBRARY})
 else()
 	message(FATAL_ERROR "\nMYSQL not found")
 endif()
@@ -121,36 +132,31 @@ endif()
 include(FindTBB)
 if(TBB_FOUND)
 	include_directories(${TBB_INCLUDE_DIRS})
-	target_link_libraries(${EXECUTABLE_NAME} ${TBB_MALLOC_LIBRARY})
 else()
 	message(FATAL_ERROR "\nIntel TBB not found\n Please Set TBB_ROOT")
 endif()
 
 
+
 if(${WIN32})
 	# Windows
+	target_link_libraries(${EXECUTABLE_NAME} ${Boost_LIBRARIES}  ${POCO_LIBRARIES} ${MYSQL_LIBRARY} ${TBB_MALLOC_LIBRARY})
+	
 	add_definitions(-DUNICODE -D_UNICODE -DWIN32_LEAN_AND_MEAN)
 	SET_TARGET_PROPERTIES(${EXECUTABLE_NAME} PROPERTIES LINK_FLAGS " /MANIFEST:NO /ERRORREPORT:NONE")
 else()
 	# Linux 
-	if (NOT((COMPILE_TEST_APPLICATION) OR (COMPILE_RCON_APPLICATION) OR (COMPILE_TEST_SANITIZE_APPLICATION)))
-		ADD_CUSTOM_COMMAND(
-			TARGET ${EXECUTABLE_NAME}
-			POST_BUILD
-			COMMAND ${CMAKE_COMMAND} -E rename libextDB2.so extDB2.so
-		)
-	endif()
-endif()
+	target_link_libraries(${EXECUTABLE_NAME} -Wl,-Bdynamic ${TBB_MALLOC_LIBRARY} pthread, -Wl,-Bstatic ${Boost_LIBRARIES} ${POCO_LIBRARIES} ${MYSQL_LIBRARY})
+	set(CMAKE_CXX_FLAGS "-std=c++0x ${CMAKE_CXX_FLAGS}")
 
-#check for 32bit vs. 64bit system
-if (CMAKE_SIZEOF_VOID_P EQUAL 8) #64bit
-	message(STATUS "Warning: You are on a 64-bit system, make sure you are pulling in the appropriate 32-bit libraries.")
-elseif (CMAKE_SIZEOF_VOID_P EQUAL 4) #32bit
-	message(STATUS "You are on a 32-bit system.")
-else()
-	message(STATUS "CMake wasn't able to identify if you are on 32-bit or 64-bit...")
+#	if (NOT((COMPILE_TEST_APPLICATION) OR (COMPILE_RCON_APPLICATION) OR (COMPILE_TEST_SANITIZE_APPLICATION)))
+#		ADD_CUSTOM_COMMAND(
+#			TARGET ${EXECUTABLE_NAME}
+#			POST_BUILD
+#			COMMAND ${CMAKE_COMMAND} -E rename libextDB2.so extDB2.so
+#		)
+#	endif()
 endif()
-
 
 mark_as_advanced(CMAKE_INSTALL_PREFIX)
 mark_as_advanced(CMAKE_CONFIGURATION_TYPES)
