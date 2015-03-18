@@ -16,9 +16,12 @@ along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 */
 
-#include <boost/algorithm/string.hpp>
 
 #include "remoteserver.h"
+
+#include <boost/algorithm/string.hpp>
+
+#include <limits>
 
 
 void RemoteServer::init(AbstractExt *extension)
@@ -162,7 +165,18 @@ void RemoteConnection::mainLoop()
 	int unique_id;
 	{
 		std::lock_guard<std::mutex> lock(remoteServer_ptr->id_mgr_mutex);
-		unique_id = remoteServer_ptr->id_mgr.AllocateId();
+		while (true) // Limited Number of connected clients, so need to worry about all clientIDs beening used up
+		{
+			unique_id = remoteServer_ptr->unique_client_id_counter++;
+			if (remoteServer_ptr->unique_client_id_counter >= remoteServer_ptr->unique_client_id_counter_max)
+			{
+				remoteServer_ptr->unique_client_id_counter = 0;
+			}
+			if (remoteServer_ptr->clients_data.count(unique_id) == 0) // Check if clientID is in use
+			{
+				break;
+			}
+		}
 	}
 		
 	while (isOpen)
@@ -281,10 +295,6 @@ void RemoteConnection::mainLoop()
 	{
 		std::lock_guard<std::mutex> lock(remoteServer_ptr->clients_data_mutex);
 		remoteServer_ptr->clients_data.erase(unique_id);
-	}
-	{
-		std::lock_guard<std::mutex> lock(remoteServer_ptr->id_mgr_mutex);
-		remoteServer_ptr->id_mgr.FreeId(std::move(unique_id));
 	}
 }
 

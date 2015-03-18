@@ -15,23 +15,22 @@ You should have received a copy of the GNU General Public License
 along with this program. If not, see <http://www.gnu.org/licenses/>.
 */
 
+
 #pragma once
 
-#include <boost/asio.hpp>
 #include <thread>
+#include <unordered_map>
+
+#include <boost/asio.hpp>
 
 #include <Poco/Data/SessionPool.h>
 
-#include <unordered_map>
-
+#include "abstract_ext.h"
 #include "rconworker.h"
 #include "remoteserver.h"
 #include "steamworker.h"
-#include "uniqueid.h"
 
-#include "protocols/abstract_ext.h"
 #include "protocols/abstract_protocol.h"
-
 
 
 class Ext: public AbstractExt
@@ -57,16 +56,13 @@ class Ext: public AbstractExt
 
 	private:
 		// RCon
-		RCONWORKER rcon_worker;
+		RconWorker rcon_worker;
 
 		/// Remote Server
 		RemoteServer remote_server;
 
 		// Steam
-		STEAMWORKER steam_worker;
-
-		// Unique ID for key for ^^
-		IdManager mgr;
+		SteamWorker steam_worker;
 
 		// ASIO Thread Queue
 		std::unique_ptr<boost::asio::io_service::work> io_work_ptr;
@@ -77,9 +73,12 @@ class Ext: public AbstractExt
 		std::unordered_map< std::string, std::unique_ptr<AbstractProtocol> > unordered_map_protocol;
 		std::mutex mutex_unordered_map_protocol;
 
-		std::unordered_map<int, resultData> stored_results;
-		std::mutex mutex_results;  // Using Same Lock for Wait / Results / Plugins
+		// Unique ID
+		long unique_id_counter = 9816; // Can't be value 0 or 1
 
+		// Results
+		std::unordered_map<int, resultData> stored_results;
+		std::mutex mutex_results;  // Using Same Lock for Unique ID aswell
 
 		// RCon
 		void connectRcon(char *output, const int &output_size, const std::string &rcon_conf);

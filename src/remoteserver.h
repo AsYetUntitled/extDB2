@@ -19,14 +19,14 @@ along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 #pragma once
 
+#include "abstract_ext.h"
+
 #include <Poco/Net/TCPServer.h>
 #include <Poco/Net/TCPServerConnection.h>
 #include <Poco/Net/TCPServerConnectionFactory.h>
 
 #include <Poco/Net/StreamSocket.h>
 
-#include "protocols/abstract_ext.h"
-#include "uniqueid.h"
 
 class RemoteConnection;
 
@@ -39,7 +39,8 @@ public:
 
 	AbstractExt *extension_ptr;
 
-	IdManager id_mgr;
+	long unique_client_id_counter = 0;
+	long unique_client_id_counter_max = std::numeric_limits<long>::max();
 	std::mutex id_mgr_mutex;
 
 	struct clients
@@ -66,21 +67,21 @@ class RemoteConnection: public Poco::Net::TCPServerConnection
 	///
 	/// A string with the current date and time is sent back to the client.
 {
-public:
-	RemoteConnection(const Poco::Net::StreamSocket& s, RemoteServer *remoteServer) :
-		Poco::Net::TCPServerConnection(s),
-		remoteServer_ptr(remoteServer),
-		extension_ptr(remoteServer->extension_ptr)
-	{
-	}
+	public:
+		RemoteConnection(const Poco::Net::StreamSocket& s, RemoteServer *remoteServer) :
+			Poco::Net::TCPServerConnection(s),
+			remoteServer_ptr(remoteServer),
+			extension_ptr(remoteServer->extension_ptr)
+		{
+		}
 
-	void run();
-	bool login();
-	void mainLoop();
-	
-private:
-	AbstractExt *extension_ptr;
-	RemoteServer *remoteServer_ptr;
+		void run();
+		bool login();
+		void mainLoop();
+		
+	private:
+		AbstractExt *extension_ptr;
+		RemoteServer *remoteServer_ptr;
 };
 
 
@@ -88,17 +89,17 @@ private:
 class RemoteConnectionFactory: public Poco::Net::TCPServerConnectionFactory
 	/// A factory for TimeServerConnection.
 {
-public:
-	RemoteConnectionFactory(RemoteServer *remoteServer) :
-		remoteServer_ptr(remoteServer)
-	{
-	}
-	
-	Poco::Net::TCPServerConnection* createConnection(const Poco::Net::StreamSocket& socket)
-	{
-		return new RemoteConnection(socket, remoteServer_ptr);
-	}
+	public:
+		RemoteConnectionFactory(RemoteServer *remoteServer) :
+			remoteServer_ptr(remoteServer)
+		{
+		}
+		
+		Poco::Net::TCPServerConnection* createConnection(const Poco::Net::StreamSocket& socket)
+		{
+			return new RemoteConnection(socket, remoteServer_ptr);
+		}
 
-private:
-	RemoteServer *remoteServer_ptr;
+	private:
+		RemoteServer *remoteServer_ptr;
 };

@@ -18,18 +18,23 @@ along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 #pragma once
 
+#include <thread>
+
 #include <Poco/AutoPtr.h>
 #include <Poco/Data/Session.h>
 #include <Poco/Data/SessionPool.h>
 #include <Poco/Util/IniFileConfiguration.h>
 
-#include <boost/thread/thread.hpp>
+#include "redisworker.h"
+#include "redis/redisasyncclient.h"
 
-#include "../spdlog/spdlog.h"
+#include "spdlog/spdlog.h"
 
 
-#define EXTDB_VERSION "46"
-#define EXTDB_CONF_VERSION 3
+#define EXTDB_VERSION "47"
+#define EXTDB_CONF_VERSION 4
+
+class RedisWorker;
 
 class AbstractExt
 {
@@ -44,14 +49,14 @@ class AbstractExt
 		struct DBConnectionInfo
 		{
 			std::string type;
-			std::string connection_str;
-			int min_sessions;
-			int max_sessions;
-			int idle_time;
 
-			// Database Session Pool
-			std::unique_ptr<Poco::Data::SessionPool> pool;
-			std::mutex mutex_pool;
+			// Redis
+			std::unique_ptr<RedisAsyncClient> redis;
+			std::unique_ptr<RedisWorker> redis_worker;
+
+			// SQL Database Session Pool
+			std::unique_ptr<Poco::Data::SessionPool> sql_pool;
+			std::mutex mutex_sql_pool;
 		};
 
 		// extDB Connectors
@@ -61,6 +66,7 @@ class AbstractExt
 
 			bool mysql=false;
 			bool sqlite=false;
+			bool redis=false;
 
 			bool steam=false;
 			bool rcon=false;
@@ -92,7 +98,6 @@ class AbstractExt
 		#ifdef TESTING
 			std::shared_ptr<spdlog::logger> console;
 		#endif
-
 		std::shared_ptr<spdlog::logger> logger;
 		std::shared_ptr<spdlog::logger> vacBans_logger;
 	

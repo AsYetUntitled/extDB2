@@ -15,25 +15,25 @@ You should have received a copy of the GNU General Public License
 along with this program. If not, see <http://www.gnu.org/licenses/>.
 */
 
+
 #include "ext.h"
+
+#include <condition_variable>
+#include <cstdlib>
+#include <cstring>
+#include <iostream>
+#include <mutex>
+#include <regex>
+#include <thread>
 
 #include <boost/algorithm/string.hpp>
 #include <boost/asio.hpp>
 #include <boost/bind.hpp>
 #include <boost/filesystem.hpp>
-#include <thread>
 #ifdef _WIN32
 	#include <boost/random/random_device.hpp>
 	#include <boost/random/uniform_int_distribution.hpp>
 #endif
-#include <regex>
-
-#include <Poco/Data/Session.h>
-#include <Poco/Data/SessionPool.h>
-#include <Poco/Data/MySQL/Connector.h>
-#include <Poco/Data/MySQL/MySQLException.h>
-#include <Poco/Data/SQLite/Connector.h>
-#include <Poco/Data/SQLite/SQLiteException.h>
 
 #include <Poco/AutoPtr.h>
 #include <Poco/DateTime.h>
@@ -44,20 +44,22 @@ along with this program. If not, see <http://www.gnu.org/licenses/>.
 #include <Poco/StringTokenizer.h>
 #include <Poco/Util/IniFileConfiguration.h>
 
-#include <cstring>
-#include <iostream>
-#include <cstdlib>
+#include <Poco/Data/Session.h>
+#include <Poco/Data/SessionPool.h>
+#include <Poco/Data/MySQL/Connector.h>
+#include <Poco/Data/MySQL/MySQLException.h>
+#include <Poco/Data/SQLite/Connector.h>
+#include <Poco/Data/SQLite/SQLiteException.h>
 
 #include "rconworker.h"
+#include "redisworker.h"
 #include "remoteserver.h"
 #include "steamworker.h"
-#include "uniqueid.h"
 
 #include "protocols/abstract_protocol.h"
-
+#include "protocols/redis_raw.h"
 #include "protocols/sql_custom.h"
 #include "protocols/sql_raw.h"
-
 #include "protocols/log.h"
 #include "protocols/misc.h"
 #include "protocols/rcon.h"
@@ -91,7 +93,7 @@ Ext::Ext(std::string dll_path)
 		}
 		else
 		{
-			#ifdef _WIN32	// WINDOWS ONLY, Linux Arma2 Doesn't have extension Support
+			#ifdef _WIN32	// Windows Only, Linux Arma2 Doesn't have extension Support
 				// Search for Randomize Config File -- Legacy Security Support For Arma2Servers
 				extDB_config_path = extDB_config_path.parent_path();
 				extDB_config_str = extDB_config_path.make_preferred().string();
@@ -110,7 +112,7 @@ Ext::Ext(std::string dll_path)
 								conf_found = true;
 								conf_randomized = true;
 								extDB_config_path = boost::filesystem::path(it->path().string());
-								extDB_info.path = boost::filesystem::path (extDB_config_str).string();
+								extDB_info.path = boost::filesystem::path(extDB_config_str).string();
 								break;
 							}
 						}
@@ -305,7 +307,7 @@ Ext::Ext(std::string dll_path)
 					boost::random::uniform_int_distribution<> index_dist(0, chars.size() - 1);
 
 					std::string randomized_filename = "extdb-conf-";
-					for(int i = 0; i < 8; ++i)
+					for (int i = 0; i < 8; ++i)
 					{
 						randomized_filename += chars[index_dist(rng)];
 					}
@@ -323,7 +325,7 @@ Ext::Ext(std::string dll_path)
 	}
 	catch (spdlog::spdlog_ex& e)
 	{
-		std::cout << "SPDLOG ERROR: " << e.what() << std::endl;
+		std::cout << "SPDLOG ERROR: " <<  e.what() << std::endl;
 		std::exit(EXIT_FAILURE);
 	}
 }
@@ -363,16 +365,16 @@ void Ext::stop()
 Poco::Data::Session Ext::getDBSession_mutexlock(AbstractExt::DBConnectionInfo &database)
 // Gets available DB Session (mutex lock)
 {
-	std::lock_guard<std::mutex> lock(database.mutex_pool);
-	return database.pool->get();
+	std::lock_guard<std::mutex> lock(database.mutex_sql_pool);
+	return database.sql_pool->get();
 }
 
 
 Poco::Data::Session Ext::getDBSession_mutexlock(AbstractExt::DBConnectionInfo &database, Poco::Data::SessionPool::SessionDataPtr &session_data_ptr)
 // Gets available DB Session (mutex lock) + Cached Statemetns
 {
-	std::lock_guard<std::mutex> lock(database.mutex_pool);
-	return database.pool->get(session_data_ptr);
+	std::lock_guard<std::mutex> lock(database.mutex_sql_pool);
+	return database.sql_pool->get(session_data_ptr);
 }
 
 
@@ -437,203 +439,186 @@ void Ext::connectRcon(char *output, const int &output_size, const std::string &r
 void Ext::rconCommand(std::string str)
 // Adds RCon Command to be sent to Server.
 {
-	if (extDB_connectors_info.rcon) // Check if Rcon enabled
-	{
-		rcon_worker.addCommand(str);
-	}
+	rcon_worker.addCommand(str);
 }
 
 
 void Ext::connectDatabase(char *output, const int &output_size, const std::string &database_conf, const std::string &database_id)
 // Connection to Database, database_id used when connecting to multiple different database.
 {
-	DBConnectionInfo *database;
-	database = &extDB_connectors_info.databases[database_id];
+	DBConnectionInfo *database = &extDB_connectors_info.databases[database_id];
 
-	bool failed = false;
-	try
+	bool connected = true;
+
+	// Check if already connectted to Database.
+	if (!database->type.empty())
 	{
-		// Check if already connectted to Database.
-		if (!database->type.empty())
+		#ifdef TESTING
+			console->warn("extDB2: Already Connected to Database");
+		#endif
+		logger->warn("extDB2: Already Connected to a Database");
+		std::strcpy(output, "[0,\"Already Connected to Database\"]");
+	}
+	else if (pConf->hasOption(database_conf + ".Type"))
+	{
+		database->type = pConf->getString(database_conf + ".Type");
+		#ifdef TESTING
+			console->info("extDB2: Database Type: {0}", database->type);
+		#endif
+		logger->info("extDB2: Database Type: {0}", database->type);
+
+
+		if (boost::iequals(database->type, "Redis") == 1)
 		{
-			#ifdef TESTING
-				console->warn("extDB2: Already Connected to Database");
-			#endif
-			logger->warn("extDB2: Already Connected to a Database");
-			std::strcpy(output, "[0,\"Already Connected to Database\"]");
+			std::condition_variable cnd;
+			std::mutex cnd_mutex;
+			std::unique_lock<std::mutex> cnd_lock(cnd_mutex);
+			bool cnd_bool = false;
+
+			database->redis.reset(new RedisAsyncClient(io_service));
+			database->redis_worker.reset(new RedisWorker(io_service, *(database->redis), this));
+			boost::asio::ip::tcp::endpoint endpoint(boost::asio::ip::address::from_string(pConf->getString(database_conf + ".Address")), 
+													pConf->getInt(database_conf + ".Port", 6379));
+			database->redis->connect(endpoint, boost::bind(&RedisWorker::onConnect, *(database->redis_worker), _1, _2, boost::ref(cnd), boost::ref(cnd_mutex), boost::ref(cnd_bool)));
+
+			while (!cnd_bool)
+			{
+				cnd.wait(cnd_lock);
+			}
+
+			if (database->redis->stateValid())
+			{
+				std::strcpy(output, "[1]");
+			}
+			else
+			{
+				std::strcpy(output, "[0,\"Redis Connection Error\"]");
+				connected = false;
+			}
 		}
-		else
+		else if ((boost::iequals(database->type, std::string("MySQL")) == 1) || (boost::iequals(database->type, "SQLite") == 1))
 		{
-			if (pConf->hasOption(database_conf + ".Type"))
+			try
 			{
 				// Database
-				database->type = pConf->getString(database_conf + ".Type");
-				std::string db_name = pConf->getString(database_conf + ".Name");
-
-				database->min_sessions = pConf->getInt(database_conf + ".minSessions", 1);
-				if (database->min_sessions <= 0)
-				{
-					database->min_sessions = 1;
-				}
-				database->max_sessions = pConf->getInt(database_conf + ".maxSessions", 1);
-				if (database->max_sessions <= 0)
-				{
-					database->max_sessions = extDB_info.max_threads;
-				}
-
-				database->idle_time = pConf->getInt(database_conf + ".idleTime", 600);
-
-				#ifdef TESTING
-					console->info("extDB2: Database Type: {0}", database->type);
-				#endif
-				logger->info("extDB2: Database Type: {0}", database->type);
-
+				std::string connection_str;
 				if (boost::iequals(database->type, std::string("MySQL")) == 1)
 				{
 					database->type = "MySQL";
-
 					if (!(extDB_connectors_info.mysql))
 					{
 						Poco::Data::MySQL::Connector::registerConnector();
 						extDB_connectors_info.mysql = true;
-					}			
-
-					database->connection_str += "host=" + pConf->getString(database_conf + ".IP") + ";";
-					database->connection_str += "port=" + pConf->getString(database_conf + ".Port") + ";";
-					database->connection_str += "user=" + pConf->getString(database_conf + ".Username") + ";";
-					database->connection_str += "password=" + pConf->getString(database_conf + ".Password") + ";";
-					database->connection_str += "db=" + db_name + ";";
-					database->connection_str += "auto-reconnect=true";
+					}
+					connection_str += "host=" + pConf->getString(database_conf + ".Address") + ";";
+					connection_str += "port=" + pConf->getString(database_conf + ".Port") + ";";
+					connection_str += "user=" + pConf->getString(database_conf + ".Username") + ";";
+					connection_str += "password=" + pConf->getString(database_conf + ".Password") + ";";
+					connection_str += "db=" + pConf->getString(database_conf + ".Name") + ";";
+					connection_str += "auto-reconnect=true";
 
 					if (pConf->getBool(database_conf + ".Compress", false))
 					{
-						database->connection_str += ";compress=true";
+						connection_str += ";compress=true";
 					}
-
 					if (pConf->getBool(database_conf + ".Secure Auth", false))
 					{
-						database->connection_str += ";secure-auth=true";	
-					}
-
-					database->pool.reset(new Poco::Data::SessionPool(database->type, 
-																	 database->connection_str, 
-																	 database->min_sessions, 
-																	 database->max_sessions, 
-																	 database->idle_time));
-					if (database->pool->get().isConnected())
-					{
-						#ifdef TESTING
-							console->info("extDB2: Database Session Pool Started");
-						#endif
-						logger->info("extDB2: Database Session Pool Started");
-						std::strcpy(output, "[1]");
-					}
-					else
-					{
-						#ifdef TESTING
-							console->warn("extDB2: Database Session Pool Failed");
-						#endif
-						logger->warn("extDB2: Database Session Pool Failed");
-						std::strcpy(output, "[0,\"Database Session Pool Failed\"]");
-						failed = true;
+						connection_str += ";secure-auth=true";	
 					}
 				}
 				else if (boost::iequals(database->type, "SQLite") == 1)
 				{
+					database->type = "SQLite";
 					if (!(extDB_connectors_info.sqlite))
 					{
 						Poco::Data::SQLite::Connector::registerConnector();
 						extDB_connectors_info.sqlite = true;
 					}
 
-					database->type = "SQLite";
-
 					boost::filesystem::path sqlite_path(extDB_info.path);
 					sqlite_path /= "extDB";
 					sqlite_path /= "sqlite";
-					sqlite_path /= db_name;
-					database->connection_str = sqlite_path.make_preferred().string();
-
-					database->pool.reset(new Poco::Data::SessionPool(database->type, 
-																	 database->connection_str, 
-																	 database->min_sessions, 
-																	 database->max_sessions, 
-																	 database->idle_time));
-					if (database->pool->get().isConnected())
-					{
-						#ifdef TESTING
-							console->info("extDB2: Database Session Pool Started");
-						#endif
-						logger->info("extDB2: Database Session Pool Started");
-						std::strcpy(output, "[1]");
-					}
-					else
-					{
-						#ifdef TESTING
-							console->warn("extDB2: Database Session Pool Failed");
-						#endif
-						logger->warn("extDB2: Database Session Pool Failed");
-						std::strcpy(output, "[0,\"Database Session Pool Failed\"]");
-						failed = true;
-					}
+					sqlite_path /= pConf->getString(database_conf + ".Name");
+					connection_str = sqlite_path.make_preferred().string();
+				}
+				database->sql_pool.reset(new Poco::Data::SessionPool(database->type, 
+																 	connection_str, 
+																 	pConf->getInt(database_conf + ".minSessions", 1), 
+																 	pConf->getInt(database_conf + ".maxSessions", extDB_info.max_threads), 
+																 	pConf->getInt(database_conf + ".idleTime", 600)));
+				if (database->sql_pool->get().isConnected())
+				{
+					#ifdef TESTING
+						console->info("extDB2: Database Session Pool Started");
+					#endif
+					logger->info("extDB2: Database Session Pool Started");
+					std::strcpy(output, "[1]");
 				}
 				else
 				{
 					#ifdef TESTING
-						console->warn("extDB2: No Database Engine Found for {0}", db_name);
+						console->warn("extDB2: Database Session Pool Failed");
 					#endif
-					logger->warn("extDB2: No Database Engine Found for {0}", db_name);
-					std::strcpy(output, "[0,\"Unknown Database Type\"]");
-					failed = true;
+					logger->warn("extDB2: Database Session Pool Failed");
+					std::strcpy(output, "[0,\"Database Session Pool Failed\"]");
+					connected = false;
 				}
 			}
-			else
+			catch (Poco::Data::NotConnectedException& e)
 			{
 				#ifdef TESTING
-					console->warn("extDB2: No Config Option Found: {0}", database_conf);
+					console->error("extDB2: Database NotConnectedException Error: {0}", e.displayText());
 				#endif
-				logger->warn("extDB2: No Config Option Found: {0}", database_conf);
-				std::strcpy(output, "[0,\"No Config Option Found\"]");
-				failed = true;
+				logger->error("extDB2: Database NotConnectedException Error: {0}", e.displayText());
+				std::strcpy(output, "[0,\"Database NotConnectedException Error\"]");
+				connected = false;
+			}
+			catch (Poco::Data::MySQL::ConnectionException& e)
+			{
+				#ifdef TESTING
+					console->error("extDB2: Database ConnectionException Error: {0}", e.displayText());
+				#endif
+				logger->error("extDB2: Database ConnectionException Error: {0}", e.displayText());
+				std::strcpy(output, "[0,\"Database ConnectionException Error\"]");
+				connected = false;
+			}
+			catch (Poco::Exception& e)
+			{
+				#ifdef TESTING
+					console->error("extDB2: Database Exception Error: {0}", e.displayText());
+				#endif
+				logger->error("extDB2: Database Exception Error: {0}", e.displayText());
+				std::strcpy(output, "[0,\"Database Exception Error\"]");
+				connected = false;
 			}
 		}
+		else
+		{
+			#ifdef TESTING
+			console->warn("extDB2: No Database Engine Found for {0}", database->type);
+			#endif
+			logger->warn("extDB2: No Database Engine Found for {0}", database->type);
+			std::strcpy(output, "[0,\"Unknown Database Type\"]");
+			connected = false;
+		}
 	}
-	catch (Poco::Data::NotConnectedException& e)
+	else
 	{
 		#ifdef TESTING
-			console->error("extDB2: Database NotConnectedException Error: {0}", e.displayText());
+		console->warn("extDB2: No Config Option Found: {0}", database_conf);
 		#endif
-		logger->error("extDB2: Database NotConnectedException Error: {0}", e.displayText());
-		std::strcpy(output, "[0,\"Database NotConnectedException Error\"]");
-		failed = true;
-	}
-	catch (Poco::Data::MySQL::ConnectionException& e)
-	{
-		#ifdef TESTING
-			console->error("extDB2: Database ConnectionException Error: {0}", e.displayText());
-		#endif
-		logger->error("extDB2: Database ConnectionException Error: {0}", e.displayText());
-		std::strcpy(output, "[0,\"Database ConnectionException Error\"]");
-		failed = true;
-	}
-	catch (Poco::Exception& e)
-	{
-		#ifdef TESTING
-			console->error("extDB2: Database Exception Error: {0}", e.displayText());
-		#endif
-		logger->error("extDB2: Database Exception Error: {0}", e.displayText());
-		std::strcpy(output, "[0,\"Database Exception Error\"]");
-		failed = true;
+		logger->warn("extDB2: No Config Option Found: {0}", database_conf);
+		std::strcpy(output, "[0,\"No Config Option Found\"]");
+		connected = false;
 	}
 
-	if (failed)
+	if (!connected)
 	{
 		if (database_id.empty())
 		{
 			// Default Database
 			database->type.clear();
-			database->connection_str.clear();
-			database->pool.reset();
+			database->sql_pool.reset();
 		}
 		else
 		{
@@ -657,6 +642,14 @@ void Ext::addProtocol(char *output, const int &output_size, const std::string &d
 		bool status = true;
 		if (database_id.empty())
 		{
+			if (boost::iequals(protocol, std::string("LOG")) == 1)
+			{
+				unordered_map_protocol[protocol_name] = std::unique_ptr<AbstractProtocol> (new LOG());
+			}
+			else if (boost::iequals(protocol, std::string("MISC")) == 1)
+			{
+				unordered_map_protocol[protocol_name] = std::unique_ptr<AbstractProtocol> (new MISC());
+			}
 			if (boost::iequals(protocol, std::string("RCON")) == 1)
 			{
 				unordered_map_protocol[protocol_name] = std::unique_ptr<AbstractProtocol> (new RCON());
@@ -664,14 +657,6 @@ void Ext::addProtocol(char *output, const int &output_size, const std::string &d
 			else if (boost::iequals(protocol, std::string("VAC")) == 1)
 			{
 				unordered_map_protocol[protocol_name] = std::unique_ptr<AbstractProtocol> (new STEAM());
-			}
-			else if (boost::iequals(protocol, std::string("MISC")) == 1)
-			{
-				unordered_map_protocol[protocol_name] = std::unique_ptr<AbstractProtocol> (new MISC());
-			}
-			else if (boost::iequals(protocol, std::string("LOG")) == 1)
-			{
-				unordered_map_protocol[protocol_name] = std::unique_ptr<AbstractProtocol> (new LOG());
 			}
 			else
 			{
@@ -682,7 +667,11 @@ void Ext::addProtocol(char *output, const int &output_size, const std::string &d
 		}
 		else
 		{
-			if (boost::iequals(protocol, std::string("SQL_CUSTOM")) == 1)
+			if (boost::iequals(protocol, std::string("REDIS_RAW")) == 1)
+			{
+				unordered_map_protocol[protocol_name] = std::unique_ptr<AbstractProtocol> (new REDIS_RAW());
+			}
+			else if (boost::iequals(protocol, std::string("SQL_CUSTOM")) == 1)
 			{
 				unordered_map_protocol[protocol_name] = std::unique_ptr<AbstractProtocol> (new SQL_CUSTOM());
 			}
@@ -741,7 +730,6 @@ void Ext::getSinglePartResult_mutexlock(char *output, const int &output_size, co
 		{
 			std::strcpy(output, const_itr->second.message.c_str());
 			stored_results.erase(const_itr);
-			mgr.FreeId(unique_id);
 		}
 	}
 }
@@ -767,7 +755,6 @@ void Ext::getMultiPartResult_mutexlock(char *output, const int &output_size, con
 	else if (const_itr->second.message.empty()) // END of MSG
 	{
 		stored_results.erase(const_itr);
-		mgr.FreeId(std::move(unique_id));
 		std::strcpy(output, "");
 	}
 	else // SEND MSG (Part)
@@ -790,7 +777,7 @@ const int Ext::saveResult_mutexlock(const resultData &result_data)
 // Stores Result String and returns Unique ID, used by SYNC Calls where message > outputsize
 {
 	std::lock_guard<std::mutex> lock(mutex_results);
-	const int unique_id = mgr.AllocateId();
+	int unique_id = unique_id_counter++;
 	stored_results[unique_id] = std::move(result_data);
 	stored_results[unique_id].wait = false;
 	return unique_id;
@@ -853,7 +840,7 @@ void Ext::sendTCPRemote_mutexlock(std::string &input_str)
 			std::lock_guard<std::mutex> lock(remote_server.clients_data_mutex);
 			if (remote_server.clients_data.count(unique_id) != 0)
 			{
-				remote_server.clients_data[unique_id].outputs.push_back(input_str.substr(found + 1));
+				remote_server.clients_data[unique_id].outputs.push_back(input_str.substr(found+1));
 			}
 		}
 		else
@@ -989,8 +976,7 @@ void Ext::callExtension(char *output, const int &output_size, const char *functi
 								int unique_id;
 								{
 									std::lock_guard<std::mutex> lock(mutex_results);
-
-									unique_id = mgr.AllocateId();
+									unique_id = unique_id_counter++;
 									stored_results[unique_id].wait = true;
 								}
 
@@ -1262,7 +1248,7 @@ int main(int nNumberofArgs, char* pszArgs[])
 		}
 		else
 		{
-			extension->callExtenion(result, result_size, input_str.c_str());
+			extension->callExtension(result, result_size, input_str.c_str());
 			extension->console->info("extDB2: {0}", result);
 		}
 		while (test)
@@ -1274,11 +1260,11 @@ int main(int nNumberofArgs, char* pszArgs[])
 				break;
 			}
 			test_counter = test_counter + 1;
-			extension->callExtenion(result, result_size, std::string("1:SQL:TEST:testing").c_str());
-			extension->callExtenion(result, result_size, std::string("1:SQL:TEST2:testing").c_str());
-			extension->callExtenion(result, result_size, std::string("1:SQL:TEST3:testing").c_str());
-			extension->callExtenion(result, result_size, std::string("1:SQL:TEST4:testing").c_str());
-			extension->callExtenion(result, result_size, std::string("1:SQL:TEST5:testing").c_str());
+			extension->callExtension(result, result_size, std::string("1:SQL:TEST:testing").c_str());
+			extension->callExtension(result, result_size, std::string("1:SQL:TEST2:testing").c_str());
+			extension->callExtension(result, result_size, std::string("1:SQL:TEST3:testing").c_str());
+			extension->callExtension(result, result_size, std::string("1:SQL:TEST4:testing").c_str());
+			extension->callExtension(result, result_size, std::string("1:SQL:TEST5:testing").c_str());
 			extension->console->info("extDB2: {0}", result);			
 		}
 	}
