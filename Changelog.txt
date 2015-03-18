@@ -1,4 +1,10 @@
 -------------------------------------------------------------------------------
+47:
+	ADDED: SQL_CUSTOM: BOOL Option
+
+	UPDATED: Improved UniqueID Code + more code changes thanks https://github.com/MaHuJa
+
+-------------------------------------------------------------------------------
 46:
 	FIXED: Windows Lockup
 
