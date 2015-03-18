@@ -18,7 +18,7 @@ along with this program. If not, see <http://www.gnu.org/licenses/>.
 #pragma once
 
 #include <boost/asio.hpp>
-#include <boost/thread/thread.hpp>
+#include <thread>
 
 #include <Poco/Data/SessionPool.h>
 
@@ -75,10 +75,10 @@ class Ext: public AbstractExt
 
 		// Protocols
 		std::unordered_map< std::string, std::unique_ptr<AbstractProtocol> > unordered_map_protocol;
-		boost::mutex mutex_unordered_map_protocol;
+		std::mutex mutex_unordered_map_protocol;
 
 		std::unordered_map<int, resultData> stored_results;
-		boost::mutex mutex_results;  // Using Same Lock for Wait / Results / Plugins
+		std::mutex mutex_results;  // Using Same Lock for Wait / Results / Plugins
 
 
 		// RCon

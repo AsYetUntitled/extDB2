@@ -67,7 +67,7 @@ void MISC::getDateTime(int hours, std::string &result)
 
 void MISC::getCrc32(std::string &input_str, std::string &result)
 {
-	boost::lock_guard<boost::mutex> lock(mutex_crc32);
+	std::lock_guard<std::mutex> lock(mutex_crc32);
 	crc32.reset();
 	crc32.process_bytes(input_str.data(), input_str.length());
 	result = "[1,\"" + Poco::NumberFormatter::format(crc32.checksum()) + "\"]";
@@ -76,7 +76,7 @@ void MISC::getCrc32(std::string &input_str, std::string &result)
 
 void MISC::getMD4(std::string &input_str, std::string &result)
 {
-	boost::lock_guard<boost::mutex> lock(mutex_md4);
+	std::lock_guard<std::mutex> lock(mutex_md4);
 	md4.update(input_str);
 	result = "[1,\"" + Poco::DigestEngine::digestToHex(md4.digest()) + "\"]";
 }
@@ -84,7 +84,7 @@ void MISC::getMD4(std::string &input_str, std::string &result)
 
 void MISC::getMD5(std::string &input_str, std::string &result)
 {
-	boost::lock_guard<boost::mutex> lock(mutex_md5);
+	std::lock_guard<std::mutex> lock(mutex_md5);
 	md5.update(input_str);
 	result = "[1,\"" + Poco::DigestEngine::digestToHex(md5.digest()) + "\"]";
 }
@@ -131,7 +131,7 @@ void MISC::getBEGUID(std::string &input_str, std::string &result)
 			bestring << char(part);
 		}
 
-		boost::lock_guard<boost::mutex> lock(mutex_md5);
+		std::lock_guard<std::mutex> lock(mutex_md5);
 		md5.update(bestring.str());
 		result = "[1,\"" + Poco::DigestEngine::digestToHex(md5.digest()) + "\"]";
 	}
@@ -161,7 +161,7 @@ void MISC::getRandomString(std::string &input_str, bool uniqueString, std::strin
 			}
 			else
 			{
-				boost::lock_guard<boost::mutex> lock(mutex_RandomString);
+				std::lock_guard<std::mutex> lock(mutex_RandomString);
 				std::string chars(
 					"ABCDEFGHIJKLMNOPQRSTUVWXYZ"
 					//"1234567890"  Arma Variable Names cant start with a number

@@ -161,7 +161,7 @@ void RemoteConnection::mainLoop()
 
 	int unique_id;
 	{
-		boost::lock_guard<boost::mutex> lock(remoteServer_ptr->id_mgr_mutex);
+		std::lock_guard<std::mutex> lock(remoteServer_ptr->id_mgr_mutex);
 		unique_id = remoteServer_ptr->id_mgr.AllocateId();
 	}
 		
@@ -169,7 +169,7 @@ void RemoteConnection::mainLoop()
 	{
 		if (socket().poll(timeOut, Poco::Net::Socket::SELECT_READ) == false)
 		{
-			boost::lock_guard<boost::mutex> lock(remoteServer_ptr->clients_data_mutex);
+			std::lock_guard<std::mutex> lock(remoteServer_ptr->clients_data_mutex);
 			if (!remoteServer_ptr->clients_data[unique_id].outputs.empty())
 			{
 				for (auto &output : remoteServer_ptr->clients_data[unique_id].outputs)
@@ -225,7 +225,7 @@ void RemoteConnection::mainLoop()
 						}
 						else if (boost::iequals(recv_str, std::string("#SEND")) == 1)
 						{
-							boost::lock_guard<boost::mutex> lock(remoteServer_ptr->inputs_mutex);
+							std::lock_guard<std::mutex> lock(remoteServer_ptr->inputs_mutex);
 							std::string temp_str = Poco::NumberFormatter::format(unique_id) + ":" + store_str;
 							remoteServer_ptr->inputs.push_back(std::move(temp_str));
 							*remoteServer_ptr->inputs_flag = true;
@@ -279,11 +279,11 @@ void RemoteConnection::mainLoop()
 		}
 	}
 	{
-		boost::lock_guard<boost::mutex> lock(remoteServer_ptr->clients_data_mutex);
+		std::lock_guard<std::mutex> lock(remoteServer_ptr->clients_data_mutex);
 		remoteServer_ptr->clients_data.erase(unique_id);
 	}
 	{
-		boost::lock_guard<boost::mutex> lock(remoteServer_ptr->id_mgr_mutex);
+		std::lock_guard<std::mutex> lock(remoteServer_ptr->id_mgr_mutex);
 		remoteServer_ptr->id_mgr.FreeId(std::move(unique_id));
 	}
 }

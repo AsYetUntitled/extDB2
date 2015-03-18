@@ -91,7 +91,7 @@ class RCONWORKER: public Poco::Runnable
 		std::atomic<bool> *rcon_login_flag;
 		
 		std::vector< std::string > rcon_commands;
-		boost::mutex mutex_rcon_commands;
+		std::mutex mutex_rcon_commands;
 
 		// Functions
 		void connect();

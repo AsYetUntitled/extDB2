@@ -223,7 +223,7 @@ void RCONWORKER::addCommand(std::string command)
 {
 	if (*rcon_run_flag)
 	{
-		boost::lock_guard<boost::mutex> lock(mutex_rcon_commands);
+		std::lock_guard<std::mutex> lock(mutex_rcon_commands);
 		rcon_commands.push_back(std::move(command));
 	}
 }
@@ -359,7 +359,7 @@ void RCONWORKER::mainLoop()
 			if (*rcon_login_flag)
 			{
 				// Checking for Commands to Send
-				boost::lock_guard<boost::mutex> lock(mutex_rcon_commands);
+				std::lock_guard<std::mutex> lock(mutex_rcon_commands);
 				for (auto &rcon_command : rcon_commands)
 				{
 					char *cmd = new char[rcon_command.size()+1];
@@ -383,7 +383,7 @@ void RCONWORKER::mainLoop()
 			{
 				if (!*rcon_run_flag)
 				{
-					boost::lock_guard<boost::mutex> lock(mutex_rcon_commands);
+					std::lock_guard<std::mutex> lock(mutex_rcon_commands);
 					if (rcon_commands.empty())
 					{
 						break;
@@ -424,7 +424,7 @@ void RCONWORKER::mainLoop()
 				else if (*rcon_login_flag)
 				{
 					// Checking for Commands to Send
-					boost::lock_guard<boost::mutex> lock(mutex_rcon_commands);
+					std::lock_guard<std::mutex> lock(mutex_rcon_commands);
 
 					for (auto &rcon_command : rcon_commands)
 					{

@@ -407,7 +407,7 @@ void SQL_CUSTOM::getBEGUID(std::string &input_str, std::string &result)
 				bestring << char(part);
 			}
 
-			boost::lock_guard<boost::mutex> lock(mutex_md5);
+			std::lock_guard<std::mutex> lock(mutex_md5);
 			md5.update(bestring.str());
 			result = Poco::DigestEngine::digestToHex(md5.digest());
 		}

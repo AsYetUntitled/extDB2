@@ -21,7 +21,7 @@ along with this program. If not, see <http://www.gnu.org/licenses/>.
 #include <boost/asio.hpp>
 #include <boost/bind.hpp>
 #include <boost/filesystem.hpp>
-#include <boost/thread/thread.hpp>
+#include <thread>
 #ifdef _WIN32
 	#include <boost/random/random_device.hpp>
 	#include <boost/random/uniform_int_distribution.hpp>
@@ -363,7 +363,7 @@ void Ext::stop()
 Poco::Data::Session Ext::getDBSession_mutexlock(AbstractExt::DBConnectionInfo &database)
 // Gets available DB Session (mutex lock)
 {
-	boost::lock_guard<boost::mutex> lock(database.mutex_pool);
+	std::lock_guard<std::mutex> lock(database.mutex_pool);
 	return database.pool->get();
 }
 
@@ -371,7 +371,7 @@ Poco::Data::Session Ext::getDBSession_mutexlock(AbstractExt::DBConnectionInfo &d
 Poco::Data::Session Ext::getDBSession_mutexlock(AbstractExt::DBConnectionInfo &database, Poco::Data::SessionPool::SessionDataPtr &session_data_ptr)
 // Gets available DB Session (mutex lock) + Cached Statemetns
 {
-	boost::lock_guard<boost::mutex> lock(database.mutex_pool);
+	std::lock_guard<std::mutex> lock(database.mutex_pool);
 	return database.pool->get(session_data_ptr);
 }
 
@@ -646,7 +646,7 @@ void Ext::connectDatabase(char *output, const int &output_size, const std::strin
 
 void Ext::addProtocol(char *output, const int &output_size, const std::string &database_id, const std::string &protocol, const std::string &protocol_name, const std::string &init_data)
 {
-	boost::lock_guard<boost::mutex> lock(mutex_unordered_map_protocol);
+	std::lock_guard<std::mutex> lock(mutex_unordered_map_protocol);
 	if (unordered_map_protocol.find(protocol_name) != unordered_map_protocol.end())
 	{
 		std::strcpy(output, "[0,\"Error Protocol Name Already Taken\"]");
@@ -720,7 +720,7 @@ void Ext::getSinglePartResult_mutexlock(char *output, const int &output_size, co
 //   If <=, then sends output to arma, and removes entry from unordered map array
 //   If >, sends [5] to indicate MultiPartResult
 {
-	boost::lock_guard<boost::mutex> lock(mutex_results);
+	std::lock_guard<std::mutex> lock(mutex_results);
 
 	auto const_itr = stored_results.find(unique_id);
 	if (const_itr == stored_results.end()) // NO UNIQUE ID
@@ -753,7 +753,7 @@ void Ext::getMultiPartResult_mutexlock(char *output, const int &output_size, con
 //   If <=, then sends output to arma
 //   If >, then sends 1 part to arma + stores rest.
 {
-	boost::lock_guard<boost::mutex> lock(mutex_results);
+	std::lock_guard<std::mutex> lock(mutex_results);
 
 	auto const_itr = stored_results.find(unique_id);
 	if (const_itr == stored_results.end()) // NO UNIQUE ID or WAIT
@@ -789,7 +789,7 @@ void Ext::getMultiPartResult_mutexlock(char *output, const int &output_size, con
 const int Ext::saveResult_mutexlock(const resultData &result_data)
 // Stores Result String and returns Unique ID, used by SYNC Calls where message > outputsize
 {
-	boost::lock_guard<boost::mutex> lock(mutex_results);
+	std::lock_guard<std::mutex> lock(mutex_results);
 	const int unique_id = mgr.AllocateId();
 	stored_results[unique_id] = std::move(result_data);
 	stored_results[unique_id].wait = false;
@@ -801,7 +801,7 @@ void Ext::saveResult_mutexlock(const int &unique_id, const resultData &result_da
 // Stores Result String  in a unordered map array.
 //   Used when string > arma output char
 {
-	boost::lock_guard<boost::mutex> lock(mutex_results);
+	std::lock_guard<std::mutex> lock(mutex_results);
 	stored_results[unique_id] = std::move(result_data);
 	stored_results[unique_id].wait = false;
 }
@@ -811,7 +811,7 @@ void Ext::getTCPRemote_mutexlock(char *output, const int &output_size)
 {
 	std::string result;
 	{
-		boost::lock_guard<boost::mutex> lock(remote_server.inputs_mutex);
+		std::lock_guard<std::mutex> lock(remote_server.inputs_mutex);
 		if (!remote_server.inputs.empty())
 		{
 			result = remote_server.inputs[0];
@@ -850,7 +850,7 @@ void Ext::sendTCPRemote_mutexlock(std::string &input_str)
 		int unique_id;
 		if (Poco::NumberParser::tryParse(input_str.substr(2,(found-2)), unique_id))
 		{
-			boost::lock_guard<boost::mutex> lock(remote_server.clients_data_mutex);
+			std::lock_guard<std::mutex> lock(remote_server.clients_data_mutex);
 			if (remote_server.clients_data.count(unique_id) != 0)
 			{
 				remote_server.clients_data[unique_id].outputs.push_back(input_str.substr(found + 1));
@@ -988,7 +988,7 @@ void Ext::callExtension(char *output, const int &output_size, const char *functi
 							{
 								int unique_id;
 								{
-									boost::lock_guard<boost::mutex> lock(mutex_results);
+									std::lock_guard<std::mutex> lock(mutex_results);
 
 									unique_id = mgr.AllocateId();
 									stored_results[unique_id].wait = true;

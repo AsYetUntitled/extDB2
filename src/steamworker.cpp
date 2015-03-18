@@ -179,7 +179,7 @@ std::string STEAMWORKER::convertSteamIDtoBEGUID(const std::string &input_str)
 		bestring << char(parts[i]);
 	}
 
-	boost::lock_guard<boost::mutex> lock(mutex_md5);
+	std::lock_guard<std::mutex> lock(mutex_md5);
 	md5.update(bestring.str());
 	return Poco::DigestEngine::digestToHex(md5.digest());
 }
@@ -387,7 +387,7 @@ void STEAMWORKER::addQuery(const int &unique_id, bool queryFriends, bool queryVa
 		info.queryVACBans = queryVacBans;
 		info.steamIDs = steamIDs;
 
-		boost::lock_guard<boost::mutex> lock(mutex_query_queue);
+		std::lock_guard<std::mutex> lock(mutex_query_queue);
 		query_queue.push_back(std::move(info));
 	}
 	else
@@ -427,7 +427,7 @@ void STEAMWORKER::run()
 		#endif
 
 		{
-			boost::lock_guard<boost::mutex> lock(mutex_query_queue);
+			std::lock_guard<std::mutex> lock(mutex_query_queue);
 			query_queue_copy = query_queue;
 			query_queue.clear();
 		}

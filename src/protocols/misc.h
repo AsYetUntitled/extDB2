@@ -37,15 +37,15 @@ class MISC: public AbstractProtocol
 
 	private:
 		Poco::MD5Engine md5;
-		boost::mutex mutex_md5;
+		std::mutex mutex_md5;
 
 		Poco::MD4Engine md4;
-		boost::mutex mutex_md4;
+		std::mutex mutex_md4;
 
 	    boost::crc_32_type crc32;
-		boost::mutex mutex_crc32;
+		std::mutex mutex_crc32;
 
-		boost::mutex mutex_RandomString;
+		std::mutex mutex_RandomString;
 		std::vector < std::string > uniqueRandomVarNames;
 
 		void getDateTime(std::string &result);
