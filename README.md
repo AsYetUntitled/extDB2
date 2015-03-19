@@ -75,14 +75,14 @@ https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=2SUEFTGABTA
 
 #### Thanks to
 
- - firefly2442 for the CMake Build System https://github.com/firefly2442  
- - MaHuJa for taking time to look over the code and fixing / improving the code https://github.com/MaHuJa  
+ - [firefly2442](https://github.com/firefly2442) for the CMake Build System   
+ - [MaHuJa](https://github.com/MaHuJa) for taking time to look over the code and fixing / improving the code   
 
- - bladez- For code to encode BERcon packets from https://github.com/bladez-/bercon for RCON  
- - Fank for his code to convert SteamID to BEGUID https://gist.github.com/Fank/11127158
- - Gabime for Spdlog https://github.com/gabime/spdlog  
- - rajkosto for his work on DayZ Hive, using almost the exact same boost parser for sanitize checks for input/output https://github.com/rajkosto/hive   
+ - [bladez-](https://github.com/bladez-) For code to encode BERcon packets from bercon
+ - [Fank](https://gist.github.com/Fank) for his code to convert SteamID to BEGUID 
+ - [Gabime](https://github.com/gabime) for Spdlog
+ - [rajkosto](https://github.com/rajkosto) for his work on DayZ Hive, using almost the exact same boost parser for sanitize checks for input/output
  - killerty69 for fix loadbans after AutoBan player  
 
- - killzonekid for his blog http://killzonekid.com/  
- - Tonic & Atlis RPG Admins for beening literally beening bleeding edge testers for extDB. https://github.com/TAWTonic  
+ - [killzonekid](http://killzonekid.com) for his blog  
+ - [Tonic](https://github.com/TAWTonic) & Atlis RPG Admins for beening literally beening bleeding edge testers for extDB.   
