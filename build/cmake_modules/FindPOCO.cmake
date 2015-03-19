@@ -49,14 +49,24 @@ make_library_set(POCO_LIBRARY)
 
 findpkg_finish(POCO)
 
-# Look for Poco's Foundation package
-findpkg_begin(POCO_Foundation)
-set(POCO_FOUNDATION_NAMES PocoFoundationmt PocoFoundation)
-find_path(POCO_Foundation_INCLUDE_DIR NAMES Poco/Foundation.h HINTS ${POCO_INCLUDE_DIR} ${POCO_INC_SEARCH_PATH} ${POCO_PKGC_INCLUDE_DIRS} PATH_SUFFIXES Foundation/include .)
-find_library(POCO_Foundation_LIBRARY_REL NAMES ${POCO_FOUNDATION_NAMES} HINTS ${POCO_LIB_SEARCH_PATH} ${POCO_PKGC_LIBRARY_DIRS} PATH_SUFFIXES Linux/i686)
-make_library_set(POCO_Foundation_LIBRARY)
-list(APPEND POCO_LIBRARIES ${POCO_Foundation_LIBRARY})
-findpkg_finish(POCO_Foundation)
+# Look for Poco's Util package
+findpkg_begin(POCO_Util)
+set(POCO_Util_LIBRARY_NAMES PocoUtilmt PocoUtil)
+find_path(POCO_Util_INCLUDE_DIR NAMES Poco/Util/Util.h HINTS ${POCO_INCLUDE_DIR} ${POCO_INC_SEARCH_PATH} ${POCO_PKGC_INCLUDE_DIRS} PATH_SUFFIXES Util/include)
+find_library(POCO_Util_LIBRARY_REL NAMES ${POCO_Util_LIBRARY_NAMES} HINTS ${POCO_LIB_SEARCH_PATH} ${POCO_PKGC_LIBRARY_DIRS} PATH_SUFFIXES Linux/i686)
+make_library_set(POCO_Util_LIBRARY)
+list(APPEND POCO_LIBRARIES ${POCO_Util_LIBRARY})
+findpkg_finish(POCO_Util)
+
+
+# Look for Poco's XML package
+#findpkg_begin(POCO_XML)
+#set(POCO_XML_LIBRARY_NAMES PocoXMLmt PocoXML)
+#find_path(POCO_XML_INCLUDE_DIR NAMES Poco/XML/XML.h HINTS ${POCO_INCLUDE_DIR} ${POCO_INC_SEARCH_PATH} ${POCO_PKGC_INCLUDE_DIRS} PATH_SUFFIXES XML/include)
+#find_library(POCO_XML_LIBRARY_REL NAMES ${POCO_XML_LIBRARY_NAMES} HINTS ${POCO_LIB_SEARCH_PATH} ${POCO_PKGC_LIBRARY_DIRS} PATH_SUFFIXES Linux/i686)
+#make_library_set(POCO_XML_LIBRARY)
+#list(APPEND POCO_LIBRARIES ${POCO_XML_LIBRARY})
+#findpkg_finish(POCO_XML)
 
 # Look for Poco's Crypto package
 findpkg_begin(POCO_Crypto)
@@ -66,15 +76,6 @@ find_library(POCO_Crypto_LIBRARY_REL NAMES ${POCO_CRYPTO_LIBRARY_NAMES} HINTS ${
 make_library_set(POCO_Crypto_LIBRARY)
 list(APPEND POCO_LIBRARIES ${POCO_Crypto_LIBRARY})
 findpkg_finish(POCO_Crypto)
-
-# Look for Poco's Data package
-findpkg_begin(POCO_Data)
-set(POCO_DATA_LIBRARY_NAMES PocoDatamt PocoData)
-find_path(POCO_Data_INCLUDE_DIR NAMES Poco/Data/Data.h HINTS ${POCO_INCLUDE_DIR} ${POCO_INC_SEARCH_PATH} ${POCO_PKGC_INCLUDE_DIRS} PATH_SUFFIXES Data/include)
-find_library(POCO_Data_LIBRARY_REL NAMES ${POCO_DATA_LIBRARY_NAMES} HINTS ${POCO_LIB_SEARCH_PATH} ${POCO_PKGC_LIBRARY_DIRS} PATH_SUFFIXES Linux/i686)
-make_library_set(POCO_Data_LIBRARY)
-list(APPEND POCO_LIBRARIES ${POCO_Data_LIBRARY})
-findpkg_finish(POCO_Data)
 
 # Look for Poco's ODBC package
 #findpkg_begin(POCO_Data_ODBC)
@@ -103,6 +104,15 @@ make_library_set(POCO_Data_MYSQL_LIBRARY)
 list(APPEND POCO_LIBRARIES ${POCO_Data_MYSQL_LIBRARY})
 findpkg_finish(POCO_Data_MYSQL)
 
+# Look for Poco's Data package
+findpkg_begin(POCO_Data)
+set(POCO_DATA_LIBRARY_NAMES PocoDatamt PocoData)
+find_path(POCO_Data_INCLUDE_DIR NAMES Poco/Data/Data.h HINTS ${POCO_INCLUDE_DIR} ${POCO_INC_SEARCH_PATH} ${POCO_PKGC_INCLUDE_DIRS} PATH_SUFFIXES Data/include)
+find_library(POCO_Data_LIBRARY_REL NAMES ${POCO_DATA_LIBRARY_NAMES} HINTS ${POCO_LIB_SEARCH_PATH} ${POCO_PKGC_LIBRARY_DIRS} PATH_SUFFIXES Linux/i686)
+make_library_set(POCO_Data_LIBRARY)
+list(APPEND POCO_LIBRARIES ${POCO_Data_LIBRARY})
+findpkg_finish(POCO_Data)
+
 # Look for Poco's Net package
 findpkg_begin(POCO_Net)
 set(POCO_Net_LIBRARY_NAMES PocoNetmt PocoNet)
@@ -112,24 +122,15 @@ make_library_set(POCO_Net_LIBRARY)
 list(APPEND POCO_LIBRARIES ${POCO_Net_LIBRARY})
 findpkg_finish(POCO_Net)
 
-# Look for Poco's Util package
-findpkg_begin(POCO_Util)
-set(POCO_Util_LIBRARY_NAMES PocoUtilmt PocoUtil)
-find_path(POCO_Util_INCLUDE_DIR NAMES Poco/Util/Util.h HINTS ${POCO_INCLUDE_DIR} ${POCO_INC_SEARCH_PATH} ${POCO_PKGC_INCLUDE_DIRS} PATH_SUFFIXES Util/include)
-find_library(POCO_Util_LIBRARY_REL NAMES ${POCO_Util_LIBRARY_NAMES} HINTS ${POCO_LIB_SEARCH_PATH} ${POCO_PKGC_LIBRARY_DIRS} PATH_SUFFIXES Linux/i686)
-make_library_set(POCO_Util_LIBRARY)
-list(APPEND POCO_LIBRARIES ${POCO_Util_LIBRARY})
-findpkg_finish(POCO_Util)
+# Look for Poco's Foundation package
+findpkg_begin(POCO_Foundation)
+set(POCO_FOUNDATION_NAMES PocoFoundationmt PocoFoundation)
+find_path(POCO_Foundation_INCLUDE_DIR NAMES Poco/Foundation.h HINTS ${POCO_INCLUDE_DIR} ${POCO_INC_SEARCH_PATH} ${POCO_PKGC_INCLUDE_DIRS} PATH_SUFFIXES Foundation/include .)
+find_library(POCO_Foundation_LIBRARY_REL NAMES ${POCO_FOUNDATION_NAMES} HINTS ${POCO_LIB_SEARCH_PATH} ${POCO_PKGC_LIBRARY_DIRS} PATH_SUFFIXES Linux/i686)
+make_library_set(POCO_Foundation_LIBRARY)
+list(APPEND POCO_LIBRARIES ${POCO_Foundation_LIBRARY})
+findpkg_finish(POCO_Foundation)
 
-
-# Look for Poco's XML package
-findpkg_begin(POCO_XML)
-set(POCO_XML_LIBRARY_NAMES PocoXMLmt PocoXML)
-find_path(POCO_XML_INCLUDE_DIR NAMES Poco/XML/XML.h HINTS ${POCO_INCLUDE_DIR} ${POCO_INC_SEARCH_PATH} ${POCO_PKGC_INCLUDE_DIRS} PATH_SUFFIXES XML/include)
-find_library(POCO_XML_LIBRARY_REL NAMES ${POCO_XML_LIBRARY_NAMES} HINTS ${POCO_LIB_SEARCH_PATH} ${POCO_PKGC_LIBRARY_DIRS} PATH_SUFFIXES Linux/i686)
-make_library_set(POCO_XML_LIBRARY)
-list(APPEND POCO_LIBRARIES ${POCO_XML_LIBRARY})
-findpkg_finish(POCO_XML)
 
 IF (POCO_Foundation_INCLUDE_DIR)
 	SET(POCO_FOUND TRUE)
