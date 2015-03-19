@@ -77,7 +77,7 @@ void SteamGet::run()
 	Poco::Net::HTTPRequest request(Poco::Net::HTTPRequest::HTTP_GET, path, Poco::Net::HTTPMessage::HTTP_1_1);
 	session->sendRequest(request);
 
-	#ifdef TESTING
+	#ifdef DEBUG_TESTING
 		extension_ptr->console->info("{0}", path);
 	#endif
 	#ifdef DEBUG_LOGGING
@@ -95,7 +95,7 @@ void SteamGet::run()
 		}
 		catch (boost::property_tree::json_parser::json_parser_error &e)
 		{
-			#ifdef TESTING
+			#ifdef DEBUG_TESTING
 				extension_ptr->console->error("extDB2: Steam: Parsing Error Message: {0}, URI: {1}", e.message(), path);
 			#endif
 			extension_ptr->logger->error("extDB2: Steam: Parsing Error Message: {0}, URI: {1}", e.message(), path);
@@ -260,7 +260,7 @@ void SteamWorker::updateSteamBans(std::vector<std::string> &steamIDs)
 						steam_info.VACBanned = val.second.get<bool>("VACBanned", false);
 						steam_info.DaysSinceLastBan = val.second.get<int>("DaysSinceLastBan", 0);
 
-						#ifdef TESTING
+						#ifdef DEBUG_TESTING
 							extension_ptr->console->info();
 							extension_ptr->console->info("VAC Bans Info: steamID {0}", steam_info.steamID);
 							extension_ptr->console->info("VAC Bans Info: NumberOfVACBans {0}", steam_info.NumberOfVACBans);
@@ -294,7 +294,7 @@ void SteamWorker::updateSteamBans(std::vector<std::string> &steamIDs)
 		{
 			steam_get.abort();
 			steam_thread.join();
-			#ifdef TESTING
+			#ifdef DEBUG_TESTING
 				extension_ptr->console->error("extDB2: Steam: Request Timed Out");
 			#endif
 			extension_ptr->logger->error("extDB2: Steam: Request Timed Out");
@@ -412,7 +412,7 @@ void SteamWorker::run()
 	*steam_run_flag = true;
 	while (*steam_run_flag)
 	{
-		#ifdef TESTING
+		#ifdef DEBUG_TESTING
 			extension_ptr->console->info("extDB2: Steam: Sleep");
 		#endif
 		#ifdef DEBUG_LOGGING
@@ -421,7 +421,7 @@ void SteamWorker::run()
 
 		Poco::Thread::trySleep(60000); // 1 Minute Sleep unless woken up
 
-		#ifdef TESTING
+		#ifdef DEBUG_TESTING
 			extension_ptr->console->info("extDB2: Steam: Wake Up");
 		#endif
 		#ifdef DEBUG_LOGGING
@@ -468,8 +468,8 @@ void SteamWorker::run()
 							if (friends_info.isNull())
 							{
 								result += "[],";
-								#ifdef TESTING
-									extension_ptr->logger->error("extDB2: Steam: No Friends Entry for: {0}", steamID);
+								#ifdef DEBUG_TESTING
+									extension_ptr->console->error("extDB2: Steam: No Friends Entry for: {0}", steamID);
 								#endif
 								#ifdef DEBUG_LOGGING
 									extension_ptr->logger->warn("extDB2: Steam: No Friends Entry for: {0}", steamID);
@@ -492,8 +492,8 @@ void SteamWorker::run()
 							if (vac_info.isNull()) // Incase entry expired
 							{
 								result += "false,";
-								#ifdef TESTING
-									extension_ptr->logger->error("extDB2: Steam: No Bans Entry for: {0}", steamID);
+								#ifdef DEBUG_TESTING
+									extension_ptr->console->error("extDB2: Steam: No Bans Entry for: {0}", steamID);
 								#endif
 								#ifdef DEBUG_LOGGING
 									extension_ptr->logger->warn("extDB2: Steam: No Bans Entry for: {0}", steamID);
