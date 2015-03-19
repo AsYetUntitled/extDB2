@@ -21,18 +21,8 @@ along with this program. If not, see <http://www.gnu.org/licenses/>.
 #include <condition_variable>
 #include <mutex>
 
+#include "abstract_ext.h"
 
-void RedisWorker::dummy(const RedisValue &value, const int unique_id)
-{
-	#ifdef DEBUG_TESTING
-		extension_ptr->console->info("Dummy: {0}", value.toString());
-	#endif
-	extension_ptr->logger->info("Dummy: {0}", value.toString());
-    if (unique_id > 0)
-    {
-
-    }
-}
 
 void RedisWorker::onConnect(bool connected, const std::string &errorMessage, std::condition_variable &cnd, std::mutex &cnd_mutex, bool &cnd_bool)
 {
@@ -57,64 +47,23 @@ void RedisWorker::onConnect(bool connected, const std::string &errorMessage, std
     // TODO ADD Code for AUTH   
 }
 
+
 void RedisWorker::command(std::vector<std::string> &args, const int unique_id)
 {
-    if (args[0] == "GET")
-    {
-		redisClient.command(args, boost::bind(&RedisWorker::onGet, this, _1, unique_id));
-    }
-    else if (args[0] == "SET")
-    {
-		redisClient.command(args, boost::bind(&RedisWorker::onSet, this, _1, unique_id));
-    }
-    else
-    {
-		redisClient.command(args, boost::bind(&RedisWorker::dummy, this, _1, unique_id));
-    }
+    redisClient.command(args, boost::bind(&RedisWorker::processResult, this, _1, unique_id));
 }
 
-void RedisWorker::onSet(const RedisValue &value, const int unique_id)
+
+void RedisWorker::processResult(const RedisValue &value, const int unique_id)
 {
     #ifdef DEBUG_TESTING
-        extension_ptr->console->info("onSet: {0}", value.toString());
+        extension_ptr->console->info("processResult: {0}", value.toString());
     #endif
-    extension_ptr->logger->info("onSet: {0}", value.toString());
+    extension_ptr->logger->info("processResult: {0}", value.toString());
     if (unique_id > 0)
     {
-
+        AbstractExt::resultData result_data;
+        result_data.message = "[1," + value.toString() + "]";
+        extension_ptr->saveResult_mutexlock(unique_id, result_data);
     }
-    /*
-    std::cerr << "SET: " << value.toString() << std::endl;
-    if (value.toString() == "OK")
-    {
-        redisClient.command("GET",  redisKey,
-                                boost::bind(&RedisWorker::onGet, this, _1));
-    }
-    else
-    {
-        std::cerr << "Invalid value from redis: " << value.toString() << std::endl;
-    }
-    */
-}
-
-void RedisWorker::onGet(const RedisValue &value, const int unique_id)
-{
-    #ifdef DEBUG_TESTING
-        extension_ptr->console->info("onGet: {0}", value.toString());
-    #endif
-    extension_ptr->logger->info("onGet: {0}", value.toString());
-    if (unique_id > 0)
-    {
-        
-    }
-    /*
-    std::cerr << "GET " << value.toString() << std::endl;
-    if (value.toString() != redisValue)
-    {
-        std::cerr << "Invalid value from redis: " << value.toString() << std::endl;
-    }
-
-    redisClient.command("DEL", redisKey,
-                            boost::bind(&boost::asio::io_service::stop, boost::ref(ioService)));
-    */
 }

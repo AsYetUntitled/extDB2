@@ -9,6 +9,8 @@
 #include <boost/bind.hpp>
 #include <boost/lexical_cast.hpp>
 
+#include "Poco/Exception.h"
+
 #include <algorithm>
 
 #include "redisclientimpl.h"
@@ -223,9 +225,7 @@ void RedisClientImpl::asyncRead(const boost::system::error_code &ec, const size_
 
         pos += result.first;
     }
-
     processMessage();
-
 }
 
 void RedisClientImpl::onRedisError(const RedisValue &v)
@@ -237,7 +237,8 @@ void RedisClientImpl::onRedisError(const RedisValue &v)
 
 void RedisClientImpl::defaulErrorHandler(const std::string &s)
 {
-    throw std::runtime_error(s);
+    //throw std::runtime_error(s);
+    throw Poco::Exception(s);
 }
 
 void RedisClientImpl::ignoreErrorHandler(const std::string &)
