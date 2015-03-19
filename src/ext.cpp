@@ -423,7 +423,7 @@ void Ext::connectRcon(char *output, const int &output_size, const std::string &r
 	{
 		if (pConf->hasOption(rcon_conf + ".Port"))
 		{
-			rcon_worker.updateLogin(pConf->getString((rcon_conf + ".Address"), "127.0.0.1"), pConf->getInt((rcon_conf + ".Port"), 2302), pConf->getString((rcon_conf + ".Password"), "password"));
+			rcon_worker.updateLogin(pConf->getString((rcon_conf + ".IP"), "127.0.0.1"), pConf->getInt((rcon_conf + ".Port"), 2302), pConf->getString((rcon_conf + ".Password"), "password"));
 			rcon_worker_thread.start(rcon_worker);
 			std::strcpy(output, "[1]");
 			extDB_connectors_info.rcon = true;
@@ -477,7 +477,7 @@ void Ext::connectDatabase(char *output, const int &output_size, const std::strin
 
 			database->redis.reset(new RedisAsyncClient(io_service));
 			database->redis_worker.reset(new RedisWorker(io_service, *(database->redis), this));
-			boost::asio::ip::tcp::endpoint endpoint(boost::asio::ip::address::from_string(pConf->getString(database_conf + ".Address")), 
+			boost::asio::ip::tcp::endpoint endpoint(boost::asio::ip::address::from_string(pConf->getString(database_conf + ".IP")), 
 													pConf->getInt(database_conf + ".Port", 6379));
 			database->redis->connect(endpoint, boost::bind(&RedisWorker::onConnect, *(database->redis_worker), _1, _2, boost::ref(cnd), boost::ref(cnd_mutex), boost::ref(cnd_bool)));
 
@@ -510,7 +510,7 @@ void Ext::connectDatabase(char *output, const int &output_size, const std::strin
 						Poco::Data::MySQL::Connector::registerConnector();
 						extDB_connectors_info.mysql = true;
 					}
-					connection_str += "host=" + pConf->getString(database_conf + ".Address") + ";";
+					connection_str += "host=" + pConf->getString(database_conf + ".IP") + ";";
 					connection_str += "port=" + pConf->getString(database_conf + ".Port") + ";";
 					connection_str += "user=" + pConf->getString(database_conf + ".Username") + ";";
 					connection_str += "password=" + pConf->getString(database_conf + ".Password") + ";";

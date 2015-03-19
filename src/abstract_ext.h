@@ -32,7 +32,7 @@ along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 
 #define EXTDB_VERSION "47"
-#define EXTDB_CONF_VERSION 4
+#define EXTDB_CONF_VERSION 3
 
 class RedisWorker;
 
