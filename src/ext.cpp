@@ -142,7 +142,7 @@ Ext::Ext(std::string dll_path)
 
 		// Initialize Loggers
 		//		Console Logger
-		#ifdef TESTING
+		#ifdef DEBUG_TESTING
 			auto console_temp = spdlog::stdout_logger_mt("extDB Console logger");
 			console.swap(console_temp);
 		#endif
@@ -193,7 +193,7 @@ Ext::Ext(std::string dll_path)
 			#endif
 		#endif
 
-		#ifdef TESTING
+		#ifdef DEBUG_TESTING
 			console->info("Welcome to extDB Test Application : Version {0}", EXTDB_VERSION);
 			console->info("OutputSize is set to 80 for Test Application, just so it is readable");
 			console->info("OutputSize for Arma3 is more like 10k in size ");
@@ -220,7 +220,7 @@ Ext::Ext(std::string dll_path)
 		}
 		else
 		{
-			#ifdef TESTING
+			#ifdef DEBUG_TESTING
 				console->info("extDB2: Found extdb-conf.ini");
 			#endif
 			logger->info("extDB2: Found extdb-conf.ini");
@@ -241,7 +241,7 @@ Ext::Ext(std::string dll_path)
 				// Auto-Detect
 				if (detected_cpu_cores > 6)
 				{
-					#ifdef TESTING
+					#ifdef DEBUG_TESTING
 						console->info("extDB2: Detected {0} Cores, Setting up {1} Worker Threads", detected_cpu_cores, 6);
 					#endif
 					logger->info("extDB2: Detected {0} Cores, Setting up {1} Worker Threads", detected_cpu_cores, 6);
@@ -249,7 +249,7 @@ Ext::Ext(std::string dll_path)
 				}
 				else if (detected_cpu_cores <= 2)
 				{
-					#ifdef TESTING
+					#ifdef DEBUG_TESTING
 						console->info("extDB2: Detected {0} Cores, Setting up {1} Worker Threads", detected_cpu_cores, 2);
 					#endif
 					logger->info("extDB2: Detected {0} Cores, Setting up {1} Worker Threads", detected_cpu_cores, 2);
@@ -258,7 +258,7 @@ Ext::Ext(std::string dll_path)
 				else
 				{
 					extDB_info.max_threads = detected_cpu_cores;
-					#ifdef TESTING
+					#ifdef DEBUG_TESTING
 						console->info("extDB2: Detected {0} Cores, Setting up {1} Worker Threads", detected_cpu_cores, extDB_info.max_threads);
 					#endif
 					logger->info("extDB2: Detected {0} Cores, Setting up {1} Worker Threads", detected_cpu_cores, extDB_info.max_threads);
@@ -267,7 +267,7 @@ Ext::Ext(std::string dll_path)
 			else if (extDB_info.max_threads > 8)  // Sanity Check
 			{
 				// Manual Config
-				#ifdef TESTING
+				#ifdef DEBUG_TESTING
 					console->info("extDB2: Sanity Check, Setting up {0} Worker Threads (config settings {1})", 8, extDB_info.max_threads);
 				#endif
 				logger->info("extDB2: Sanity Check, Setting up {0} Worker Threads (config settings {1})", 8, extDB_info.max_threads);
@@ -276,7 +276,7 @@ Ext::Ext(std::string dll_path)
 			else
 			{
 				// Manual Config
-				#ifdef TESTING
+				#ifdef DEBUG_TESTING
 					console->info("extDB2: Detected {0} Cores, Setting up {1} Worker Threads (config settings)", detected_cpu_cores, extDB_info.max_threads);
 				#endif
 				logger->info("extDB2: Detected {0} Cores, Setting up {1} Worker Threads (config settings)", detected_cpu_cores, extDB_info.max_threads);
@@ -339,7 +339,7 @@ Ext::~Ext(void)
 
 void Ext::stop()
 {
-	#ifdef TESTING
+	#ifdef DEBUG_TESTING
 		console->info("extDB2: Stopping ...");
 	#endif
 	logger->info("extDB2: Stopping ...");
@@ -453,7 +453,7 @@ void Ext::connectDatabase(char *output, const int &output_size, const std::strin
 	// Check if already connectted to Database.
 	if (!database->type.empty())
 	{
-		#ifdef TESTING
+		#ifdef DEBUG_TESTING
 			console->warn("extDB2: Already Connected to Database");
 		#endif
 		logger->warn("extDB2: Already Connected to a Database");
@@ -462,7 +462,7 @@ void Ext::connectDatabase(char *output, const int &output_size, const std::strin
 	else if (pConf->hasOption(database_conf + ".Type"))
 	{
 		database->type = pConf->getString(database_conf + ".Type");
-		#ifdef TESTING
+		#ifdef DEBUG_TESTING
 			console->info("extDB2: Database Type: {0}", database->type);
 		#endif
 		logger->info("extDB2: Database Type: {0}", database->type);
@@ -548,7 +548,7 @@ void Ext::connectDatabase(char *output, const int &output_size, const std::strin
 																 	pConf->getInt(database_conf + ".idleTime", 600)));
 				if (database->sql_pool->get().isConnected())
 				{
-					#ifdef TESTING
+					#ifdef DEBUG_TESTING
 						console->info("extDB2: Database Session Pool Started");
 					#endif
 					logger->info("extDB2: Database Session Pool Started");
@@ -556,7 +556,7 @@ void Ext::connectDatabase(char *output, const int &output_size, const std::strin
 				}
 				else
 				{
-					#ifdef TESTING
+					#ifdef DEBUG_TESTING
 						console->warn("extDB2: Database Session Pool Failed");
 					#endif
 					logger->warn("extDB2: Database Session Pool Failed");
@@ -566,7 +566,7 @@ void Ext::connectDatabase(char *output, const int &output_size, const std::strin
 			}
 			catch (Poco::Data::NotConnectedException& e)
 			{
-				#ifdef TESTING
+				#ifdef DEBUG_TESTING
 					console->error("extDB2: Database NotConnectedException Error: {0}", e.displayText());
 				#endif
 				logger->error("extDB2: Database NotConnectedException Error: {0}", e.displayText());
@@ -575,7 +575,7 @@ void Ext::connectDatabase(char *output, const int &output_size, const std::strin
 			}
 			catch (Poco::Data::MySQL::ConnectionException& e)
 			{
-				#ifdef TESTING
+				#ifdef DEBUG_TESTING
 					console->error("extDB2: Database ConnectionException Error: {0}", e.displayText());
 				#endif
 				logger->error("extDB2: Database ConnectionException Error: {0}", e.displayText());
@@ -584,7 +584,7 @@ void Ext::connectDatabase(char *output, const int &output_size, const std::strin
 			}
 			catch (Poco::Exception& e)
 			{
-				#ifdef TESTING
+				#ifdef DEBUG_TESTING
 					console->error("extDB2: Database Exception Error: {0}", e.displayText());
 				#endif
 				logger->error("extDB2: Database Exception Error: {0}", e.displayText());
@@ -594,7 +594,7 @@ void Ext::connectDatabase(char *output, const int &output_size, const std::strin
 		}
 		else
 		{
-			#ifdef TESTING
+			#ifdef DEBUG_TESTING
 			console->warn("extDB2: No Database Engine Found for {0}", database->type);
 			#endif
 			logger->warn("extDB2: No Database Engine Found for {0}", database->type);
@@ -604,7 +604,7 @@ void Ext::connectDatabase(char *output, const int &output_size, const std::strin
 	}
 	else
 	{
-		#ifdef TESTING
+		#ifdef DEBUG_TESTING
 		console->warn("extDB2: No Config Option Found: {0}", database_conf);
 		#endif
 		logger->warn("extDB2: No Config Option Found: {0}", database_conf);
@@ -1211,7 +1211,7 @@ void Ext::callExtension(char *output, const int &output_size, const char *functi
 	catch (Poco::Exception& e)
 	{
 		std::strcpy(output, "[0,\"Error\"]");
-		#ifdef TESTING
+		#ifdef DEBUG_TESTING
 			console->critical("extDB2: Error: {0}", e.displayText());
 			console->critical("extDB2: Error: Input String {0}", function);
 		#endif
@@ -1221,7 +1221,7 @@ void Ext::callExtension(char *output, const int &output_size, const char *functi
 }
 
 
-#if defined(TEST_APP) && defined(TESTING)
+#if defined(TEST_APP) && defined(DEBUG_TESTING)
 int main(int nNumberofArgs, char* pszArgs[])
 {
 	int result_size = 80;

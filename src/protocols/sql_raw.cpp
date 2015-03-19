@@ -37,7 +37,7 @@ bool SQL_RAW::init(AbstractExt *extension, const std::string &database_id, const
 	extension_ptr = extension;
 	if (extension_ptr->extDB_connectors_info.databases.count(database_id) == 0)
 	{
-		#ifdef TESTING
+		#ifdef DEBUG_TESTING
 			extension_ptr->console->warn("extDB2: SQL_RAW: No Database Connection ID: {0}", database_id);
 		#endif
 		extension_ptr->logger->warn("extDB2: SQL_RAW: No Database Connection ID: {0}", database_id);
@@ -58,7 +58,7 @@ bool SQL_RAW::init(AbstractExt *extension, const std::string &database_id, const
 	else
 	{
 		// DATABASE NOT SETUP YET
-		#ifdef TESTING
+		#ifdef DEBUG_TESTING
 			extension_ptr->console->warn("extDB2: SQL_RAW: No Database Connection");
 		#endif
 		extension_ptr->logger->warn("extDB2: SQL_RAW: No Database Connection");
@@ -70,7 +70,7 @@ bool SQL_RAW::init(AbstractExt *extension, const std::string &database_id, const
 		if (init_str.empty())
 		{
 			stringDataTypeCheck = false;
-			#ifdef TESTING
+			#ifdef DEBUG_TESTING
 				extension_ptr->console->info("extDB2: SQL_RAW: Initialized: ADD_QUOTES False");
 			#endif
 			extension_ptr->logger->info("extDB2: SQL_RAW: Initialized: ADD_QUOTES False");
@@ -78,7 +78,7 @@ bool SQL_RAW::init(AbstractExt *extension, const std::string &database_id, const
 		else if (boost::iequals(init_str, std::string("ADD_QUOTES")))
 		{
 			stringDataTypeCheck = true;
-			#ifdef TESTING
+			#ifdef DEBUG_TESTING
 				extension_ptr->console->info("extDB2: SQL_RAW: Initialized: ADD_QUOTES True");
 			#endif
 			extension_ptr->logger->info("extDB2: SQL_RAW: Initialized: ADD_QUOTES True");
@@ -96,7 +96,7 @@ bool SQL_RAW::callProtocol(std::string input_str, std::string &result, const int
 {
 	try
 	{
-		#ifdef TESTING
+		#ifdef DEBUG_TESTING
 			extension_ptr->console->info("extDB2: SQL_RAW: Trace: Input: {0}", input_str);
 		#endif
 		#ifdef DEBUG_LOGGING
@@ -182,7 +182,7 @@ bool SQL_RAW::callProtocol(std::string input_str, std::string &result, const int
 			result += "]";
 		}
 		result += "]]";
-		#ifdef TESTING
+		#ifdef DEBUG_TESTING
 			extension_ptr->console->info("extDB2: SQL_RAW: Trace: Result: {0}", result);
 		#endif
 		#ifdef DEBUG_LOGGING
@@ -191,7 +191,7 @@ bool SQL_RAW::callProtocol(std::string input_str, std::string &result, const int
 	}
 	catch (Poco::InvalidAccessException& e)
 	{
-		#ifdef TESTING
+		#ifdef DEBUG_TESTING
 			extension_ptr->console->error("extDB2: SQL_RAW: Error InvalidAccessException: {0}", e.displayText());
 			extension_ptr->console->error("extDB2: SQL_RAW: Error InvalidAccessException: SQL: {0}", input_str);
 		#endif
@@ -201,7 +201,7 @@ bool SQL_RAW::callProtocol(std::string input_str, std::string &result, const int
 	}
 	catch (Poco::Data::NotConnectedException& e)
 	{
-		#ifdef TESTING
+		#ifdef DEBUG_TESTING
 			extension_ptr->console->error("extDB2: SQL_RAW: Error NotConnectedException: {0}", e.displayText());
 			extension_ptr->console->error("extDB2: SQL_RAW: Error NotConnectedException: SQL: {0}", input_str);
 		#endif
@@ -211,7 +211,7 @@ bool SQL_RAW::callProtocol(std::string input_str, std::string &result, const int
 	}
 	catch (Poco::NotImplementedException& e)
 	{
-		#ifdef TESTING
+		#ifdef DEBUG_TESTING
 			extension_ptr->console->error("extDB2: SQL_RAW: Error NotImplementedException: {0}", e.displayText());
 			extension_ptr->console->error("extDB2: SQL_RAW: Error NotImplementedException: SQL: {0}", input_str);
 
@@ -222,7 +222,7 @@ bool SQL_RAW::callProtocol(std::string input_str, std::string &result, const int
 	}
 	catch (Poco::Data::SQLite::DBLockedException& e)
 	{
-		#ifdef TESTING
+		#ifdef DEBUG_TESTING
 			extension_ptr->console->error("extDB2: SQL_RAW: Error DBLockedException: {0}", e.displayText());
 			extension_ptr->logger->error("extDB2: SQL_RAW: Error DBLockedException: SQL: {0}", input_str);
 		#endif
@@ -232,7 +232,7 @@ bool SQL_RAW::callProtocol(std::string input_str, std::string &result, const int
 	}
 	catch (Poco::Data::MySQL::ConnectionException& e)
 	{
-		#ifdef TESTING
+		#ifdef DEBUG_TESTING
 			extension_ptr->console->error("extDB2: SQL_RAW: Error ConnectionException: {0}", e.displayText());
 			extension_ptr->logger->error("extDB2: SQL_RAW: Error ConnectionException: SQL: {0}", input_str);
 		#endif
@@ -242,7 +242,7 @@ bool SQL_RAW::callProtocol(std::string input_str, std::string &result, const int
 	}
 	catch(Poco::Data::MySQL::StatementException& e)
 	{
-		#ifdef TESTING
+		#ifdef DEBUG_TESTING
 			extension_ptr->console->error("extDB2: SQL_RAW: Error StatementException: {0}", e.displayText());
 			extension_ptr->logger->error("extDB2: SQL_RAW: Error StatementException: SQL: {0}", input_str);
 		#endif
@@ -252,7 +252,7 @@ bool SQL_RAW::callProtocol(std::string input_str, std::string &result, const int
 	}
 	catch (Poco::Data::ConnectionFailedException& e)
 	{
-		#ifdef TESTING
+		#ifdef DEBUG_TESTING
 			extension_ptr->console->error("extDB2: SQL_RAW: Error ConnectionFailedException: {0}", e.displayText());
 			extension_ptr->console->error("extDB2: SQL_RAW: Error ConnectionFailedException: SQL {0}", input_str);
 		#endif
@@ -262,7 +262,7 @@ bool SQL_RAW::callProtocol(std::string input_str, std::string &result, const int
 	}
 	catch (Poco::Data::DataException& e)
 	{
-		#ifdef TESTING
+		#ifdef DEBUG_TESTING
 			extension_ptr->console->error("extDB2: SQL_RAW: Error DataException: {0}", e.displayText());
 			extension_ptr->logger->error("extDB2: SQL_RAW: Error DataException: SQL: {0}", input_str);
 		#endif
@@ -272,7 +272,7 @@ bool SQL_RAW::callProtocol(std::string input_str, std::string &result, const int
 	}
 	catch (Poco::Exception& e)
 	{
-		#ifdef TESTING
+		#ifdef DEBUG_TESTING
 			extension_ptr->console->error("extDB2: SQL_RAW: Error Exception: {0}", e.displayText());
 			extension_ptr->console->error("extDB2: SQL_RAW: Error Exception: SQL: {0}", input_str);
 		#endif

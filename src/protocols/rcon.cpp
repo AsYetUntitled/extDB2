@@ -32,7 +32,7 @@ bool RCON::init(AbstractExt *extension,  const std::string &database_id, const s
 	{
 		Poco::StringTokenizer tokens(init_str, "-");
 		allowed_commands.insert(allowed_commands.begin(), tokens.begin(), tokens.end());
-		#ifdef TESTING
+		#ifdef DEBUG_TESTING
 			extension_ptr->console->warn("extDB2: RCON: Commands Allowed: {0}", init_str);
 			extension_ptr->console->warn("extDB2: RCON Status: {0}", extension_ptr->extDB_connectors_info.rcon);
 		#endif
@@ -45,7 +45,7 @@ bool RCON::init(AbstractExt *extension,  const std::string &database_id, const s
 
 bool RCON::callProtocol(std::string input_str, std::string &result, const int unique_id)
 {
-	#ifdef TESTING
+	#ifdef DEBUG_TESTING
 		extension_ptr->console->info("extDB2: RCON: Trace: Input: {0}", input_str);
 	#endif
 	#ifdef DEBUG_LOGGING
@@ -70,7 +70,7 @@ bool RCON::callProtocol(std::string input_str, std::string &result, const int un
 		if (std::find(allowed_commands.begin(), allowed_commands.end(), command) == allowed_commands.end())
 		{
 			result ="[0,\"RCon Command Not Allowed\"]";
-			#ifdef TESTING
+			#ifdef DEBUG_TESTING
 				extension_ptr->console->warn("extDB2: RCON: Command Not Allowed: Input: {0}", input_str);
 			#endif
 			extension_ptr->logger->warn("extDB2: RCON: Command Not Allowed: Input: {0}", input_str);

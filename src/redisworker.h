@@ -36,10 +36,10 @@ class RedisWorker
 		}
 
         void onConnect(bool connected, const std::string &errorMessage, std::condition_variable &cnd, std::mutex &cnd_mutex, bool &cnd_bool);
-        void command(std::vector<std::string> &args);
-        void dummy(const RedisValue &value);
-        void onSet(const RedisValue &value);
-        void onGet(const RedisValue &value);
+		void command(std::vector<std::string> &args, const int unique_id);
+		void dummy(const RedisValue &value, const int unique_id);
+		void onSet(const RedisValue &value, const int unique_id);
+		void onGet(const RedisValue &value, const int unique_id);
         void stop();
 
     private:

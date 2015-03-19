@@ -52,7 +52,7 @@ bool SQL_CUSTOM::init(AbstractExt *extension, const std::string &database_id, co
 	extension_ptr = extension;
 	if (extension_ptr->extDB_connectors_info.databases.count(database_id) == 0)
 	{
-		#ifdef TESTING
+		#ifdef DEBUG_TESTING
 			extension_ptr->console->warn("extDB2: SQL_CUSTOM: No Database Connection ID: {0}", database_id);
 		#endif
 		extension_ptr->logger->warn("extDB2: SQL_CUSTOM: No Database Connection ID: {0}", database_id);
@@ -73,7 +73,7 @@ bool SQL_CUSTOM::init(AbstractExt *extension, const std::string &database_id, co
 	else
 	{
 		// DATABASE NOT SETUP YET
-		#ifdef TESTING
+		#ifdef DEBUG_TESTING
 			extension_ptr->console->warn("extDB2: SQL_CUSTOM: Database Type Not Supported");
 		#endif
 		extension_ptr->logger->warn("extDB2: SQL_CUSTOM: Database Type Not Supported");
@@ -83,7 +83,7 @@ bool SQL_CUSTOM::init(AbstractExt *extension, const std::string &database_id, co
 	// Check if SQL_CUSTOM Template Filename Given
 	if (init_str.empty()) 
 	{
-		#ifdef TESTING
+		#ifdef DEBUG_TESTING
 			extension_ptr->console->warn("extDB2: SQL_CUSTOM: Missing Init Parameter");
 		#endif
 		extension_ptr->logger->warn("extDB2: SQL_CUSTOM: Missing Init Parameter");
@@ -98,7 +98,7 @@ bool SQL_CUSTOM::init(AbstractExt *extension, const std::string &database_id, co
 	extension_path /= (init_str + ".ini");
 	std::string db_template_file = extension_path.make_preferred().string();
 
-	#ifdef TESTING
+	#ifdef DEBUG_TESTING
 		extension_ptr->console->info("extDB2: SQL_CUSTOM: Loading Template Filename: {0}", db_template_file);
 	#endif
 	extension_ptr->logger->info("extDB2: SQL_CUSTOM: Loading Template Filename: {0}", db_template_file);
@@ -147,7 +147,7 @@ bool SQL_CUSTOM::init(AbstractExt *extension, const std::string &database_id, co
 			}
 			else
 			{
-				#ifdef TESTING
+				#ifdef DEBUG_TESTING
 					extension_ptr->console->warn("extDB2: SQL_CUSTOM: Invalid Default Strip Chars Action: {0}", strip_chars_action_str);
 				#endif
 				extension_ptr->logger->warn("extDB2: SQL_CUSTOM: Invalid Default Strip Chars Action: {0}", strip_chars_action_str);
@@ -187,7 +187,7 @@ bool SQL_CUSTOM::init(AbstractExt *extension, const std::string &database_id, co
 					}
 					else
 					{
-						#ifdef TESTING
+						#ifdef DEBUG_TESTING
 							extension_ptr->console->warn("extDB2: SQL_CUSTOM: Invalid Strip Chars Action: {0}", strip_chars_action_str);
 						#endif
 						extension_ptr->logger->warn("extDB2: SQL_CUSTOM: Invalid Strip Chars Action: {0}", strip_chars_action_str);
@@ -262,7 +262,7 @@ bool SQL_CUSTOM::init(AbstractExt *extension, const std::string &database_id, co
 									else
 									{
 										status = false;
-										#ifdef TESTING
+										#ifdef DEBUG_TESTING
 											extension_ptr->console->warn("extDB2: SQL_CUSTOM: Invalid Strip Output Option: {0}: {1}", call_name, options_tokens[x]);
 										#endif
 										extension_ptr->logger->warn("extDB2: SQL_CUSTOM: Invalid Strip Output Option: {0}: {1}", call_name, options_tokens[x]);
@@ -344,7 +344,7 @@ bool SQL_CUSTOM::init(AbstractExt *extension, const std::string &database_id, co
 								else
 								{
 									status = false;
-									#ifdef TESTING
+									#ifdef DEBUG_TESTING
 										extension_ptr->console->warn("extDB2: SQL_CUSTOM: Invalid Strip Input Option: {0}: {1}", call_name, sub_token_input);
 									#endif
 									extension_ptr->logger->warn("extDB2: SQL_CUSTOM: Invalid Strip Input Option: {0}: {1}", call_name, sub_token_input);
@@ -359,7 +359,7 @@ bool SQL_CUSTOM::init(AbstractExt *extension, const std::string &database_id, co
 		else
 		{
 			status = false;
-			#ifdef TESTING
+			#ifdef DEBUG_TESTING
 				extension_ptr->console->warn("extDB2: SQL_CUSTOM: Incompatible Version: {0} Required: {1}", (template_ini->getInt("Default.Version", 1)), EXTDB_SQL_CUSTOM_REQUIRED_VERSION);
 			#endif
 			extension_ptr->logger->warn("extDB2: SQL_CUSTOM: Incompatible Version: {0} Required: {1}", (template_ini->getInt("Default.Version", 1)), EXTDB_SQL_CUSTOM_REQUIRED_VERSION);
@@ -368,7 +368,7 @@ bool SQL_CUSTOM::init(AbstractExt *extension, const std::string &database_id, co
 	else
 	{
 		status = false;
-		#ifdef TESTING
+		#ifdef DEBUG_TESTING
 			extension_ptr->console->warn("extDB2: SQL_CUSTOM: Template File Not Found: {0}", db_template_file);
 		#endif
 		extension_ptr->logger->warn("extDB2: SQL_CUSTOM: Template File Not Found: {0}", db_template_file);
@@ -587,7 +587,7 @@ void SQL_CUSTOM::getResult(Custom_Call_UnorderedMap::const_iterator &custom_call
 	}
 	catch (Poco::NotImplementedException& e)
 	{
-		#ifdef TESTING
+		#ifdef DEBUG_TESTING
 			extension_ptr->console->error("extDB2: SQL_CUSTOM: Error NotImplementedException: {0}", e.displayText());
 		#endif
 		extension_ptr->logger->error("extDB2: SQL_CUSTOM: Error NotImplementedException: {0}", e.displayText());
@@ -595,7 +595,7 @@ void SQL_CUSTOM::getResult(Custom_Call_UnorderedMap::const_iterator &custom_call
 	}
 	catch (Poco::Exception& e)
 	{
-		#ifdef TESTING
+		#ifdef DEBUG_TESTING
 			extension_ptr->console->error("extDB2: SQL_CUSTOM: Error Exception: {0}", e.displayText());
 		#endif
 		extension_ptr->logger->error("extDB2: SQL_CUSTOM: Error Exception: {0}", e.displayText());
@@ -613,7 +613,7 @@ void SQL_CUSTOM::executeSQL(Poco::Data::Statement &sql_statement, std::string &r
 	catch (Poco::InvalidAccessException& e)
 	{
 		status = false;
-		#ifdef TESTING
+		#ifdef DEBUG_TESTING
 			extension_ptr->console->error("extDB2: SQL_CUSTOM: Error NotConnectedException: {0}", e.displayText());
 		#endif
 		extension_ptr->logger->error("extDB2: SQL_CUSTOM: Error NotConnectedException: {0}", e.displayText());
@@ -622,7 +622,7 @@ void SQL_CUSTOM::executeSQL(Poco::Data::Statement &sql_statement, std::string &r
 	catch (Poco::Data::NotConnectedException& e)
 	{
 		status = false;
-		#ifdef TESTING
+		#ifdef DEBUG_TESTING
 			extension_ptr->console->error("extDB2: SQL_CUSTOM: Error NotConnectedException: {0}", e.displayText());
 		#endif
 		extension_ptr->logger->error("extDB2: SQL_CUSTOM: Error NotConnectedException: {0}", e.displayText());
@@ -631,7 +631,7 @@ void SQL_CUSTOM::executeSQL(Poco::Data::Statement &sql_statement, std::string &r
 	catch (Poco::NotImplementedException& e)
 	{
 		status = false;
-		#ifdef TESTING
+		#ifdef DEBUG_TESTING
 			extension_ptr->console->error("extDB2: SQL_CUSTOM: Error NotImplementedException: {0}", e.displayText());
 		#endif
 		extension_ptr->logger->error("extDB2: SQL_CUSTOM: Error NotImplementedException: {0}", e.displayText());
@@ -640,7 +640,7 @@ void SQL_CUSTOM::executeSQL(Poco::Data::Statement &sql_statement, std::string &r
 	catch (Poco::Data::SQLite::DBLockedException& e)
 	{
 		status = false;
-		#ifdef TESTING
+		#ifdef DEBUG_TESTING
 			extension_ptr->console->error("extDB2: SQL_CUSTOM: Error DBLockedException: {0}", e.displayText());
 		#endif
 		extension_ptr->logger->error("extDB2: SQL_CUSTOM: Error DBLockedException: {0}", e.displayText());
@@ -649,7 +649,7 @@ void SQL_CUSTOM::executeSQL(Poco::Data::Statement &sql_statement, std::string &r
 	catch (Poco::Data::MySQL::ConnectionException& e)
 	{
 		status = false;
-		#ifdef TESTING
+		#ifdef DEBUG_TESTING
 			extension_ptr->console->error("extDB2: SQL_CUSTOM: Error ConnectionException: {0}", e.displayText());
 		#endif
 		extension_ptr->logger->error("extDB2: SQL_CUSTOM: Error ConnectionException: {0}", e.displayText());
@@ -658,7 +658,7 @@ void SQL_CUSTOM::executeSQL(Poco::Data::Statement &sql_statement, std::string &r
 	catch(Poco::Data::MySQL::StatementException& e)
 	{
 		status = false;
-		#ifdef TESTING
+		#ifdef DEBUG_TESTING
 			extension_ptr->console->error("extDB2: SQL_CUSTOM: Error StatementException: {0}", e.displayText());
 		#endif
 		extension_ptr->logger->error("extDB2: SQL_CUSTOM: Error StatementException: {0}", e.displayText());
@@ -668,7 +668,7 @@ void SQL_CUSTOM::executeSQL(Poco::Data::Statement &sql_statement, std::string &r
 	{
 		// Error
 		status = false;
-		#ifdef TESTING
+		#ifdef DEBUG_TESTING
 			extension_ptr->console->error("extDB2: SQL_CUSTOM: Error ConnectionFailedException: {0}", e.displayText());
 		#endif
 		extension_ptr->logger->error("extDB2: SQL_CUSTOM: Error ConnectionFailedException: {0}", e.displayText());
@@ -677,7 +677,7 @@ void SQL_CUSTOM::executeSQL(Poco::Data::Statement &sql_statement, std::string &r
 	catch (Poco::Data::DataException& e)
 	{
 		status = false;
-		#ifdef TESTING
+		#ifdef DEBUG_TESTING
 			extension_ptr->console->error("extDB2: SQL_CUSTOM: Error DataException: {0}", e.displayText());
 		#endif
 		extension_ptr->logger->error("extDB2: SQL_CUSTOM: Error DataException: {0}", e.displayText());
@@ -686,7 +686,7 @@ void SQL_CUSTOM::executeSQL(Poco::Data::Statement &sql_statement, std::string &r
 	catch (Poco::Exception& e)
 	{
 		status = false;
-		#ifdef TESTING
+		#ifdef DEBUG_TESTING
 			extension_ptr->console->error("extDB2: SQL_CUSTOM: Error Exception: {0}", e.displayText());
 		#endif
 		extension_ptr->logger->error("extDB2: SQL_CUSTOM: Error Exception: {0}", e.displayText());
@@ -765,7 +765,7 @@ void SQL_CUSTOM::callPreparedStatement(std::string call_name, Custom_Call_Unorde
 		}
 		if (!status)
 		{
-			#ifdef TESTING
+			#ifdef DEBUG_TESTING
 				extension_ptr->console->error("extDB2: SQL_CUSTOM: Wiping Statements + Session");
 			#endif
 			extension_ptr->logger->error("extDB2: SQL_CUSTOM: Wiping Statements + Session");
@@ -775,7 +775,7 @@ void SQL_CUSTOM::callPreparedStatement(std::string call_name, Custom_Call_Unorde
 	catch (Poco::Data::MySQL::ConnectionException& e)
 	{
 		status = false;
-		#ifdef TESTING
+		#ifdef DEBUG_TESTING
 			extension_ptr->console->error("extDB2: SQL_CUSTOM: Error ConnectionException: {0}", e.displayText());
 		#endif
 		extension_ptr->logger->error("extDB2: SQL_CUSTOM: Error ConnectionException: {0}", e.displayText());
@@ -789,7 +789,7 @@ void SQL_CUSTOM::callPreparedStatement(std::string call_name, Custom_Call_Unorde
 	{
 		// Error
 		status = false;
-		#ifdef TESTING
+		#ifdef DEBUG_TESTING
 			extension_ptr->console->error("extDB2: SQL_CUSTOM: Error ConnectionFailedException: {0}", e.displayText());
 		#endif
 		extension_ptr->logger->error("extDB2: SQL_CUSTOM: Error ConnectionFailedException: {0}", e.displayText());
@@ -838,7 +838,7 @@ void SQL_CUSTOM::callPreparedStatement(std::string call_name, Custom_Call_Unorde
 		}
 		if (!status)
 		{
-			#ifdef TESTING
+			#ifdef DEBUG_TESTING
 				extension_ptr->console->error("extDB2: SQL_CUSTOM: Clearing Any Cached Statements");
 			#endif
 			extension_ptr->logger->error("extDB2: SQL_CUSTOM: Clearing Any Cached Statements");
@@ -848,7 +848,7 @@ void SQL_CUSTOM::callPreparedStatement(std::string call_name, Custom_Call_Unorde
 	catch (Poco::Data::MySQL::ConnectionException& e)
 	{
 		status = false;
-		#ifdef TESTING
+		#ifdef DEBUG_TESTING
 			extension_ptr->console->error("extDB2: SQL_CUSTOM: Error ConnectionException: {0}", e.displayText());
 		#endif
 		extension_ptr->logger->error("extDB2: SQL_CUSTOM: Error ConnectionException: {0}", e.displayText());
@@ -862,7 +862,7 @@ void SQL_CUSTOM::callPreparedStatement(std::string call_name, Custom_Call_Unorde
 	{
 		// Error
 		status = false;
-		#ifdef TESTING
+		#ifdef DEBUG_TESTING
 			extension_ptr->console->error("extDB2: SQL_CUSTOM: Error ConnectionFailedException: {0}", e.displayText());
 		#endif
 		extension_ptr->logger->error("extDB2: SQL_CUSTOM: Error ConnectionFailedException: {0}", e.displayText());
@@ -877,7 +877,7 @@ void SQL_CUSTOM::callPreparedStatement(std::string call_name, Custom_Call_Unorde
 
 bool SQL_CUSTOM::callProtocol(std::string input_str, std::string &result, const int unique_id)
 {
-	#ifdef TESTING
+	#ifdef DEBUG_TESTING
 		extension_ptr->console->info("extDB2: SQL_CUSTOM: Trace: UniqueID: {0} Input: {1}", unique_id, input_str);
 	#endif
 	#ifdef DEBUG_LOGGING
@@ -892,7 +892,7 @@ bool SQL_CUSTOM::callProtocol(std::string input_str, std::string &result, const 
 		result = "[0,\"Error No Custom Call Not Found\"]";
 		extension_ptr->logger->warn("extDB2: SQL_CUSTOM: Error No Custom Call Not Found: Input String {0}", input_str);
 		extension_ptr->logger->warn("extDB2: SQL_CUSTOM: Error No Custom Call Not Found: Callname {0}", tokens[0]);
-		#ifdef TESTING
+		#ifdef DEBUG_TESTING
 			extension_ptr->console->warn("extDB2: SQL_CUSTOM: Error No Custom Call Not Found: Input String {0}", input_str);
 			extension_ptr->console->warn("extDB2: SQL_CUSTOM: Error No Custom Call Not Found: Callname {0}", tokens[0]);
 		#endif
@@ -905,7 +905,7 @@ bool SQL_CUSTOM::callProtocol(std::string input_str, std::string &result, const 
 			result = "[0,\"Error Incorrect Number of Inputs\"]";
 			extension_ptr->logger->warn("extDB2: SQL_CUSTOM: Incorrect Number of Inputs: Input String {0}", input_str);
 			extension_ptr->logger->warn("extDB2: SQL_CUSTOM: Incorrect Number of Inputs: Expected: {0} Got: {1}", (custom_calls_const_itr->second.number_of_inputs + custom_calls_const_itr->second.number_of_custom_inputs), (tokens.count() - 1));
-			#ifdef TESTING
+			#ifdef DEBUG_TESTING
 				extension_ptr->console->warn("extDB2: SQL_CUSTOM: Incorrect Number of Inputs: Input String {0}", input_str);
 				extension_ptr->console->warn("extDB2: SQL_CUSTOM: Incorrect Number of Inputs: Expected: {0} Got: {1}", (custom_calls_const_itr->second.number_of_inputs + custom_calls_const_itr->second.number_of_custom_inputs), (tokens.count() - 1));
 			#endif
@@ -1036,7 +1036,7 @@ bool SQL_CUSTOM::callProtocol(std::string input_str, std::string &result, const 
 				}
 				if (status)
 				{
-					#ifdef TESTING
+					#ifdef DEBUG_TESTING
 						extension_ptr->console->info("extDB2: SQL_CUSTOM: Trace: UniqueID: {0} Result: {1}", unique_id, result);
 					#endif
 					#ifdef DEBUG_LOGGING

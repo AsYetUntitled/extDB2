@@ -57,7 +57,7 @@ bool STEAM::isNumber(const std::string &input_str)
 
 bool STEAM::callProtocol(std::string input_str, std::string &result, const int unique_id)
 {
-	#ifdef TESTING
+	#ifdef DEBUG_TESTING
 		extension_ptr->console->info("extDB2: STEAM: Trace: Input: {0}", input_str);
 	#endif
 	#ifdef DEBUG_LOGGING
@@ -67,7 +67,7 @@ bool STEAM::callProtocol(std::string input_str, std::string &result, const int u
 	bool status = true;
 	if (unique_id == -1)
 	{
-		#ifdef TESTING
+		#ifdef DEBUG_TESTING
 			extension_ptr->console->warn("extDB2: STEAM: SYNC MODE NOT SUPPORTED");
 		#endif
 		extension_ptr->logger->warn("extDB2: STEAM: SYNC MODE NOT SUPPORTED");
@@ -88,7 +88,7 @@ bool STEAM::callProtocol(std::string input_str, std::string &result, const int u
 				}
 				else
 				{
-					#ifdef TESTING
+					#ifdef DEBUG_TESTING
 						extension_ptr->console->warn("extDB2: STEAM: Invalid SteamID: {0}", token);
 					#endif
 					extension_ptr->logger->warn("extDB2: STEAM: Invalid SteamID: {0}", token);
@@ -110,7 +110,7 @@ bool STEAM::callProtocol(std::string input_str, std::string &result, const int u
 				}
 				else
 				{
-					#ifdef TESTING
+					#ifdef DEBUG_TESTING
 						extension_ptr->console->warn("extDB2: STEAM: Invalid Query Type: {0}", tokens[0]);
 					#endif
 					extension_ptr->logger->warn("extDB2: STEAM: Invalid Query Type: {0}", tokens[0]);

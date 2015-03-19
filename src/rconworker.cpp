@@ -455,3 +455,122 @@ void RconWorker::mainLoop()
 		}
 	}
 }
+
+
+
+#ifdef RCON_APP
+
+	int main(int nNumberofArgs, char* pszArgs[])
+	{
+		auto console = spdlog::stdout_logger_mt("extDB Console logger");
+
+		boost::program_options::options_description desc("Options");
+		desc.add_options()
+			("help", "Print help messages")
+			("ip", boost::program_options::value<std::string>()->required(), "IP Address for Server")
+			("port", boost::program_options::value<int>()->required(), "Port for Server")
+			("password", boost::program_options::value<std::string>()->required(), "Rcon Password for Server")
+			("file", boost::program_options::value<std::string>(), "File to run i.e rcon restart warnings");
+
+		boost::program_options::variables_map options;
+
+		try 
+		{
+			boost::program_options::store(boost::program_options::parse_command_line(nNumberofArgs, pszArgs, desc), options);
+			
+			if (options.count("help") )
+			{
+				console->info("Rcon Command Line, based off bercon by Prithu \"bladez\" Parker");
+				console->info("\t\t @ https://github.com/bladez-/bercon");
+				console->info("");
+				console->info("");
+				console->info("Rewritten for extDB + crossplatform by Torndeco");
+				console->info("\t\t @ https://github.com/Torndeco/extDB");
+				console->info("");
+				console->info("File Option is just for parsing rcon commands to be ran, i.e server restart warnings");
+				console->info("\t\t For actually restarts use a cron program to run a script");
+				console->info("");
+				return 0;
+			}
+			
+			boost::program_options::notify(options);
+		}
+		catch(boost::program_options::error& e)
+		{
+			std::cout << "ERROR: " << e.what() << std::endl;
+			std::cout << desc << std::endl;
+			return 1;
+		}
+
+		BERcon rcon;
+		rcon.init(console);
+		rcon.updateLogin(options["ip"].as<std::string>(), options["port"].as<int>(), options["password"].as<std::string>());
+		Poco::Thread thread;
+		thread.start(rcon);
+		
+		if (options.count("file"))
+		{
+			std::ifstream fin(options["file"].as<std::string>());
+			//std::ifstream fin("test");
+			if (fin.is_open() == false)
+			{
+				console->warn("ERROR: File is Open");
+				return 1;
+			}
+			else
+			{
+				console->info("File is OK");
+			}
+			
+			std::string line;
+			while (std::getline(fin, line))
+			{
+				console->info("{0}", line);
+				if (line.empty())
+				{
+					boost::this_thread::sleep( boost::posix_time::milliseconds(1000) );
+					console->info("Sleep", line);
+				}
+				else
+				{
+					rcon.addCommand(line);
+				}
+			}
+			console->info("OK");
+			rcon.disconnect();
+			thread.join();
+			return 0;
+		}
+		else
+		{
+			console->info("**********************************");
+			console->info("**********************************");
+			console->info("To talk type ");
+			console->info("SAY -1 Server Restart in 10 mins");
+			console->info();
+			console->info("To see all players type");
+			console->info("players");
+			console->info("**********************************");
+			console->info("**********************************");
+			console->info();
+
+			std::string input_str;
+			for (;;) {
+				std::getline(std::cin, input_str);
+				if (std::string(input_str) == "quit")
+				{
+					console->info("Quitting Please Wait");
+					rcon.disconnect();
+					thread.join();
+					break;
+				}
+				else
+				{
+					rcon.addCommand(input_str);
+				}
+			}
+			console->info("Quitting");
+			return 0;
+		}
+	}
+#endif

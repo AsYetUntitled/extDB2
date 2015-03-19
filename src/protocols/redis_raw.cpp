@@ -26,7 +26,7 @@ bool REDIS_RAW::init(AbstractExt *extension, const std::string &database_id, con
 	extension_ptr = extension;
 	if (extension_ptr->extDB_connectors_info.databases.count(database_id) == 0)
 	{
-		#ifdef TESTING
+		#ifdef DEBUG_TESTING
 			extension_ptr->console->warn("extDB2: REDIS_RAW: No Database Connection ID: {0}", database_id);
 		#endif
 		extension_ptr->logger->warn("extDB2: REDIS_RAW: No Database Connection ID: {0}", database_id);
@@ -43,7 +43,7 @@ bool REDIS_RAW::init(AbstractExt *extension, const std::string &database_id, con
 	else
 	{
 		// DATABASE NOT SETUP YET
-		#ifdef TESTING
+		#ifdef DEBUG_TESTING
 			extension_ptr->console->warn("extDB2: REDIS_RAW: No Database Connection");
 		#endif
 		extension_ptr->logger->warn("extDB2: REDIS_RAW: No Database Connection");
@@ -54,7 +54,7 @@ bool REDIS_RAW::init(AbstractExt *extension, const std::string &database_id, con
 	{
 		if (init_str.empty())
 		{
-			#ifdef TESTING
+			#ifdef DEBUG_TESTING
 				extension_ptr->console->info("extDB2: REDIS_RAW: Initialized");
 			#endif
 			extension_ptr->logger->info("extDB2: REDIS_RAW: Initialized");
@@ -63,7 +63,7 @@ bool REDIS_RAW::init(AbstractExt *extension, const std::string &database_id, con
 		{
 			Poco::StringTokenizer tokens(init_str, "-");
 			allowed_commands.insert(allowed_commands.begin(), tokens.begin(), tokens.end());
-			#ifdef TESTING
+			#ifdef DEBUG_TESTING
 				extension_ptr->console->warn("extDB2: REDIS_RAW: Commands Allowed: {0}", init_str);
 			#endif
 			extension_ptr->logger->warn("extDB2: REDIS_RAW: Commands Allowed: {0}", init_str);
@@ -75,44 +75,57 @@ bool REDIS_RAW::init(AbstractExt *extension, const std::string &database_id, con
 
 bool REDIS_RAW::callProtocol(std::string input_str, std::string &result, const int unique_id)
 {
-	#ifdef TESTING
+	bool status = true;
+	#ifdef DEBUG_TESTING
 		extension_ptr->console->info("extDB2: REDIS_RAW: Trace: Input: {0}", input_str);
 	#endif
 	#ifdef DEBUG_LOGGING
 		extension_ptr->logger->info("extDB2: REDIS_RAW: Trace: Input: {0}", input_str);
 	#endif
 
-	if (input_str.empty())
+	if (unique_id == -1)
 	{
-		// TODO
+		#ifdef DEBUG_TESTING
+			extension_ptr->console->warn("extDB2: STEAM: SYNC MODE NOT SUPPORTED");
+		#endif
+		extension_ptr->logger->warn("extDB2: STEAM: SYNC MODE NOT SUPPORTED");
+		result = "[0, \"STEAM: SYNC MODE NOT SUPPORTED\"]";
+		status = false;
 	}
 	else
 	{
-		Poco::StringTokenizer tokens(input_str, ":");
-		std::vector<std::string> args;
-		args.insert(args.begin(), tokens.begin(), tokens.end());
-
-		if (allowed_commands.size() > 0)
+		if (input_str.empty())
 		{
-			if (std::find(allowed_commands.begin(), allowed_commands.end(), args[0]) == allowed_commands.end())
-			{
-				result ="[0,\"Redis Command Not Allowed\"]";
-				#ifdef TESTING
-					extension_ptr->console->warn("extDB2: REDIS_RAW: Command Not Allowed: Input: {0}", input_str);
-				#endif
-				extension_ptr->logger->warn("extDB2: REDIS_RAW: Command Not Allowed: Input: {0}", input_str);
-			}
-			else
-			{
-				result = "[1]";
-				database_ptr->redis_worker->command(args);
-			}
+			// TODO Check if this is possible
 		}
 		else
 		{
-			result = "[1]"; 
-			// TODO extension_ptr->rconCommand(input_str);
+			Poco::StringTokenizer tokens(input_str, ":");
+			std::vector<std::string> args;
+			args.insert(args.begin(), tokens.begin(), tokens.end());
+
+			if (allowed_commands.size() > 0)
+			{
+				if (std::find(allowed_commands.begin(), allowed_commands.end(), args[0]) == allowed_commands.end())
+				{
+					result ="[0,\"Redis Command Not Allowed\"]";
+					#ifdef DEBUG_TESTING
+						extension_ptr->console->warn("extDB2: REDIS_RAW: Command Not Allowed: Input: {0}", input_str);
+					#endif
+					extension_ptr->logger->warn("extDB2: REDIS_RAW: Command Not Allowed: Input: {0}", input_str);
+				}
+				else
+				{
+					database_ptr->redis_worker->command(args, unique_id);
+					result = "[1]";
+				}
+			}
+			else
+			{
+				database_ptr->redis_worker->command(args, unique_id);
+				result = "[1]"; 
+			}
 		}
 	}
-	return true;
+	return status;
 }

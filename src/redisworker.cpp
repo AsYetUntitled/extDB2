@@ -22,22 +22,30 @@ along with this program. If not, see <http://www.gnu.org/licenses/>.
 #include <mutex>
 
 
-void RedisWorker::dummy(const RedisValue &value)
+void RedisWorker::dummy(const RedisValue &value, const int unique_id)
 {
+	#ifdef DEBUG_TESTING
+		extension_ptr->console->info("Dummy: {0}", value.toString());
+	#endif
+	extension_ptr->logger->info("Dummy: {0}", value.toString());
+    if (unique_id > 0)
+    {
+
+    }
 }
 
 void RedisWorker::onConnect(bool connected, const std::string &errorMessage, std::condition_variable &cnd, std::mutex &cnd_mutex, bool &cnd_bool)
 {
 	if (connected)
 	{
-		#ifdef TESTING
+		#ifdef DEBUG_TESTING
 			extension_ptr->console->info("extDB2: Redis Connected");
 		#endif
 		extension_ptr->logger->info("extDB2: Redis Connected");
 	}
 	else
 	{
-		#ifdef TESTING
+		#ifdef DEBUG_TESTING
 		  extension_ptr->console->info("extDB2: extDB2: Redis Connection Error: {0}", errorMessage);
 		#endif
 		extension_ptr->logger->info("extDB2: extDB2: Redis Connection Error: {0}", errorMessage);
@@ -49,25 +57,32 @@ void RedisWorker::onConnect(bool connected, const std::string &errorMessage, std
     // TODO ADD Code for AUTH   
 }
 
-void RedisWorker::command(std::vector<std::string> &args)
+void RedisWorker::command(std::vector<std::string> &args, const int unique_id)
 {
     if (args[0] == "GET")
     {
-        redisClient.command(args, boost::bind(&RedisWorker::onGet, this, _1));
+		redisClient.command(args, boost::bind(&RedisWorker::onGet, this, _1, unique_id));
     }
     else if (args[0] == "SET")
     {
-        redisClient.command(args, boost::bind(&RedisWorker::onSet, this, _1));
+		redisClient.command(args, boost::bind(&RedisWorker::onSet, this, _1, unique_id));
     }
     else
     {
-        redisClient.command(args, boost::bind(&RedisWorker::dummy, this, _1));    
+		redisClient.command(args, boost::bind(&RedisWorker::dummy, this, _1, unique_id));
     }
 }
 
-void RedisWorker::onSet(const RedisValue &value)
+void RedisWorker::onSet(const RedisValue &value, const int unique_id)
 {
-    extension_ptr->console->info(value.toString());
+    #ifdef DEBUG_TESTING
+        extension_ptr->console->info("onSet: {0}", value.toString());
+    #endif
+    extension_ptr->logger->info("onSet: {0}", value.toString());
+    if (unique_id > 0)
+    {
+
+    }
     /*
     std::cerr << "SET: " << value.toString() << std::endl;
     if (value.toString() == "OK")
@@ -82,9 +97,16 @@ void RedisWorker::onSet(const RedisValue &value)
     */
 }
 
-void RedisWorker::onGet(const RedisValue &value)
+void RedisWorker::onGet(const RedisValue &value, const int unique_id)
 {
-    extension_ptr->console->info(value.toString());
+    #ifdef DEBUG_TESTING
+        extension_ptr->console->info("onGet: {0}", value.toString());
+    #endif
+    extension_ptr->logger->info("onGet: {0}", value.toString());
+    if (unique_id > 0)
+    {
+        
+    }
     /*
     std::cerr << "GET " << value.toString() << std::endl;
     if (value.toString() != redisValue)

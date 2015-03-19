@@ -87,3 +87,29 @@ namespace Sqf
 		}
 	};
 }
+
+#ifdef SANITIZE_APP
+int main(int nNumberofArgs, char* pszArgs[])
+{
+	std::string input_str;
+	for (;;) {
+		std::getline(std::cin, input_str);
+		if (input_str == "quit")
+		{
+			break;
+		}
+		else
+		{
+			if (Sqf::check(input_str))
+			{
+				std::cout << "extDB: Sanitize Check True: " << input_str << std::endl;
+			}
+			else
+			{
+				std::cout << "extDB: Sanitize Check False: " << input_str << std::endl;
+			}
+		}
+	}
+	return 0;
+}
+#endif

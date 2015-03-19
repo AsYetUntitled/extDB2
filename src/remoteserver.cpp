@@ -72,7 +72,7 @@ bool RemoteConnection::login()
 	{
 		if (socket().poll(timeOut, Poco::Net::Socket::SELECT_READ) == false)
 		{
-			#ifdef TESTING
+			#ifdef DEBUG_TESTING
 				extension_ptr->console->info("extDB2: Client Timed Out");
 			#endif
 			extension_ptr->logger->info("extDB2: Client Timed Out");
@@ -94,7 +94,7 @@ bool RemoteConnection::login()
 			catch (Poco::Exception& e)
 			{
 				//Handle your network errors.
-				#ifdef TESTING
+				#ifdef DEBUG_TESTING
 					extension_ptr->console->warn("extDB2: Network Error: {0}", e.displayText());
 				#endif
 				extension_ptr->logger->warn("extDB2: Network Error: {0}", e.displayText());
@@ -103,7 +103,7 @@ bool RemoteConnection::login()
 
 			if (nBytes==0)
 			{
-				#ifdef TESTING
+				#ifdef DEBUG_TESTING
 					extension_ptr->console->info("extDB2: Client closed connection");
 				#endif
 				extension_ptr->logger->info("extDB2: Client closed connection");
@@ -113,7 +113,7 @@ bool RemoteConnection::login()
 			{
 				if (extension_ptr->remote_access_info.password == recv_str)
 				{
-					#ifdef TESTING
+					#ifdef DEBUG_TESTING
 						extension_ptr->console->info("extDB2: Client Logged in");
 					#endif
 					extension_ptr->logger->info("extDB2: Client Logged in");
@@ -132,7 +132,7 @@ bool RemoteConnection::login()
 					++failed_attempt;
 					if (failed_attempt > 3)
 					{
-						#ifdef TESTING
+						#ifdef DEBUG_TESTING
 							extension_ptr->console->info("extDB2: Client Failed Login 3 Times, blacklisting");
 						#endif
 						extension_ptr->logger->info("extDB2: Client Failed Login 3 Times, blacklisting");
@@ -207,7 +207,7 @@ void RemoteConnection::mainLoop()
 			catch (Poco::Exception& e)
 			{
 				isOpen = false;
-				#ifdef TESTING
+				#ifdef DEBUG_TESTING
 					extension_ptr->console->warn("extDB2: Network Error: {0}", e.displayText());
 				#endif
 				extension_ptr->logger->warn("extDB2: Network Error: {0}", e.displayText());
@@ -216,7 +216,7 @@ void RemoteConnection::mainLoop()
 			if (nBytes==0)
 			{
 				isOpen = false;
-				#ifdef TESTING
+				#ifdef DEBUG_TESTING
 					extension_ptr->console->info("extDB2: Client closed connection");
 				#endif
 				extension_ptr->logger->info("extDB2: Client closed connection");
@@ -301,7 +301,7 @@ void RemoteConnection::mainLoop()
 
 void RemoteConnection::run()
 {
-	#ifdef TESTING
+	#ifdef DEBUG_TESTING
 		extension_ptr->console->info("New Connection from: {0}", socket().peerAddress().host().toString());
 	#endif
 	extension_ptr->logger->info("New Connection from: {0}", socket().peerAddress().host().toString());
@@ -311,7 +311,7 @@ void RemoteConnection::run()
 		mainLoop();
 	}
 
-	#ifdef TESTING
+	#ifdef DEBUG_TESTING
 		extension_ptr->console->info("Connection closed");
 	#endif
 }

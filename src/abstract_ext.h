@@ -95,7 +95,7 @@ class AbstractExt
 
 		Poco::AutoPtr<Poco::Util::IniFileConfiguration> pConf;
 
-		#ifdef TESTING
+		#ifdef DEBUG_TESTING
 			std::shared_ptr<spdlog::logger> console;
 		#endif
 		std::shared_ptr<spdlog::logger> logger;
