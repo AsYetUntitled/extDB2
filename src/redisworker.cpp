@@ -28,11 +28,13 @@ void RedisWorker::onConnect(bool connected, const std::string &errorMessage, std
 {
 	if (connected)
 	{
-		#ifdef DEBUG_TESTING
-			extension_ptr->console->info("extDB2: Redis Connected");
-		#endif
-		extension_ptr->logger->info("extDB2: Redis Connected");
-	}
+        #ifdef DEBUG_TESTING
+            extension_ptr->console->info("extDB2: Redis Connected");
+        #endif
+        #ifdef DEBUG_LOGGING
+            extension_ptr->logger->info("extDB2: Redis Connected");
+        #endif
+    }
 	else
 	{
 		#ifdef DEBUG_TESTING
@@ -59,7 +61,9 @@ void RedisWorker::processResult(const RedisValue &value, const int unique_id)
     #ifdef DEBUG_TESTING
         extension_ptr->console->info("processResult: {0}", value.toString());
     #endif
-    extension_ptr->logger->info("processResult: {0}", value.toString());
+    #ifdef DEBUG_LOGGING
+        extension_ptr->logger->info("processResult: {0}", value.toString());
+    #endif
     if (unique_id > 0)
     {
         AbstractExt::resultData result_data;
