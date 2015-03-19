@@ -20,9 +20,7 @@ along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 #include <boost/algorithm/string.hpp>
 
-#include <Poco/Data/MetaColumn.h>
 #include <Poco/Data/RecordSet.h>
-#include <Poco/Data/Session.h>
 
 #include <Poco/Data/MySQL/Connector.h>
 #include <Poco/Data/MySQL/MySQLException.h>
@@ -103,11 +101,8 @@ bool SQL_RAW::callProtocol(std::string input_str, std::string &result, const int
 			extension_ptr->logger->info("extDB2: SQL_RAW: Trace: Input: {0}", input_str);
 		#endif
 
-		Poco::Data::Session session = extension_ptr->getDBSession_mutexlock(*database_ptr);
-		Poco::Data::Statement sql(session);
 
-		sql << input_str, Poco::Data::Keywords::now;
-		Poco::Data::RecordSet rs(sql);
+		Poco::Data::RecordSet rs(session, input_str);
 
 		result = "[1,[";
 		std::string temp_str;

@@ -25,7 +25,6 @@ along with this program. If not, see <http://www.gnu.org/licenses/>.
 #include <boost/algorithm/string/erase.hpp>
 #include <boost/filesystem.hpp>
 
-#include <Poco/Data/MetaColumn.h>
 #include <Poco/Data/RecordSet.h>
 #include <Poco/Data/Session.h>
 
@@ -994,7 +993,6 @@ bool SQL_CUSTOM::callProtocol(std::string input_str, std::string &result, const 
 					{
 						getBEGUID(temp_str, temp_str);
 					}
-
 
 					// STRING
 					if (sql_input_option.string)
