@@ -75,7 +75,7 @@ elseif (COMPILE_SANITIZE_APPLICATION)
 	add_definitions(-DSANITIZE_APP)
 	message(STATUS "Building Sanitize Applicaton")	
 else()
-	LIST(APPEND SOURCES ../src/main.cpp)  # Add main.cpp for library build
+	LIST(APPEND SOURCES ../src/main.cpp)
 	set(EXECUTABLE_NAME "extDB2")
 	add_library (${EXECUTABLE_NAME} SHARED ${SOURCES})
 	message(STATUS "Building Test Application")
@@ -85,16 +85,17 @@ if (DEBUG_LOGGING)
 	add_definitions(-DDEBUG_LOGGING)
 	message(STATUS "Debug Logging is enabled.")
 endif()
-
 if (DEBUG_TESTING)
 	add_definitions(-DDEBUG_TESTING)
 	message(STATUS "Testing flag is enabled.")
 endif()
 
+# -----------------------
+# START STATIC LIBRARIES
+# -----------------------
 if(${UNIX})
         set(CMAKE_FIND_LIBRARY_SUFFIXES ".a")
 endif()
-
 
 # BOOST
 set(Boost_USE_STATIC_LIBS ON)
@@ -103,8 +104,6 @@ set(Boost_USE_STATIC_RUNTIME ON)
 if(${WIN32})
 	add_definitions(-D _WIN32_WINNT=0x0600)
 endif()
-
-
 if (COMPILE_EXTENSION)
 	find_package(Boost REQUIRED COMPONENTS chrono date_time filesystem random system thread)
 else()
@@ -139,6 +138,14 @@ endif()
 if(${UNIX})
 	set(CMAKE_FIND_LIBRARY_SUFFIXES ".so")
 endif()
+# -----------------------
+# END STATIC LIBRARIES
+# -----------------------
+
+
+# -----------------------
+# START DYNAMIC LIBRARIES
+# -----------------------
 
 # Look for Intel Threading Building Blocks (TBB)
 include(FindTBB)
@@ -148,7 +155,9 @@ else()
 	message(FATAL_ERROR "\nIntel TBB not found\n Please Set TBB_ROOT")
 endif()
 
-
+# -----------------------
+# END DYNAMIC LIBRARIES
+# -----------------------
 
 if(${WIN32})
 	# Windows
