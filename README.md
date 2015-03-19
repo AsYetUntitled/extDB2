@@ -16,30 +16,37 @@ None
 ### Features
 
  - ASync Support
- - Unique ID for Messages  
+ - Unique ID for Messages
  - Multi-Part Messages  
  - Rcon Support  
  - Steam VAC + Friends Queries  
- - MySQL + SQLite Support  
  - RemoteTCP Support to send/receive text from extDB2  
  - Arma2 Legacy randomize configfile support  
 
 
+### Supported Backends
+
+ - MySQL
+ - SQLite
+ - Redis
+
+
 #### Protocols
 
+ - REDIS_RAW (Ability to whitelist allowed commands)
  - SQL_CUSTOM (Ability to define sql prepared statements in a .ini file)
  - SQL_RAW
- - LOG (Ability to log info into custom log files)
+ - LOG (Custom Logfiles)
  - MISC (has beguid, crc32, md4/5, time + time offset)
- - RCon (Send Server Rcon messages + ability to whitelist them aswell)
+ - RCON (Ability to whitelist allowed commands)
  - STEAM (Ability to Query Steam for VAC Bans / Friend Info)
 
 
 #### WIP
 
- - Improve TCPServer code security wise  
+ - Improve TCPServer code Security wise  
  - Improve RCon Code
- - Redis Support Coming Soon  
+ - Improve Redis Support i.e exceptional handling + AUTH
 
   
 #### Known Issues
@@ -68,12 +75,14 @@ https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=2SUEFTGABTA
 
 #### Thanks to
 
+ - firefly2442 for the CMake Build System https://github.com/firefly2442  
+ - MaHuJa for taking time to look over the code and fixing / improving the code https://github.com/MaHuJa  
+
  - bladez- For code to encode BERcon packets from https://github.com/bladez-/bercon for RCON  
  - Fank for his code to convert SteamID to BEGUID https://gist.github.com/Fank/11127158
+ - Gabime for Spdlog https://github.com/gabime/spdlog  
  - rajkosto for his work on DayZ Hive, using almost the exact same boost parser for sanitize checks for input/output https://github.com/rajkosto/hive   
- - firefly2442 for the CMake Build System & wiki updates https://github.com/firefly2442  
- - MaHuJa for fixing Test Application Input, no longer hardcoded input limit https://github.com/MaHuJa  
+ - killerty69 for fix loadbans after AutoBan player  
+
  - killzonekid for his blog http://killzonekid.com/  
  - Tonic & Atlis RPG Admins for beening literally beening bleeding edge testers for extDB. https://github.com/TAWTonic  
- - Gabime for Spdlog https://github.com/gabime/spdlog  
- - killerty69 for fix loadbans after AutoBan player  

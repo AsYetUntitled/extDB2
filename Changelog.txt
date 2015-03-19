@@ -1,8 +1,11 @@
 -------------------------------------------------------------------------------
 47:
+	ADDED: REDIS_RAW Protocol  (Yes finally got around to Redis Support)
 	ADDED: SQL_CUSTOM: BOOL Option
 
-	UPDATED: Improved UniqueID Code + more code changes thanks https://github.com/MaHuJa
+	UPDATED: Improved UniqueID Generator Code + more code changes thanks https://github.com/MaHuJa
+
+	KNOWN ISSUES: There is no exceptional handling for Redis atm, so if loses connection will crash extension.
 
 -------------------------------------------------------------------------------
 46:
