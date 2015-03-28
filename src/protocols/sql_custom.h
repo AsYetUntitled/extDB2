@@ -49,6 +49,8 @@ class SQL_CUSTOM: public AbstractProtocol
 			bool check;
 			bool boolean = false;
 			bool beguid = false;
+			bool vac_steamID = false;
+			bool vac_beguid = false;
 
 			bool string = false;
 			bool string_datatype_check = false;

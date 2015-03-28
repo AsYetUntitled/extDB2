@@ -258,6 +258,14 @@ bool SQL_CUSTOM::init(AbstractExt *extension, const std::string &database_id, co
 									{
 										outputs_options.strip = false;
 									}
+									else if (boost::iequals(options_tokens[x], std::string("Vac_BeGUID")) == 1)
+									{
+										outputs_options.vac_steamID = true;
+									}
+									else if (boost::iequals(options_tokens[x], std::string("Vac_SteamID")) == 1)
+									{
+										outputs_options.vac_beguid = true;
+									}
 									else
 									{
 										status = false;
@@ -339,6 +347,14 @@ bool SQL_CUSTOM::init(AbstractExt *extension, const std::string &database_id, co
 								else if (boost::iequals(sub_token_input, std::string("NoStrip")) == 1)
 								{
 									inputs_options.strip = false;
+								}
+								else if (boost::iequals(sub_token_input, std::string("Vac_BeGUID")) == 1)
+								{
+									inputs_options.vac_steamID = true;
+								}
+								else if (boost::iequals(sub_token_input, std::string("Vac_SteamID")) == 1)
+								{
+									inputs_options.vac_beguid = true;
 								}
 								else
 								{
@@ -520,6 +536,16 @@ void SQL_CUSTOM::getResult(Custom_Call_UnorderedMap::const_iterator &custom_call
 							if (custom_calls_itr->second.sql_outputs_options[col].beguid)
 							{
 								getBEGUID(temp_str, temp_str);
+							}
+							if (custom_calls_itr->second.sql_outputs_options[col].vac_steamID)
+							{
+								std::string steamID;
+								getBEGUID(temp_str, steamID);
+								extension_ptr->steamQuery(-1, false, true, steamID, true);
+							}
+							else if (custom_calls_itr->second.sql_outputs_options[col].vac_beguid)
+							{
+								extension_ptr->steamQuery(-1, false, true, steamID, true);
 							}
 						}
 
@@ -988,10 +1014,23 @@ bool SQL_CUSTOM::callProtocol(std::string input_str, std::string &result, const 
 							temp_str = "0";
 						}
 					}
-					// BEGUID					
-					else if (sql_input_option.beguid)
+					else
 					{
-						getBEGUID(temp_str, temp_str);
+						// BEGUID					
+						if (sql_input_option.beguid)
+						{
+							getBEGUID(temp_str, temp_str);
+						}
+						if (sql_input_option.vac_steamID)
+						{
+							std::string steamID;
+							getBEGUID(temp_str, steamID);
+							extension_ptr->steamQuery(-1, false, true, steamID, true);
+						}
+						else if (sql_input_option.vac_beguid)
+						{
+							extension_ptr->steamQuery(-1, false, true, steamID, true);
+						}
 					}
 
 					// STRING
