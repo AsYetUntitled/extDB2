@@ -89,26 +89,44 @@ bool SQL_CUSTOM::init(AbstractExt *extension, const std::string &database_id, co
 		return false;
 	}
 
-	boost::filesystem::path extension_path(extension_ptr->extDB_info.path);
-	extension_path /= "extDB";
-	extension_path /= "sql_custom";
+	Poco::AutoPtr<Poco::Util::IniFileConfiguration> template_ini;
+	template_ini = new Poco::Util::IniFileConfiguration();
 
-	boost::filesystem::create_directories(extension_path); // Creating Directory if missing
-	extension_path /= (init_str + ".ini");
-	std::string db_template_file = extension_path.make_preferred().string();
+	boost::filesystem::path sql_custom_path(extension_ptr->extDB_info.path);
+	sql_custom_path /= "extDB";
+	sql_custom_path /= "sql_custom";
+	boost::filesystem::create_directories(sql_custom_path); // Creating Directory if missing
 
-	#ifdef DEBUG_TESTING
-		extension_ptr->console->info("extDB2: SQL_CUSTOM: Loading Template Filename: {0}", db_template_file);
-	#endif
-	extension_ptr->logger->info("extDB2: SQL_CUSTOM: Loading Template Filename: {0}", db_template_file);
+
+	bool status = true;
+	std::string db_template_file_str;
+	Poco::StringTokenizer custom_ini_files = (init_str, ",", Poco::StringTokenizer::TOK_TRIM);
+	for (auto &custom_ini_file : custom_ini_files)
+	{
+		boost::filesystem::path db_template_file(sql_custom_path);
+		db_template_file /= (custom_ini_file + ".ini");
+		db_template_file_str = db_template_file.make_preferred().string();
+
+		#ifdef DEBUG_TESTING
+			extension_ptr->console->info("extDB2: SQL_CUSTOM: Loading Template Filename: {0}", db_template_file_str);
+		#endif
+		extension_ptr->logger->info("extDB2: SQL_CUSTOM: Loading Template Filename: {0}", db_template_file_str);
+
+		if (boost::filesystem::exists(db_template_file_str))
+		{
+			template_ini->loadExtra(db_template_file_str);
+		}
+		else
+		{
+			status = false;
+			break;
+		}
+	}
 	
 	// Read Template File
-	if (boost::filesystem::exists(db_template_file))
-	{
-		Poco::AutoPtr<Poco::Util::IniFileConfiguration> template_ini;
-		template_ini = (new Poco::Util::IniFileConfiguration(db_template_file));
-		
-		std::vector < std::string > custom_calls_list;
+	if (status)
+	{		
+		std::vector<std::string> custom_calls_list;
 		template_ini->keys(custom_calls_list);
 
 		if ((template_ini->getInt("Default.Version", 1)) == EXTDB_SQL_CUSTOM_REQUIRED_VERSION)
@@ -384,9 +402,9 @@ bool SQL_CUSTOM::init(AbstractExt *extension, const std::string &database_id, co
 	{
 		status = false;
 		#ifdef DEBUG_TESTING
-			extension_ptr->console->warn("extDB2: SQL_CUSTOM: Template File Not Found: {0}", db_template_file);
+			extension_ptr->console->warn("extDB2: SQL_CUSTOM: Template File Not Found: {0}", db_template_file_str);
 		#endif
-		extension_ptr->logger->warn("extDB2: SQL_CUSTOM: Template File Not Found: {0}", db_template_file);
+		extension_ptr->logger->warn("extDB2: SQL_CUSTOM: Template File Not Found: {0}", db_template_file_str);
 	}
 	return status;
 }

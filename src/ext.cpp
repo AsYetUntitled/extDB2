@@ -197,9 +197,12 @@ Ext::Ext(std::string dll_path)
 			console->info("Welcome to extDB Test Application : Version {0}", EXTDB_VERSION);
 			console->info("OutputSize is set to 80 for Test Application, just so it is readable");
 			console->info("OutputSize for Arma3 is more like 10k in size ");
-			console->info("To exit type 'quit'");
 			console->info();
+			console->info("Typing test will spam 1:SQL:TEST<1-5>:testing");
+			console->info("This is used for poor man stress testing");
 			console->info();
+			console->info("Type 'test' for spam test")
+			console->info("Type 'quit' to exit")
 		#else
 			logger->info("Message: Donated to extDB2 Develeopment ?");
 			logger->info("Message: All development for extDB2 is done on a Linux Dedicated Server");
@@ -650,7 +653,7 @@ void Ext::addProtocol(char *output, const int &output_size, const std::string &d
 			{
 				unordered_map_protocol[protocol_name] = std::unique_ptr<AbstractProtocol> (new MISC());
 			}
-			if (boost::iequals(protocol, std::string("RCON")) == 1)
+			else if (boost::iequals(protocol, std::string("RCON")) == 1)
 			{
 				unordered_map_protocol[protocol_name] = std::unique_ptr<AbstractProtocol> (new RCON());
 			}
@@ -1260,7 +1263,7 @@ int main(int nNumberofArgs, char* pszArgs[])
 				break;
 			}
 			test_counter = test_counter + 1;
-			extension->callExtension(result, result_size, std::string("1:SQL:TEST:testing").c_str());
+			extension->callExtension(result, result_size, std::string("1:SQL:TEST1:testing").c_str());
 			extension->callExtension(result, result_size, std::string("1:SQL:TEST2:testing").c_str());
 			extension->callExtension(result, result_size, std::string("1:SQL:TEST3:testing").c_str());
 			extension->callExtension(result, result_size, std::string("1:SQL:TEST4:testing").c_str());
