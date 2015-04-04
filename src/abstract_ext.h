@@ -31,7 +31,7 @@ along with this program. If not, see <http://www.gnu.org/licenses/>.
 #include "spdlog/spdlog.h"
 
 
-#define EXTDB_VERSION "47"
+#define EXTDB_VERSION "48"
 #define EXTDB_CONF_VERSION 3
 
 class RedisWorker;
@@ -107,5 +107,6 @@ class AbstractExt
 		virtual Poco::Data::Session  getDBSession_mutexlock(DBConnectionInfo &database, Poco::Data::SessionPool::SessionDataPtr &session_data_ptr)=0;
 		
 		virtual void rconCommand(std::string str)=0;
+		virtual void steamQuery(const int &unique_id, bool queryFriends, bool queryVacBans, std::string &steamID, bool wakeup)=0;
 		virtual void steamQuery(const int &unique_id, bool queryFriends, bool queryVacBans, std::vector<std::string> &steamIDs, bool wakeup)=0;
 };

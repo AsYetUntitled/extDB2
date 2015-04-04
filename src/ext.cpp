@@ -201,8 +201,8 @@ Ext::Ext(std::string dll_path)
 			console->info("Typing test will spam 1:SQL:TEST<1-5>:testing");
 			console->info("This is used for poor man stress testing");
 			console->info();
-			console->info("Type 'test' for spam test")
-			console->info("Type 'quit' to exit")
+			console->info("Type 'test' for spam test");
+			console->info("Type 'quit' to exit");
 		#else
 			logger->info("Message: Donated to extDB2 Develeopment ?");
 			logger->info("Message: All development for extDB2 is done on a Linux Dedicated Server");
@@ -378,6 +378,19 @@ Poco::Data::Session Ext::getDBSession_mutexlock(AbstractExt::DBConnectionInfo &d
 {
 	std::lock_guard<std::mutex> lock(database.mutex_sql_pool);
 	return database.sql_pool->get(session_data_ptr);
+}
+
+
+void Ext::steamQuery(const int &unique_id, bool queryFriends, bool queryVacBans, std::string &steamID, bool wakeup)
+// Adds Query to Steam Protocol, wakeup option is to wakeup steam thread. Note: Steam thread periodically checks every minute anyway.
+{
+	std::vector<std::string> steamIDs;
+	steamIDs.push_back(steamID);
+	steam_worker.addQuery(unique_id, queryFriends, queryVacBans, steamIDs);
+	if (wakeup)
+	{
+		steam_worker_thread.wakeUp();
+	}
 }
 
 
@@ -780,7 +793,7 @@ const int Ext::saveResult_mutexlock(const resultData &result_data)
 // Stores Result String and returns Unique ID, used by SYNC Calls where message > outputsize
 {
 	std::lock_guard<std::mutex> lock(mutex_results);
-	int unique_id = unique_id_counter++;
+	const int unique_id = unique_id_counter++;
 	stored_results[unique_id] = std::move(result_data);
 	stored_results[unique_id].wait = false;
 	return unique_id;
@@ -976,12 +989,15 @@ void Ext::callExtension(char *output, const int &output_size, const char *functi
 							// Do this so if someone manages to get server, the error message wont get stored in the result unordered map
 							if (unordered_map_protocol.find(protocol) != unordered_map_protocol.end())
 							{
+								logger->error("extDB2: LOCK START");
 								int unique_id;
 								{
 									std::lock_guard<std::mutex> lock(mutex_results);
 									unique_id = unique_id_counter++;
 									stored_results[unique_id].wait = true;
 								}
+								logger->error("extDB2: LOCK STOP");
+								logger->error("");
 
 								io_service.post(boost::bind(&Ext::asyncCallProtocol, this, output_size, protocol, input_str.substr(found+1), unique_id));
 								std::strcpy(output, ("[2,\"" + Poco::NumberFormatter::format(unique_id) + "\"]").c_str());
@@ -1262,7 +1278,7 @@ int main(int nNumberofArgs, char* pszArgs[])
 				test = false;
 				break;
 			}
-			test_counter = test_counter + 1;
+			++test_counter;
 			extension->callExtension(result, result_size, std::string("1:SQL:TEST1:testing").c_str());
 			extension->callExtension(result, result_size, std::string("1:SQL:TEST2:testing").c_str());
 			extension->callExtension(result, result_size, std::string("1:SQL:TEST3:testing").c_str());

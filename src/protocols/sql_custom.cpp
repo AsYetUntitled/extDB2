@@ -59,17 +59,7 @@ bool SQL_CUSTOM::init(AbstractExt *extension, const std::string &database_id, co
 	}
 
 	database_ptr = &extension_ptr->extDB_connectors_info.databases[database_id];
-	
-	bool status = false;
-	if (database_ptr->type == std::string("MySQL"))
-	{
-		status = true;
-	}
-	else if (database_ptr->type == std::string("SQLite"))
-	{
-		status =  true;
-	}
-	else
+	if ((database_ptr->type != std::string("MySQL")) && (database_ptr->type != std::string("SQLite")))
 	{
 		// DATABASE NOT SETUP YET
 		#ifdef DEBUG_TESTING
@@ -97,29 +87,35 @@ bool SQL_CUSTOM::init(AbstractExt *extension, const std::string &database_id, co
 	sql_custom_path /= "sql_custom";
 	boost::filesystem::create_directories(sql_custom_path); // Creating Directory if missing
 
-
 	bool status = true;
-	std::string db_template_file_str;
-	Poco::StringTokenizer custom_ini_files = (init_str, ",", Poco::StringTokenizer::TOK_TRIM);
-	for (auto &custom_ini_file : custom_ini_files)
+	if (status)
 	{
-		boost::filesystem::path db_template_file(sql_custom_path);
-		db_template_file /= (custom_ini_file + ".ini");
-		db_template_file_str = db_template_file.make_preferred().string();
-
-		#ifdef DEBUG_TESTING
-			extension_ptr->console->info("extDB2: SQL_CUSTOM: Loading Template Filename: {0}", db_template_file_str);
-		#endif
-		extension_ptr->logger->info("extDB2: SQL_CUSTOM: Loading Template Filename: {0}", db_template_file_str);
-
-		if (boost::filesystem::exists(db_template_file_str))
+		std::string db_template_file_str;
+		Poco::StringTokenizer custom_ini_files(init_str, ",", Poco::StringTokenizer::TOK_TRIM);
+		for (auto &custom_ini_file : custom_ini_files)
 		{
-			template_ini->loadExtra(db_template_file_str);
-		}
-		else
-		{
-			status = false;
-			break;
+			boost::filesystem::path db_template_file(sql_custom_path);
+			db_template_file /= (custom_ini_file + ".ini");
+			db_template_file_str = db_template_file.make_preferred().string();
+
+			#ifdef DEBUG_TESTING
+				extension_ptr->console->info("extDB2: SQL_CUSTOM: Loading Template Filename: {0}", db_template_file_str);
+			#endif
+			extension_ptr->logger->info("extDB2: SQL_CUSTOM: Loading Template Filename: {0}", db_template_file_str);
+
+			if (boost::filesystem::exists(db_template_file_str))
+			{
+				template_ini->loadExtra(db_template_file_str);
+			}
+			else
+			{
+				status = false;
+				#ifdef DEBUG_TESTING
+					extension_ptr->console->warn("extDB2: SQL_CUSTOM: Template File Not Found: {0}", db_template_file_str);
+				#endif
+				extension_ptr->logger->warn("extDB2: SQL_CUSTOM: Template File Not Found: {0}", db_template_file_str);
+				break;
+			}
 		}
 	}
 	
@@ -278,11 +274,11 @@ bool SQL_CUSTOM::init(AbstractExt *extension, const std::string &database_id, co
 									}
 									else if (boost::iequals(options_tokens[x], std::string("Vac_BeGUID")) == 1)
 									{
-										outputs_options.vac_steamID = true;
+										outputs_options.vac_beguid = true;
 									}
 									else if (boost::iequals(options_tokens[x], std::string("Vac_SteamID")) == 1)
 									{
-										outputs_options.vac_beguid = true;
+										outputs_options.vac_steamID = true;
 									}
 									else
 									{
@@ -368,11 +364,11 @@ bool SQL_CUSTOM::init(AbstractExt *extension, const std::string &database_id, co
 								}
 								else if (boost::iequals(sub_token_input, std::string("Vac_BeGUID")) == 1)
 								{
-									inputs_options.vac_steamID = true;
+									inputs_options.vac_beguid = true;
 								}
 								else if (boost::iequals(sub_token_input, std::string("Vac_SteamID")) == 1)
 								{
-									inputs_options.vac_beguid = true;
+									inputs_options.vac_steamID = true;
 								}
 								else
 								{
@@ -397,14 +393,6 @@ bool SQL_CUSTOM::init(AbstractExt *extension, const std::string &database_id, co
 			#endif
 			extension_ptr->logger->warn("extDB2: SQL_CUSTOM: Incompatible Version: {0} Required: {1}", (template_ini->getInt("Default.Version", 1)), EXTDB_SQL_CUSTOM_REQUIRED_VERSION);
 		}
-	}
-	else
-	{
-		status = false;
-		#ifdef DEBUG_TESTING
-			extension_ptr->console->warn("extDB2: SQL_CUSTOM: Template File Not Found: {0}", db_template_file_str);
-		#endif
-		extension_ptr->logger->warn("extDB2: SQL_CUSTOM: Template File Not Found: {0}", db_template_file_str);
 	}
 	return status;
 }
@@ -563,7 +551,7 @@ void SQL_CUSTOM::getResult(Custom_Call_UnorderedMap::const_iterator &custom_call
 							}
 							else if (custom_calls_itr->second.sql_outputs_options[col].vac_beguid)
 							{
-								extension_ptr->steamQuery(-1, false, true, steamID, true);
+								extension_ptr->steamQuery(-1, false, true, temp_str, true);
 							}
 						}
 
@@ -1047,7 +1035,7 @@ bool SQL_CUSTOM::callProtocol(std::string input_str, std::string &result, const 
 						}
 						else if (sql_input_option.vac_beguid)
 						{
-							extension_ptr->steamQuery(-1, false, true, steamID, true);
+							extension_ptr->steamQuery(-1, false, true, temp_str, true);
 						}
 					}
 
