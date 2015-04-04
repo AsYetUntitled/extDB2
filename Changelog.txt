@@ -1,4 +1,11 @@
 -------------------------------------------------------------------------------
+48:
+	ADDED: SQL_CUSTOM: Support for loading multiple sql_custom.ini files
+	ADDED: SQL_CUSTOM: Vac_SteamID + Vac_BeGUID Options
+
+	FIXED: Loading MISC + LOG Protocols
+
+-------------------------------------------------------------------------------
 47:
 	ADDED: REDIS_RAW Protocol  (Yes finally got around to Redis Support)
 	ADDED: SQL_CUSTOM: BOOL Option
