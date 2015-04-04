@@ -95,7 +95,7 @@ void IniFileConfiguration::loadExtra(const std::string& path)
 {
 	Poco::FileInputStream istr(path);
 	if (istr.good())
-		load(istr);
+		loadExtra(istr);
 	else
 		throw Poco::OpenFileException(path);
 }
