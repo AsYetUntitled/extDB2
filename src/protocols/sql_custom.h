@@ -27,7 +27,7 @@ along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 #include "abstract_protocol.h"
 
-#define EXTDB_SQL_CUSTOM_REQUIRED_VERSION 8
+#define EXTDB_SQL_CUSTOM_REQUIRED_VERSION 9
 
 
 class SQL_CUSTOM: public AbstractProtocol

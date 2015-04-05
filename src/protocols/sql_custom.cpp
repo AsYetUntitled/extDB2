@@ -138,7 +138,7 @@ bool SQL_CUSTOM::init(AbstractExt *extension, const std::string &database_id, co
 
 			bool default_strip = template_ini->getBool("Default.Strip", false);
 			std::string default_strip_chars = template_ini->getString("Default.Strip Chars", "");
-			std::string default_strip_custom_input_chars = template_ini->getString("Default.Strip Custom Input Chars", "");
+			std::string default_strip_custom_input_chars = template_ini->getString("Default.Strip Custom Chars", "");
 			int default_strip_chars_action = 0;
 
 			std::string strip_chars_action_str = template_ini->getString("Default.Strip Chars Action", "Strip");
@@ -213,7 +213,7 @@ bool SQL_CUSTOM::init(AbstractExt *extension, const std::string &database_id, co
 				}
 				
 				custom_calls[call_name].strip = template_ini->getBool(call_name + ".Strip", default_strip);
-				custom_calls[call_name].strip_custom_input_chars = template_ini->getString(call_name + ".Strip Custom Input Chars", default_strip_custom_input_chars);
+				custom_calls[call_name].strip_custom_input_chars = template_ini->getString(call_name + ".Strip Custom Chars", default_strip_custom_input_chars);
 				custom_calls[call_name].strip_chars = template_ini->getString(call_name + ".Strip Chars", default_strip_chars);
 
 				while (true)
