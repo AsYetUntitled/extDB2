@@ -1,7 +1,7 @@
 -------------------------------------------------------------------------------
-48:
-	FIXED: SQL_CUSTOM: Strip Custom Input Chars -> Strip Input Chars
-	UPDATED: SQL_CUSTOM version -> 9
+49:
+	FIXED: SQL_CUSTOM: Strip Custom Input Chars -> Strip Custom Chars
+	UPDATED: SQL_CUSTOM version = 9
 
 -------------------------------------------------------------------------------
 48:
