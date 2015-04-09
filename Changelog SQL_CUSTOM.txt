@@ -1,0 +1,9 @@
+SQL_CUSTOM Major Changes
+This just lists info on changes when SQL_CUSTOM version is bumped.
+Looking for more info on SQL_CUSTOM check out https://github.com/Torndeco/extDB2/wiki/Calls:-Protocol--SQL_CUSTOM
+
+Versions
+
+8->9 
+	Change "Strip Custom Input Chars" -> "Strip Custom Chars"   
+		Not a Typo, only afew people will have "Strip Custom Input Chars", most should already be using "Strip Custom Chars".
