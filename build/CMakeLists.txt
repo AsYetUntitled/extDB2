@@ -41,7 +41,9 @@ SET(SOURCES
 	../src/protocols/abstract_protocol.cpp
 	../src/protocols/redis_raw.cpp
 	../src/protocols/sql_custom.cpp
+	../src/protocols/sql_custom_v2.cpp
 	../src/protocols/sql_raw.cpp
+	../src/protocols/sql_raw_v2.cpp
 	../src/protocols/log.cpp
 	../src/protocols/misc.cpp
 	../src/protocols/rcon.cpp
