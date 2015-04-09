@@ -1,4 +1,11 @@
 -------------------------------------------------------------------------------
+50 WIP:
+	ADDED: V2 SQL Protocols, empty results return [] instead of [[]]
+
+	FIXED: Loading STEAM Protocol
+	FIXED: Removed debug output for timing mutex locks
+
+-------------------------------------------------------------------------------
 49:
 	FIXED: SQL_CUSTOM: Strip Custom Input Chars -> Strip Custom Chars
 	UPDATED: SQL_CUSTOM version = 9
