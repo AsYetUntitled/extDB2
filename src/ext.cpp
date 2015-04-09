@@ -59,7 +59,9 @@ along with this program. If not, see <http://www.gnu.org/licenses/>.
 #include "protocols/abstract_protocol.h"
 #include "protocols/redis_raw.h"
 #include "protocols/sql_custom.h"
+#include "protocols/sql_custom_v2.h"
 #include "protocols/sql_raw.h"
+#include "protocols/sql_raw_v2.h"
 #include "protocols/log.h"
 #include "protocols/misc.h"
 #include "protocols/rcon.h"
@@ -216,7 +218,7 @@ Ext::Ext(std::string dll_path)
 
 		if (!conf_found)
 		{
-			std::cout << "extDB2: Unable to find extdb-conf.ini" << std::endl << std::flush;
+			std::cout << "extDB2: Unable to find extdb-conf.ini" << std::endl;
 			logger->critical("extDB2: Unable to find extdb-conf.ini");
 			// Kill Server no config file found -- Evil
 			std::exit(EXIT_SUCCESS);
@@ -231,7 +233,7 @@ Ext::Ext(std::string dll_path)
 			if ((pConf->getInt("Main.Version", 0) != EXTDB_CONF_VERSION))
 			{
 				logger->critical("extDB2: Incompatiable Config Version: {0},  Required Version: {1}", (pConf->getInt("Main.Version", 0)), EXTDB_CONF_VERSION);
-				std::cout << "extDB2: extDB2: Incompatiable Config Version" << std::endl << std::flush;
+				std::cout << "extDB2: extDB2: Incompatiable Config Version" << std::endl;
 				// Kill Server if wrong config version -- Evil
 				std::exit(EXIT_SUCCESS);
 			}
@@ -670,7 +672,7 @@ void Ext::addProtocol(char *output, const int &output_size, const std::string &d
 			{
 				unordered_map_protocol[protocol_name] = std::unique_ptr<AbstractProtocol> (new RCON());
 			}
-			else if (boost::iequals(protocol, std::string("VAC")) == 1)
+			else if (boost::iequals(protocol, std::string("STEAM")) == 1)
 			{
 				unordered_map_protocol[protocol_name] = std::unique_ptr<AbstractProtocol> (new STEAM());
 			}
@@ -691,9 +693,17 @@ void Ext::addProtocol(char *output, const int &output_size, const std::string &d
 			{
 				unordered_map_protocol[protocol_name] = std::unique_ptr<AbstractProtocol> (new SQL_CUSTOM());
 			}
+			else if (boost::iequals(protocol, std::string("SQL_CUSTOM_V2")) == 1)
+			{
+				unordered_map_protocol[protocol_name] = std::unique_ptr<AbstractProtocol> (new SQL_CUSTOM_V2());
+			}
 			else if (boost::iequals(protocol, std::string("SQL_RAW")) == 1)
 			{
 				unordered_map_protocol[protocol_name] = std::unique_ptr<AbstractProtocol> (new SQL_RAW());
+			}
+			else if (boost::iequals(protocol, std::string("SQL_RAW_V2")) == 1)
+			{
+				unordered_map_protocol[protocol_name] = std::unique_ptr<AbstractProtocol> (new SQL_RAW_V2());
 			}
 			else
 			{
@@ -989,15 +999,12 @@ void Ext::callExtension(char *output, const int &output_size, const char *functi
 							// Do this so if someone manages to get server, the error message wont get stored in the result unordered map
 							if (unordered_map_protocol.find(protocol) != unordered_map_protocol.end())
 							{
-								logger->error("extDB2: LOCK START");
 								int unique_id;
 								{
 									std::lock_guard<std::mutex> lock(mutex_results);
 									unique_id = unique_id_counter++;
 									stored_results[unique_id].wait = true;
 								}
-								logger->error("extDB2: LOCK STOP");
-								logger->error("");
 
 								io_service.post(boost::bind(&Ext::asyncCallProtocol, this, output_size, protocol, input_str.substr(found+1), unique_id));
 								std::strcpy(output, ("[2,\"" + Poco::NumberFormatter::format(unique_id) + "\"]").c_str());
@@ -1225,7 +1232,7 @@ void Ext::callExtension(char *output, const int &output_size, const char *functi
 	catch (spdlog::spdlog_ex& e)
 	{
 		std::strcpy(output, "[0,\"Error LOGGER\"]");
-		std::cout << "SPDLOG ERROR: " <<  e.what() << std::endl << std::flush;
+		std::cout << "SPDLOG ERROR: " <<  e.what() << std::endl;
 	}
 	catch (Poco::Exception& e)
 	{
