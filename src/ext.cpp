@@ -73,7 +73,6 @@ Ext::Ext(std::string dll_path)
 	try
 	{
 		bool conf_found = false;
-		bool conf_randomized = false;
 
 		boost::filesystem::path extDB_config_path(dll_path);
 
@@ -86,17 +85,24 @@ Ext::Ext(std::string dll_path)
 		{
 			conf_found = true;
 			extDB_info.path = extDB_config_path.parent_path().string();
+			pConf = (new Poco::Util::IniFileConfiguration(extDB_config_path.make_preferred().string()));
+			extDB_info.logger_flush = pConf->getBool("Log.Flush", true);
 		}
 		else if (boost::filesystem::exists("extdb-conf.ini"))
 		{
 			conf_found = true;
 			extDB_config_path = boost::filesystem::path("extdb-conf.ini");
 			extDB_info.path = boost::filesystem::current_path().string();
+			pConf = (new Poco::Util::IniFileConfiguration(extDB_config_path.make_preferred().string()));
+			extDB_info.logger_flush = pConf->getBool("Log.Flush", true);
 		}
 		else
 		{
 			#ifdef _WIN32	// Windows Only, Linux Arma2 Doesn't have extension Support
 				// Search for Randomize Config File -- Legacy Security Support For Arma2Servers
+
+				bool conf_randomized = false;
+
 				extDB_config_path = extDB_config_path.parent_path();
 				extDB_config_str = extDB_config_path.make_preferred().string();
 
@@ -139,6 +145,32 @@ Ext::Ext(std::string dll_path)
 						}
 					}
 				}
+
+				if (conf_found)
+				{
+					pConf = (new Poco::Util::IniFileConfiguration(extDB_config_path.make_preferred().string()));
+					extDB_info.logger_flush = pConf->getBool("Log.Flush", true);
+
+					if ((pConf->getBool("Main.Randomize Config File", false)) && (!conf_randomized))
+					// Only Gonna Randomize Once, Keeps things Simple
+					{
+						std::string chars("ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+										  "1234567890");
+						// Skipping Lowercase, this function only for arma2 + extensions only available on windows.
+						boost::random::random_device rng;
+						boost::random::uniform_int_distribution<> index_dist(0, chars.size() - 1);
+
+						std::string randomized_filename = "extdb-conf-";
+						for (int i = 0; i < 8; ++i)
+						{
+							randomized_filename += chars[index_dist(rng)];
+						}
+						randomized_filename += ".ini";
+
+						boost::filesystem::path randomize_configfile_path = extDB_config_path.parent_path() /= randomized_filename;
+						boost::filesystem::rename(extDB_config_path, randomize_configfile_path);
+					}
+				}
 			#endif
 		}
 
@@ -163,12 +195,6 @@ Ext::Ext(std::string dll_path)
 		extDB_info.log_path = log_relative_path.make_preferred().string();
 		boost::filesystem::create_directories(log_relative_path);
 		log_relative_path /= log_filename;
-
-		if (conf_found)
-		{
-			pConf = (new Poco::Util::IniFileConfiguration(extDB_config_path.make_preferred().string()));
-			extDB_info.logger_flush = pConf->getBool("Log.Flush", true);
-		}
 
 		auto logger_temp = spdlog::rotating_logger_mt("extDB File Logger", log_relative_path.make_preferred().string(), 1048576 * 100, 3, extDB_info.logger_flush);
 		logger.swap(logger_temp);
@@ -300,28 +326,6 @@ Ext::Ext(std::string dll_path)
 
 			// Initialize so have atomic setup correctly + Setup VAC Ban Logger
 			steam_worker.init(this, extDB_info.path, current_dateTime);
-
-			#ifdef _WIN32
-				if ((pConf->getBool("Main.Randomize Config File", false)) && (!conf_randomized))
-				// Only Gonna Randomize Once, Keeps things Simple
-				{
-					std::string chars("ABCDEFGHIJKLMNOPQRSTUVWXYZ"
-									  "1234567890");
-					// Skipping Lowercase, this function only for arma2 + extensions only available on windows.
-					boost::random::random_device rng;
-					boost::random::uniform_int_distribution<> index_dist(0, chars.size() - 1);
-
-					std::string randomized_filename = "extdb-conf-";
-					for (int i = 0; i < 8; ++i)
-					{
-						randomized_filename += chars[index_dist(rng)];
-					}
-					randomized_filename += ".ini";
-
-					boost::filesystem::path randomize_configfile_path = extDB_config_path.parent_path() /= randomized_filename;
-					boost::filesystem::rename(extDB_config_path, randomize_configfile_path);
-				}
-			#endif
 		}
 
 		logger->info();
@@ -967,15 +971,15 @@ void Ext::callExtension(char *output, const int &output_size, const char *functi
 		else
 		{
 			// Async / Sync
-			switch (int(input_str[0] - '0'))
+			switch (input_str[0])
 			{
-				case 1: //ASYNC
+				case '1': //ASYNC
 				{
 					io_service.post(boost::bind(&Ext::onewayCallProtocol, this, output_size, input_str));
 					std::strcpy(output, "[1]");
 					break;
 				}
-				case 2: //ASYNC + SAVE
+				case '2': //ASYNC + SAVE
 				{
 					// Protocol
 					const std::string::size_type found = input_str.find(":",2);
@@ -1018,19 +1022,19 @@ void Ext::callExtension(char *output, const int &output_size, const char *functi
 					}
 					break;
 				}
-				case 4: // GET -- Single-Part Message Format
+				case '4': // GET -- Single-Part Message Format
 				{
 					const int unique_id = Poco::NumberParser::parse(input_str.substr(2));
 					getSinglePartResult_mutexlock(output, output_size, unique_id);
 					break;
 				}
-				case 5: // GET -- Multi-Part Message Format
+				case '5': // GET -- Multi-Part Message Format
 				{
 					const int unique_id = Poco::NumberParser::parse(input_str.substr(2));
 					getMultiPartResult_mutexlock(output, output_size, unique_id);
 					break;
 				}
-				case 6: // GET -- TCPRemoteCode
+				case '6': // GET -- TCPRemoteCode
 				{
 					if (*(remote_server.inputs_flag))
 					{
@@ -1038,17 +1042,17 @@ void Ext::callExtension(char *output, const int &output_size, const char *functi
 					}
 					break;
 				}
-				case 7: // SEND -- TCPRemoteCode
+				case '7': // SEND -- TCPRemoteCode
 				{
 					io_service.post(boost::bind(&Ext::sendTCPRemote_mutexlock, this, input_str));
 					break;
 				}
-				case 0: //SYNC
+				case '0': //SYNC
 				{
 					syncCallProtocol(output, output_size, input_str, input_str_length);
 					break;
 				}
-				case 9: // SYSTEM CALLS / SETUP
+				case '9': // SYSTEM CALLS / SETUP
 				{
 					Poco::StringTokenizer tokens(input_str, ":");
 					if (extDB_info.extDB_lock)
