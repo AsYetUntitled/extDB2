@@ -31,7 +31,7 @@ along with this program. If not, see <http://www.gnu.org/licenses/>.
 #include "spdlog/spdlog.h"
 
 
-#define EXTDB_VERSION "49"
+#define EXTDB_VERSION "50"
 #define EXTDB_CONF_VERSION 3
 
 class RedisWorker;
