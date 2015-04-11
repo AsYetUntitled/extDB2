@@ -73,6 +73,9 @@ Ext::Ext(std::string dll_path)
 	try
 	{
 		bool conf_found = false;
+		#ifdef _WIN32
+			bool conf_randomized = false;
+		#endif
 
 		boost::filesystem::path extDB_config_path(dll_path);
 
@@ -85,23 +88,17 @@ Ext::Ext(std::string dll_path)
 		{
 			conf_found = true;
 			extDB_info.path = extDB_config_path.parent_path().string();
-			pConf = (new Poco::Util::IniFileConfiguration(extDB_config_path.make_preferred().string()));
-			extDB_info.logger_flush = pConf->getBool("Log.Flush", true);
 		}
 		else if (boost::filesystem::exists("extdb-conf.ini"))
 		{
 			conf_found = true;
 			extDB_config_path = boost::filesystem::path("extdb-conf.ini");
 			extDB_info.path = boost::filesystem::current_path().string();
-			pConf = (new Poco::Util::IniFileConfiguration(extDB_config_path.make_preferred().string()));
-			extDB_info.logger_flush = pConf->getBool("Log.Flush", true);
 		}
 		else
 		{
 			#ifdef _WIN32	// Windows Only, Linux Arma2 Doesn't have extension Support
 				// Search for Randomize Config File -- Legacy Security Support For Arma2Servers
-
-				bool conf_randomized = false;
 
 				extDB_config_path = extDB_config_path.parent_path();
 				extDB_config_str = extDB_config_path.make_preferred().string();
@@ -145,31 +142,35 @@ Ext::Ext(std::string dll_path)
 						}
 					}
 				}
+			#endif
+		}
 
-				if (conf_found)
+		if (conf_found)
+		{
+			pConf = (new Poco::Util::IniFileConfiguration(extDB_config_path.make_preferred().string()));
+			extDB_info.logger_flush = pConf->getBool("Log.Flush", true);
+
+			#ifdef _WIN32	// Windows Only, Linux Arma2 Doesn't have extension Support
+				// Search for Randomize Config File -- Legacy Security Support For Arma2Servers
+
+				if ((pConf->getBool("Main.Randomize Config File", false)) && (!conf_randomized))
+				// Only Gonna Randomize Once, Keeps things Simple
 				{
-					pConf = (new Poco::Util::IniFileConfiguration(extDB_config_path.make_preferred().string()));
-					extDB_info.logger_flush = pConf->getBool("Log.Flush", true);
+					std::string chars("ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+									  "1234567890");
+					// Skipping Lowercase, this function only for arma2 + extensions only available on windows.
+					boost::random::random_device rng;
+					boost::random::uniform_int_distribution<> index_dist(0, chars.size() - 1);
 
-					if ((pConf->getBool("Main.Randomize Config File", false)) && (!conf_randomized))
-					// Only Gonna Randomize Once, Keeps things Simple
+					std::string randomized_filename = "extdb-conf-";
+					for (int i = 0; i < 8; ++i)
 					{
-						std::string chars("ABCDEFGHIJKLMNOPQRSTUVWXYZ"
-										  "1234567890");
-						// Skipping Lowercase, this function only for arma2 + extensions only available on windows.
-						boost::random::random_device rng;
-						boost::random::uniform_int_distribution<> index_dist(0, chars.size() - 1);
-
-						std::string randomized_filename = "extdb-conf-";
-						for (int i = 0; i < 8; ++i)
-						{
-							randomized_filename += chars[index_dist(rng)];
-						}
-						randomized_filename += ".ini";
-
-						boost::filesystem::path randomize_configfile_path = extDB_config_path.parent_path() /= randomized_filename;
-						boost::filesystem::rename(extDB_config_path, randomize_configfile_path);
+						randomized_filename += chars[index_dist(rng)];
 					}
+					randomized_filename += ".ini";
+
+					boost::filesystem::path randomize_configfile_path = extDB_config_path.parent_path() /= randomized_filename;
+					boost::filesystem::rename(extDB_config_path, randomize_configfile_path);
 				}
 			#endif
 		}

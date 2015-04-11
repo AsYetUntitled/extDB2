@@ -16,7 +16,7 @@ along with this program. If not, see <http://www.gnu.org/licenses/>.
 */
 
 
-#include "SQL_CUSTOM_V2.h"
+#include "sql_custom_v2.h"
 
 #include <algorithm>
 #include <thread>

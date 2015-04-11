@@ -16,7 +16,7 @@ along with this program. If not, see <http://www.gnu.org/licenses/>.
 */
 
 
-#include "SQL_RAW_V2.h"
+#include "sql_raw_v2.h"
 
 #include <boost/algorithm/string.hpp>
 
