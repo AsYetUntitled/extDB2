@@ -76,9 +76,17 @@ bool STEAM::callProtocol(std::string input_str, std::string &result, const int u
 	}
 	else
 	{
-		Poco::StringTokenizer tokens(input_str, ":");
-		if (tokens.count() > 1)
+		const std::string::size_type found = input_str.find(":", 0);
+		if ((found==std::string::npos) || (found == (input_str.size() - 1)))
 		{
+			#ifdef DEBUG_TESTING
+				extension_ptr->console->warn("extDB2: STEAM: Invalid Query: {0}", input_str);
+			#endif
+			extension_ptr->logger->warn("extDB2: STEAM: Invalid Query: {0}", input_str);
+		}
+		else
+		{
+			Poco::StringTokenizer tokens(input_str.substr(found+1), ":");
 			std::vector<std::string> steamIDs;
 			for (auto &token : tokens)
 			{
@@ -100,20 +108,21 @@ bool STEAM::callProtocol(std::string input_str, std::string &result, const int u
 
 			if (status)
 			{
-				if (boost::iequals(tokens[0], std::string("GetFriends")) == 1)
+				std::string steam_query = input_str.substr(0,(found-1));
+				if (boost::iequals(steam_query, std::string("GetFriends")) == 1)
 				{
 					extension_ptr->steamQuery(unique_id, true, false, steamIDs, true);
 				}
-				else if (boost::iequals(tokens[0], std::string("STEAMBanned")) == 1)
+				else if (boost::iequals(steam_query, std::string("STEAMBanned")) == 1)
 				{
 					extension_ptr->steamQuery(unique_id, false, true, steamIDs, true);
 				}
 				else
 				{
 					#ifdef DEBUG_TESTING
-						extension_ptr->console->warn("extDB2: STEAM: Invalid Query Type: {0}", tokens[0]);
+						extension_ptr->console->warn("extDB2: STEAM: Invalid Query Type: {0}", steam_query);
 					#endif
-					extension_ptr->logger->warn("extDB2: STEAM: Invalid Query Type: {0}", tokens[0]);
+					extension_ptr->logger->warn("extDB2: STEAM: Invalid Query Type: {0}", steam_query);
 					result = "[0, \"STEAM: Invalid Query Type\"]";
 					status = false;
 				}
