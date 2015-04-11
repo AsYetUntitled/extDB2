@@ -108,7 +108,7 @@ bool STEAM::callProtocol(std::string input_str, std::string &result, const int u
 
 			if (status)
 			{
-				std::string steam_query = input_str.substr(0,(found-1));
+				std::string steam_query = input_str.substr(0, found);
 				if (boost::iequals(steam_query, std::string("GetFriends")) == 1)
 				{
 					extension_ptr->steamQuery(unique_id, true, false, steamIDs, true);
