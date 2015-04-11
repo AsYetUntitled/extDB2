@@ -180,7 +180,7 @@ bool SQL_RAW_V2::callProtocol(std::string input_str, std::string &result, const 
 				result += "]";
 			}
 		}
-		result += "]]]";
+		result += "]]";
 		#ifdef DEBUG_TESTING
 			extension_ptr->console->info("extDB2: SQL_RAW_V2: Trace: Result: {0}", result);
 		#endif
