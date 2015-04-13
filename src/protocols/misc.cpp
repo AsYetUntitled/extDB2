@@ -43,6 +43,7 @@ From Frank https://gist.github.com/Fank/11127158
 bool MISC::init(AbstractExt *extension, const std::string &database_id, const std::string init_str)
 {
 	extension_ptr = extension;
+	random_chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
 	return true;
 }
 
@@ -148,6 +149,8 @@ void MISC::getRandomString(std::string &input_str, bool uniqueString, std::strin
 	{
 		int numberOfVariables;
 		int stringLength;
+		int numOfRetrys = 0;
+
 		if (!((Poco::NumberParser::tryParse(tokens[0], numberOfVariables)) && (Poco::NumberParser::tryParse(tokens[1], stringLength))))
 		{
 			result = "[0,\"Error Invalid Number\"]";
@@ -161,24 +164,16 @@ void MISC::getRandomString(std::string &input_str, bool uniqueString, std::strin
 			else
 			{
 				std::lock_guard<std::mutex> lock(mutex_RandomString);
-				std::string chars(
-					"ABCDEFGHIJKLMNOPQRSTUVWXYZ"
-					//"1234567890"  Arma Variable Names cant start with a number
-					);
-
-				boost::random::random_device rng;
-				boost::random::uniform_int_distribution<> index_dist(0, chars.size() - 1);
+				boost::random::uniform_int_distribution<> index_dist(0, random_chars.size() - 1);
 
 				result = "[1,[";
-
-				int numOfRetrys = 0;
 
 				for(int i = 0; i < numberOfVariables; ++i)
 				{
 					std::stringstream randomStringStream;
 					for(int x = 0; x < stringLength; ++x)
 					{
-						randomStringStream << chars[index_dist(rng)];
+						randomStringStream << random_chars[index_dist(random_chars_rng)];
 					}
 
 					std::string randomString = randomStringStream.str();
