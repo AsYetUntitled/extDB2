@@ -46,11 +46,11 @@ bool SQL_RAW::init(AbstractExt *extension, const std::string &database_id, const
 	database_ptr = &extension_ptr->extDB_connectors_info.databases[database_id];
 
 	bool status;
-	if (database_ptr->type == std::string("MySQL"))
+	if (database_ptr->type == "MySQL")
 	{
 		status = true;
 	}
-	else if (database_ptr->type == std::string("SQLite"))
+	else if (database_ptr->type == "SQLite")
 	{
 		status = true;
 	}
