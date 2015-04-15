@@ -21,6 +21,10 @@ along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 #include <boost/algorithm/string.hpp>
 
+#include <Poco/AbstractCache.h>
+#include <Poco/ExpireCache.h>
+#include <Poco/SharedPtr.h>
+
 #include <limits>
 
 
@@ -33,6 +37,8 @@ void RemoteServer::init(AbstractExt *extension)
 
 void RemoteServer::setup(const std::string &remote_conf)
 {
+	blacklist_cache = new Poco::ExpireCache<std::string, bool>(extension_ptr->pConf->getInt(remote_conf + ".BlacklistTime", 3600000));
+
 	pParams = new Poco::Net::TCPServerParams();
 	pParams->setMaxThreads(extension_ptr->pConf->getInt(remote_conf + ".MaxThreads", 4));
 	pParams->setMaxQueued(extension_ptr->pConf->getInt(remote_conf + ".MaxQueued", 4));
@@ -56,89 +62,100 @@ void RemoteServer::stop()
 
 bool RemoteConnection::login()
 {
-	int nBytes = -1;
-	int failed_attempt = 0;
+	std::string remoteIP_str = socket().peerAddress().host().toString();
 
-	Poco::Timespan timeOut(30, 0);
-	char incommingBuffer[1500];
-
-	// Send Password Request
-	std::string recv_str;
-	std::string send_str = "Password: ";
-
-	socket().sendBytes(send_str.c_str(), send_str.size());
-
-	while (true)
+	if  (remoteServer_ptr->blacklist_cache->has(remoteIP_str))
 	{
-		if (socket().poll(timeOut, Poco::Net::Socket::SELECT_READ) == false)
-		{
-			#ifdef DEBUG_TESTING
-				extension_ptr->console->info("extDB2: Client Timed Out");
-			#endif
-			extension_ptr->logger->info("extDB2: Client Timed Out");
-			send_str = "Timed Out, Closing Connection";
-			socket().sendBytes(send_str.c_str(), send_str.size());
-			socket().shutdown();
-			return false;
-		}
-		else
-		{
-			nBytes = -1;
+		socket().shutdown();	
+	}
+	else
+	{
+		int nBytes = -1;
+		int failed_attempt = 0;
 
-			try
-			{
-				nBytes = socket().receiveBytes(incommingBuffer, sizeof(incommingBuffer));
-				recv_str = std::string(incommingBuffer, nBytes);
-				boost::algorithm::trim(recv_str);
-			}
-			catch (Poco::Exception& e)
-			{
-				//Handle your network errors.
-				#ifdef DEBUG_TESTING
-					extension_ptr->console->warn("extDB2: Network Error: {0}", e.displayText());
-				#endif
-				extension_ptr->logger->warn("extDB2: Network Error: {0}", e.displayText());
-				return false;
-			}
+		Poco::Timespan timeOut(30, 0);
+		char incommingBuffer[1500];
 
-			if (nBytes==0)
+		// Send Password Request
+		std::string recv_str;
+		std::string send_str = "Password: ";
+
+		socket().sendBytes(send_str.c_str(), send_str.size());
+
+		while (true)
+		{
+			if (socket().poll(timeOut, Poco::Net::Socket::SELECT_READ) == false)
 			{
 				#ifdef DEBUG_TESTING
-					extension_ptr->console->info("extDB2: Client closed connection");
+					extension_ptr->console->info("extDB2: Client Timed Out");
 				#endif
-				extension_ptr->logger->info("extDB2: Client closed connection");
+				extension_ptr->logger->info("extDB2: Client Timed Out");
+				send_str = "Timed Out, Closing Connection";
+				socket().sendBytes(send_str.c_str(), send_str.size());
+				socket().shutdown();
 				return false;
 			}
 			else
 			{
-				if (extension_ptr->remote_access_info.password == recv_str)
+				nBytes = -1;
+
+				try
+				{
+					nBytes = socket().receiveBytes(incommingBuffer, sizeof(incommingBuffer));
+					recv_str = std::string(incommingBuffer, nBytes);
+					boost::algorithm::trim(recv_str);
+				}
+				catch (Poco::Exception& e)
+				{
+					//Handle your network errors.
+					#ifdef DEBUG_TESTING
+						extension_ptr->console->warn("extDB2: Network Error: {0}", e.displayText());
+					#endif
+					extension_ptr->logger->warn("extDB2: Network Error: {0}", e.displayText());
+					return false;
+				}
+
+				if (nBytes==0)
 				{
 					#ifdef DEBUG_TESTING
-						extension_ptr->console->info("extDB2: Client Logged in");
+						extension_ptr->console->info("extDB2: Client closed connection");
 					#endif
-					extension_ptr->logger->info("extDB2: Client Logged in");
-					send_str = "\n\r";
-					send_str += "Logged in\n\r";
-					send_str += "\n\r";
-					send_str += "Type #HELP for commands\n\n\r";
-					socket().sendBytes(send_str.c_str(), send_str.size());
-					return true;
+					extension_ptr->logger->info("extDB2: Client closed connection");
+					return false;
 				}
 				else
 				{
-					send_str = "Password: ";
-					socket().sendBytes(send_str.c_str(), send_str.size());
-
-					++failed_attempt;
-					if (failed_attempt > 3)
+					if (extension_ptr->remote_access_info.password == recv_str)
 					{
 						#ifdef DEBUG_TESTING
-							extension_ptr->console->info("extDB2: Client Failed Login 3 Times, blacklisting");
+							extension_ptr->console->info("extDB2: Client Logged in");
 						#endif
-						extension_ptr->logger->info("extDB2: Client Failed Login 3 Times, blacklisting");
-						// TODO: Blacklist client
-						socket().shutdown();
-						return false;
+						extension_ptr->logger->info("extDB2: Client Logged in");
+						send_str = "\n\r";
+						send_str += "Logged in\n\r";
+						send_str += "\n\r";
+						send_str += "Type #HELP for commands\n\n\r";
+						socket().sendBytes(send_str.c_str(), send_str.size());
+						return true;
+					}
+					else
+					{
+						++failed_attempt;
+						if (failed_attempt > 3)
+						{
+							remoteServer_ptr->blacklist_cache->add(remoteIP_str, true);
+							#ifdef DEBUG_TESTING
+								extension_ptr->console->info("extDB2: Client Failed Login 3 Times, blacklisting IP: {0}", remoteIP_str);
+							#endif
+							extension_ptr->logger->info("extDB2: Client Failed Login 3 Times, blacklisting: {0}", remoteIP_str);
+							socket().shutdown();
+							return false;
+						}
+						else
+						{
+							send_str = "Password: ";
+							socket().sendBytes(send_str.c_str(), send_str.size());
+						}
 					}
 				}
 			}
@@ -183,6 +200,7 @@ void RemoteConnection::mainLoop()
 	{
 		if (socket().poll(timeOut, Poco::Net::Socket::SELECT_READ) == false)
 		{
+			// TIMEOUT
 			std::lock_guard<std::mutex> lock(remoteServer_ptr->clients_data_mutex);
 			if (!remoteServer_ptr->clients_data[unique_id].outputs.empty())
 			{
