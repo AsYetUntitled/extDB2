@@ -30,6 +30,7 @@ along with this program. If not, see <http://www.gnu.org/licenses/>.
 #include <boost/asio.hpp>
 #include <boost/bind.hpp>
 #include <boost/filesystem.hpp>
+#include <boost/program_options.hpp>
 #ifdef _WIN32
 	#include <boost/random/random_device.hpp>
 	#include <boost/random/uniform_int_distribution.hpp>
@@ -68,7 +69,7 @@ along with this program. If not, see <http://www.gnu.org/licenses/>.
 #include "protocols/steam.h"
 
 
-Ext::Ext(std::string dll_path)
+Ext::Ext(std::string dll_path, boost::program_options::parsed_options options, bool status)
 {
 	try
 	{
@@ -147,7 +148,7 @@ Ext::Ext(std::string dll_path)
 
 		if (conf_found)
 		{
-			pConf = (new Poco::Util::IniFileConfiguration(extDB_config_path.make_preferred().string()));
+			pConf = new Poco::Util::IniFileConfiguration(extDB_config_path.make_preferred().string());
 			extDB_info.logger_flush = pConf->getBool("Log.Flush", true);
 
 			#ifdef _WIN32	// Windows Only, Linux Arma2 Doesn't have extension Support
@@ -197,7 +198,7 @@ Ext::Ext(std::string dll_path)
 		boost::filesystem::create_directories(log_relative_path);
 		log_relative_path /= log_filename;
 
-		auto logger_temp = spdlog::rotating_logger_mt("extDB File Logger", log_relative_path.make_preferred().string(), 1048576 * 100, 3, extDB_info.logger_flush);
+		auto logger_temp = spdlog::rotating_logger_mt("extDB2 File Logger", log_relative_path.make_preferred().string(), 1048576 * 100, 3, extDB_info.logger_flush);
 		logger.swap(logger_temp);
 
 		spdlog::set_level(spdlog::level::info);
@@ -205,6 +206,7 @@ Ext::Ext(std::string dll_path)
 
 
 		logger->info("extDB2: Version: {0}", EXTDB_VERSION);
+		logger->info("extDB2: https://github.com/Torndeco/extDB2");
 		#ifdef __GNUC__
 			#ifndef DEBUG_TESTING
 				logger->info("extDB2: Linux Version");
@@ -223,7 +225,7 @@ Ext::Ext(std::string dll_path)
 		#endif
 
 		#ifdef DEBUG_TESTING
-			console->info("Welcome to extDB Test Application : Version {0}", EXTDB_VERSION);
+			console->info("Welcome to extDB Test Application");
 			console->info("OutputSize is set to 80 for Test Application, just so it is readable");
 			console->info("OutputSize for Arma3 is more like 10k in size ");
 			console->info();
@@ -233,10 +235,10 @@ Ext::Ext(std::string dll_path)
 			console->info("Type 'test' for spam test");
 			console->info("Type 'quit' to exit");
 		#else
-			logger->info("Message: Donated to extDB2 Develeopment ?");
 			logger->info("Message: All development for extDB2 is done on a Linux Dedicated Server");
-			logger->info("Message: Donate Link https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=2SUEFTGABTAM2");
-			logger->info("Message: Leave a message if there is a feature you would like to see added.");
+			logger->info("Message: If you would like to Donate to extDB2 Develeopment");
+			logger->info("Message: https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=2SUEFTGABTAM2");
+			logger->info("Message: Also leave a message if there is any particular feature you would like to see added.");
 			logger->info("Message: Thanks for all the people that have donated.");
 			logger->info("Message: Torndeco: 20/02/15");
 			logger->info();
@@ -454,7 +456,7 @@ void Ext::connectRcon(char *output, const int &output_size, const std::string &r
 		else
 		{
 			std::strcpy(output, ("[0,\"No Config Option Found\"]"));
-		}		
+		}
 	}
 }
 
@@ -500,7 +502,7 @@ void Ext::connectDatabase(char *output, const int &output_size, const std::strin
 
 			database->redis.reset(new RedisAsyncClient(io_service));
 			database->redis_worker.reset(new RedisWorker(io_service, *(database->redis), this));
-			boost::asio::ip::tcp::endpoint endpoint(boost::asio::ip::address::from_string(pConf->getString(database_conf + ".IP")), 
+			boost::asio::ip::tcp::endpoint endpoint(boost::asio::ip::address::from_string(pConf->getString(database_conf + ".IP")),
 													pConf->getInt(database_conf + ".Port", 6379));
 			database->redis->connect(endpoint, boost::bind(&RedisWorker::onConnect, *(database->redis_worker), _1, _2, boost::ref(cnd), boost::ref(cnd_mutex), boost::ref(cnd_bool)));
 
@@ -546,7 +548,7 @@ void Ext::connectDatabase(char *output, const int &output_size, const std::strin
 					}
 					if (pConf->getBool(database_conf + ".Secure Auth", false))
 					{
-						connection_str += ";secure-auth=true";	
+						connection_str += ";secure-auth=true";
 					}
 				}
 				else if (boost::iequals(database->type, "SQLite") == 1)
@@ -564,10 +566,10 @@ void Ext::connectDatabase(char *output, const int &output_size, const std::strin
 					sqlite_path /= pConf->getString(database_conf + ".Name");
 					connection_str = sqlite_path.make_preferred().string();
 				}
-				database->sql_pool.reset(new Poco::Data::SessionPool(database->type, 
-																 	connection_str, 
-																 	pConf->getInt(database_conf + ".minSessions", 1), 
-																 	pConf->getInt(database_conf + ".maxSessions", extDB_info.max_threads), 
+				database->sql_pool.reset(new Poco::Data::SessionPool(database->type,
+																 	connection_str,
+																 	pConf->getInt(database_conf + ".minSessions", 1),
+																 	pConf->getInt(database_conf + ".maxSessions", extDB_info.max_threads),
 																 	pConf->getInt(database_conf + ".idleTime", 600)));
 				if (database->sql_pool->get().isConnected())
 				{
@@ -767,7 +769,7 @@ void Ext::getSinglePartResult_mutexlock(char *output, const int &output_size, co
 
 
 void Ext::getMultiPartResult_mutexlock(char *output, const int &output_size, const int &unique_id)
-// Gets Result String from unordered map array  -- Result Format = Multi-Message 
+// Gets Result String from unordered map array  -- Result Format = Multi-Message
 //   If length of String = 0, sends arma "", and removes entry from unordered map array
 //   If <=, then sends output to arma
 //   If >, then sends 1 part to arma + stores rest.
@@ -1109,7 +1111,7 @@ void Ext::callExtension(char *output, const int &output_size, const char *functi
 									}
 									else
 									{
-										std::strcpy(output, ("[0,\"Steam Already Started\"]"));	
+										std::strcpy(output, ("[0,\"Steam Already Started\"]"));
 									}
 								}
 								// LOCK / VERSION
@@ -1253,53 +1255,58 @@ void Ext::callExtension(char *output, const int &output_size, const char *functi
 
 
 #if defined(TEST_APP) && defined(DEBUG_TESTING)
-int main(int nNumberofArgs, char* pszArgs[])
-{
-	int result_size = 80;
-	char result[81] = {0};
-	std::string input_str;
-
-	Ext *extension;
-	std::string current_path;
-	extension = (new Ext(current_path));
-
-	bool test = false;
-	int test_counter = 0;
-	for (;;)
+	int main(int nNumberofArgs, char* pszArgs[])
 	{
-		result[0] = '\0';
-		std::getline(std::cin, input_str);
-		if (boost::iequals(input_str, "Quit") == 1)
+		int result_size = 80;
+		char result[81] = {0};
+		std::string input_str;
+
+		boost::program_options::options_description desc("Options");
+		desc.add_options()
+			("extDB2-var", boost::program_options::value<std::string>(), "extDB2 Variable")
+			("extDB2-conf", boost::program_options::value<std::string>(), "extDB2 Config File")
+			("extDB2-work", boost::program_options::value<std::string>(), "extDB2 Work Directory");
+		boost::program_options::parsed_options options = boost::program_options::command_line_parser(nNumberofArgs, pszArgs).options(desc).allow_unregistered().run();
+		Ext *extension;
+		extension = new Ext(std::string(""), options, true);
+
+		bool test = false;
+		int test_counter = 0;
+		for (;;)
 		{
-		    break;
-		}
-		else if (boost::iequals(input_str, "Test") == 1)
-		{
-			test = true;
-		}
-		else
-		{
-			extension->callExtension(result, result_size, input_str.c_str());
-			extension->console->info("extDB2: {0}", result);
-		}
-		while (test)
-		{
-			if (test_counter >= 10000)
+			result[0] = '\0';
+			std::getline(std::cin, input_str);
+			if (boost::iequals(input_str, "Quit") == 1)
 			{
-				test_counter = 0;
-				test = false;
-				break;
+			    break;
 			}
-			++test_counter;
-			extension->callExtension(result, result_size, std::string("1:SQL:TEST1:testing").c_str());
-			extension->callExtension(result, result_size, std::string("1:SQL:TEST2:testing").c_str());
-			extension->callExtension(result, result_size, std::string("1:SQL:TEST3:testing").c_str());
-			extension->callExtension(result, result_size, std::string("1:SQL:TEST4:testing").c_str());
-			extension->callExtension(result, result_size, std::string("1:SQL:TEST5:testing").c_str());
-			extension->console->info("extDB2: {0}", result);			
+			else if (boost::iequals(input_str, "Test") == 1)
+			{
+				test = true;
+			}
+			else
+			{
+				extension->callExtension(result, result_size, input_str.c_str());
+				extension->console->info("extDB2: {0}", result);
+			}
+			while (test)
+			{
+				if (test_counter >= 10000)
+				{
+					test_counter = 0;
+					test = false;
+					break;
+				}
+				++test_counter;
+				extension->callExtension(result, result_size, std::string("1:SQL:TEST1:testing").c_str());
+				extension->callExtension(result, result_size, std::string("1:SQL:TEST2:testing").c_str());
+				extension->callExtension(result, result_size, std::string("1:SQL:TEST3:testing").c_str());
+				extension->callExtension(result, result_size, std::string("1:SQL:TEST4:testing").c_str());
+				extension->callExtension(result, result_size, std::string("1:SQL:TEST5:testing").c_str());
+				extension->console->info("extDB2: {0}", result);
+			}
 		}
+		extension->stop();
+		return 0;
 	}
-	extension->stop();
-	return 0;
-}
 #endif
