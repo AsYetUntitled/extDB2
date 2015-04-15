@@ -1,0 +1,3 @@
+STEAM Protocol
+GetFriends -> GET_FRIENDS  (now case sensitive)
+STEAMBanned -> VAC_BANNED (now case sensitive)

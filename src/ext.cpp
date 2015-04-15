@@ -67,6 +67,7 @@ along with this program. If not, see <http://www.gnu.org/licenses/>.
 #include "protocols/misc.h"
 #include "protocols/rcon.h"
 #include "protocols/steam.h"
+#include "protocols/steam_v2.h"
 
 
 Ext::Ext(std::string dll_path, boost::program_options::parsed_options options, bool status)
@@ -682,6 +683,10 @@ void Ext::addProtocol(char *output, const int &output_size, const std::string &d
 			else if (boost::iequals(protocol, std::string("STEAM")) == 1)
 			{
 				unordered_map_protocol[protocol_name] = std::unique_ptr<AbstractProtocol> (new STEAM());
+			}
+			else if (boost::iequals(protocol, std::string("STEAM_V2")) == 1)
+			{
+				unordered_map_protocol[protocol_name] = std::unique_ptr<AbstractProtocol> (new STEAM_V2());
 			}
 			else
 			{
