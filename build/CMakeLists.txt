@@ -33,9 +33,9 @@ endif()
 SET(SOURCES
 	../src/memory_allocator.cpp
 	../src/ext.cpp
-	../src/pbo.cpp
+	#../src/pbo.cpp
 	../src/sanitize.cpp
-	#../src/backends/http.cpp
+	../src/backends/http.cpp
 	../src/backends/rcon.cpp
 	../src/backends/redis.cpp
 	../src/backends/remoteserver.cpp
@@ -99,7 +99,20 @@ endif()
 # START STATIC LIBRARIES
 # -----------------------
 if(${UNIX})
-        set(CMAKE_FIND_LIBRARY_SUFFIXES ".a")
+     set(CMAKE_FIND_LIBRARY_SUFFIXES ".a")
+endif()
+
+# OpenSSL Headers 
+find_package(OpenSSL)
+mark_as_advanced(LIB_EAY_LIBRARY_DEBUG)
+mark_as_advanced(LIB_EAY_LIBRARY_RELEASE)
+mark_as_advanced(SSL_EAY_LIBRARY_DEBUG)
+mark_as_advanced(SSL_EAY_LIBRARY_RELEASE)
+if(OPENSSL_FOUND)
+	include_directories("${OPENSSL_INCLUDE_DIR}")
+	target_link_libraries(${EXECUTABLE_NAME} ${OPENSSL_SSL_LIBRARY} ${OPENSSL_CRYPTO_LIBRARY})
+else()
+	message(FATAL_ERROR "\nOpenSSL not found")
 endif()
 
 # BOOST
@@ -133,7 +146,7 @@ include(FindMySQL)
 if(MYSQL_FOUND)
 	include_directories(${MYSQL_INCLUDE_DIR})
 else()
-	message(FATAL_ERROR "\nMYSQL not found")
+	message(FATAL_ERROR "\nMySQL not found")
 endif()
 
 if(${UNIX})
