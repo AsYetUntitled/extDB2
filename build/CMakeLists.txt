@@ -162,10 +162,7 @@ endif()
 
 if(${WIN32})
 	# Windows
-	if(HAVE_IPHLAPI)
-	  target_link_libraries(${EXECUTABLE_NAME} iphlpapi)
-	endif()
-	target_link_libraries(${EXECUTABLE_NAME} ${Boost_LIBRARIES}  ${POCO_LIBRARIES} ${MYSQL_LIBRARY} ${TBB_MALLOC_LIBRARY})
+	target_link_libraries(${EXECUTABLE_NAME} ${Boost_LIBRARIES}  ${POCO_LIBRARIES} ${MYSQL_LIBRARY} ${TBB_MALLOC_LIBRARY} Iphlpapi)
 	add_definitions(-DUNICODE -D_UNICODE -DWIN32_LEAN_AND_MEAN)
 	SET_TARGET_PROPERTIES(${EXECUTABLE_NAME} PROPERTIES LINK_FLAGS " /MANIFEST:NO /ERRORREPORT:NONE")
 else()
