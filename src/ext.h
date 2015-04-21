@@ -50,8 +50,8 @@ class Ext: public AbstractExt
 		const int saveResult_mutexlock(const resultData &result_data);
 		void saveResult_mutexlock(const int &unique_id, const resultData &result_data);
 
-		Poco::Thread rcon_worker_thread;
-		Poco::Thread steam_worker_thread;
+		Poco::Thread rcon_thread;
+		Poco::Thread steam_thread;
 
 		Poco::Data::Session getDBSession_mutexlock(AbstractExt::DBConnectionInfo &database);
 		Poco::Data::Session getDBSession_mutexlock(AbstractExt::DBConnectionInfo &database, Poco::Data::SessionPool::SessionDataPtr &session_data_ptr);
@@ -61,13 +61,13 @@ class Ext: public AbstractExt
 
 	private:
 		// RCon
-		Rcon rcon_worker;
+		Rcon rcon;
 
 		/// Remote Server
 		RemoteServer remote_server;
 
 		// Steam
-		Steam steam_worker;
+		Steam steam;
 
 		// ASIO Thread Queue
 		std::unique_ptr<boost::asio::io_service::work> io_work_ptr;

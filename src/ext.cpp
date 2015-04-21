@@ -327,11 +327,11 @@ Ext::Ext(std::string dll_path, boost::program_options::parsed_options options, b
 			}
 
  			// Initialize so have atomic setup correctly
-			rcon_worker.init(logger);
+			rcon.init(logger);
 			remote_server.init(this);
 
 			// Initialize so have atomic setup correctly + Setup VAC Ban Logger
-			steam_worker.init(this, extDB_info.path, current_dateTime);
+			steam.init(this, extDB_info.path, current_dateTime);
 		}
 
 		logger->info();
@@ -371,8 +371,8 @@ void Ext::stop()
 	}
 	if (extDB_connectors_info.rcon)
 	{
-		rcon_worker.disconnect();
-		rcon_worker_thread.join();
+		rcon.disconnect();
+		rcon_thread.join();
 	}
 }
 
@@ -398,10 +398,10 @@ void Ext::steamQuery(const int &unique_id, bool queryFriends, bool queryVacBans,
 {
 	std::vector<std::string> steamIDs;
 	steamIDs.push_back(steamID);
-	steam_worker.addQuery(unique_id, queryFriends, queryVacBans, steamIDs);
+	steam.addQuery(unique_id, queryFriends, queryVacBans, steamIDs);
 	if (wakeup)
 	{
-		steam_worker_thread.wakeUp();
+		steam_thread.wakeUp();
 	}
 }
 
@@ -409,10 +409,10 @@ void Ext::steamQuery(const int &unique_id, bool queryFriends, bool queryVacBans,
 void Ext::steamQuery(const int &unique_id, bool queryFriends, bool queryVacBans, std::vector<std::string> &steamIDs, bool wakeup)
 // Adds Query to Steam Protocol, wakeup option is to wakeup steam thread. Note: Steam thread periodically checks every minute anyway.
 {
-	steam_worker.addQuery(unique_id, queryFriends, queryVacBans, steamIDs);
+	steam.addQuery(unique_id, queryFriends, queryVacBans, steamIDs);
 	if (wakeup)
 	{
-		steam_worker_thread.wakeUp();
+		steam_thread.wakeUp();
 	}
 }
 
@@ -451,8 +451,8 @@ void Ext::connectRcon(char *output, const int &output_size, const std::string &r
 	{
 		if (pConf->hasOption(rcon_conf + ".Port"))
 		{
-			rcon_worker.updateLogin(pConf->getString((rcon_conf + ".IP"), "127.0.0.1"), pConf->getInt((rcon_conf + ".Port"), 2302), pConf->getString((rcon_conf + ".Password"), "password"));
-			rcon_worker_thread.start(rcon_worker);
+			rcon.updateLogin(pConf->getString((rcon_conf + ".IP"), "127.0.0.1"), pConf->getInt((rcon_conf + ".Port"), 2302), pConf->getString((rcon_conf + ".Password"), "password"));
+			rcon_thread.start(rcon);
 			std::strcpy(output, "[1]");
 			extDB_connectors_info.rcon = true;
 		}
@@ -467,7 +467,7 @@ void Ext::connectRcon(char *output, const int &output_size, const std::string &r
 void Ext::rconCommand(std::string str)
 // Adds RCon Command to be sent to Server.
 {
-	rcon_worker.addCommand(str);
+	rcon.addCommand(str);
 }
 
 
@@ -503,18 +503,18 @@ void Ext::connectDatabase(char *output, const int &output_size, const std::strin
 			std::unique_lock<std::mutex> cnd_lock(cnd_mutex);
 			bool cnd_bool = false;
 
-			database->redis.reset(new RedisAsyncClient(io_service));
-			database->redis_worker.reset(new Redis(io_service, *(database->redis), this));
+			database->redis_async_client.reset(new RedisAsyncClient(io_service));
+			database->redis.reset(new Redis(io_service, *(database->redis_async_client), this));
 			boost::asio::ip::tcp::endpoint endpoint(boost::asio::ip::address::from_string(pConf->getString(database_conf + ".IP")),
 													pConf->getInt(database_conf + ".Port", 6379));
-			database->redis->connect(endpoint, boost::bind(&Redis::onConnect, *(database->redis_worker), _1, _2, boost::ref(cnd), boost::ref(cnd_mutex), boost::ref(cnd_bool)));
+			database->redis_async_client->connect(endpoint, boost::bind(&Redis::onConnect, *(database->redis), _1, _2, boost::ref(cnd), boost::ref(cnd_mutex), boost::ref(cnd_bool)));
 
 			while (!cnd_bool)
 			{
 				cnd.wait(cnd_lock);
 			}
 
-			if (database->redis->stateValid())
+			if (database->redis_async_client->stateValid())
 			{
 				std::strcpy(output, "[1]");
 			}
@@ -1079,7 +1079,7 @@ void Ext::callExtension(char *output, const int &output_size, const char *functi
 							}
 							else if (tokens[1] == "RCON_STATUS")
 							{
-								if (rcon_worker.status())
+								if (rcon.status())
 								{
 									std::strcpy(output, "[1]");
 								}
@@ -1113,7 +1113,7 @@ void Ext::callExtension(char *output, const int &output_size, const char *functi
 									if (!extDB_connectors_info.steam)
 									{
 										extDB_connectors_info.steam = true;
-										steam_worker_thread.start(steam_worker);
+										steam_thread.start(steam);
 										std::strcpy(output, "[1]");
 									}
 									else
@@ -1137,7 +1137,7 @@ void Ext::callExtension(char *output, const int &output_size, const char *functi
 								}
 								else if (tokens[1] == "RCON_STATUS")
 								{
-									if (rcon_worker.status())
+									if (rcon.status())
 									{
 										std::strcpy(output, "[1]");
 									}

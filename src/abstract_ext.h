@@ -51,8 +51,8 @@ class AbstractExt
 			std::string type;
 
 			// Redis
-			std::unique_ptr<RedisAsyncClient> redis;
-			std::unique_ptr<Redis> redis_worker;
+			std::unique_ptr<RedisAsyncClient> redis_async_client;
+			std::unique_ptr<Redis> redis;
 
 			// SQL Database Session Pool
 			std::unique_ptr<Poco::Data::SessionPool> sql_pool;

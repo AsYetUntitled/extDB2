@@ -116,13 +116,13 @@ bool REDIS_RAW::callProtocol(std::string input_str, std::string &result, const i
 				}
 				else
 				{
-					database_ptr->redis_worker->command(args, unique_id);
+					database_ptr->redis->command(args, unique_id);
 					result = "[1]";
 				}
 			}
 			else
 			{
-				database_ptr->redis_worker->command(args, unique_id);
+				database_ptr->redis->command(args, unique_id);
 				result = "[1]"; 
 			}
 		}
