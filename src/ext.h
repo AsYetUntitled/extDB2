@@ -28,7 +28,7 @@ along with this program. If not, see <http://www.gnu.org/licenses/>.
 #include <Poco/Data/SessionPool.h>
 
 #include "abstract_ext.h"
-//#include "backends/http.h"
+#include "backends/http.h"
 #include "backends/rcon.h"
 #include "backends/redis.h"
 #include "backends/remoteserver.h"

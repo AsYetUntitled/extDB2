@@ -53,7 +53,7 @@ along with this program. If not, see <http://www.gnu.org/licenses/>.
 #include <Poco/Data/SQLite/SQLiteException.h>
 
 #include "abstract_ext.h"
-//#include "backends/http.h"
+#include "backends/http.h"
 #include "backends/rcon.h"
 #include "backends/redis.h"
 #include "backends/remoteserver.h"
@@ -699,7 +699,11 @@ void Ext::addProtocol(char *output, const int &output_size, const std::string &d
 		}
 		else
 		{
-			if (boost::iequals(protocol, std::string("REDIS_RAW")) == 1)
+			if (boost::iequals(protocol, std::string("HTTP_RAW")) == 1)
+			{
+				unordered_map_protocol[protocol_name] = std::unique_ptr<AbstractProtocol> (new HTTP_RAW());
+			}
+			else if (boost::iequals(protocol, std::string("REDIS_RAW")) == 1)
 			{
 				unordered_map_protocol[protocol_name] = std::unique_ptr<AbstractProtocol> (new REDIS_RAW());
 			}
