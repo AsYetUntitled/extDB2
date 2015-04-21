@@ -52,10 +52,12 @@ along with this program. If not, see <http://www.gnu.org/licenses/>.
 #include <Poco/Data/SQLite/Connector.h>
 #include <Poco/Data/SQLite/SQLiteException.h>
 
-#include "rconworker.h"
-#include "redisworker.h"
-#include "remoteserver.h"
-#include "steamworker.h"
+#include "abstract_ext.h"
+//#include "backends/http.h"
+#include "backends/rcon.h"
+#include "backends/redis.h"
+#include "backends/remoteserver.h"
+#include "backends/steam.h"
 
 #include "protocols/abstract_protocol.h"
 #include "protocols/redis_raw.h"
@@ -502,10 +504,10 @@ void Ext::connectDatabase(char *output, const int &output_size, const std::strin
 			bool cnd_bool = false;
 
 			database->redis.reset(new RedisAsyncClient(io_service));
-			database->redis_worker.reset(new RedisWorker(io_service, *(database->redis), this));
+			database->redis_worker.reset(new Redis(io_service, *(database->redis), this));
 			boost::asio::ip::tcp::endpoint endpoint(boost::asio::ip::address::from_string(pConf->getString(database_conf + ".IP")),
 													pConf->getInt(database_conf + ".Port", 6379));
-			database->redis->connect(endpoint, boost::bind(&RedisWorker::onConnect, *(database->redis_worker), _1, _2, boost::ref(cnd), boost::ref(cnd_mutex), boost::ref(cnd_bool)));
+			database->redis->connect(endpoint, boost::bind(&Redis::onConnect, *(database->redis_worker), _1, _2, boost::ref(cnd), boost::ref(cnd_mutex), boost::ref(cnd_bool)));
 
 			while (!cnd_bool)
 			{
@@ -956,7 +958,7 @@ void Ext::asyncCallProtocol(const int &output_size, const std::string &protocol,
 	if (unordered_map_protocol[protocol].get()->callProtocol(data, result_data.message, unique_id))
 	{
 		saveResult_mutexlock(unique_id, result_data);
-	};
+	}
 }
 
 

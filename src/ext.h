@@ -28,9 +28,11 @@ along with this program. If not, see <http://www.gnu.org/licenses/>.
 #include <Poco/Data/SessionPool.h>
 
 #include "abstract_ext.h"
-#include "rconworker.h"
-#include "remoteserver.h"
-#include "steamworker.h"
+//#include "backends/http.h"
+#include "backends/rcon.h"
+#include "backends/redis.h"
+#include "backends/remoteserver.h"
+#include "backends/steam.h"
 
 #include "protocols/abstract_protocol.h"
 
@@ -59,13 +61,13 @@ class Ext: public AbstractExt
 
 	private:
 		// RCon
-		RconWorker rcon_worker;
+		Rcon rcon_worker;
 
 		/// Remote Server
 		RemoteServer remote_server;
 
 		// Steam
-		SteamWorker steam_worker;
+		Steam steam_worker;
 
 		// ASIO Thread Queue
 		std::unique_ptr<boost::asio::io_service::work> io_work_ptr;

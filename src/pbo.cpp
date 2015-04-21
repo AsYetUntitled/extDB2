@@ -9,9 +9,10 @@ void readPBO(std::string filename)
 	std::cout << ifs.rdbuf() << std::flush;	
 	//std::cout << filename << std::endl;
 }
-
+/*
 int main(int argc, char** args)
 {
 	readPBO(std::string("test.pbo"));
     return 0;
 }
+*/

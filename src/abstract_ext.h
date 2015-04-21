@@ -25,7 +25,7 @@ along with this program. If not, see <http://www.gnu.org/licenses/>.
 #include <Poco/Data/SessionPool.h>
 #include <Poco/Util/IniFileConfiguration.h>
 
-#include "redisworker.h"
+#include "backends/redis.h"
 #include "redis/redisasyncclient.h"
 
 #include "spdlog/spdlog.h"
@@ -34,7 +34,7 @@ along with this program. If not, see <http://www.gnu.org/licenses/>.
 #define EXTDB_VERSION "50"
 #define EXTDB_CONF_VERSION 3
 
-class RedisWorker;
+class Redis;
 
 class AbstractExt
 {
@@ -52,7 +52,7 @@ class AbstractExt
 
 			// Redis
 			std::unique_ptr<RedisAsyncClient> redis;
-			std::unique_ptr<RedisWorker> redis_worker;
+			std::unique_ptr<Redis> redis_worker;
 
 			// SQL Database Session Pool
 			std::unique_ptr<Poco::Data::SessionPool> sql_pool;

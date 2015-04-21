@@ -34,10 +34,10 @@ along with this program. If not, see <http://www.gnu.org/licenses/>.
 #include <Poco/ExpireCache.h>
 #include <Poco/Stopwatch.h>
 
-#include "abstract_ext.h"
+#include "../abstract_ext.h"
 
 
-class RconWorker: public Poco::Runnable
+class Rcon: public Poco::Runnable
 {
 	public:
 		void init(std::shared_ptr<spdlog::logger> console);

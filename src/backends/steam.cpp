@@ -20,7 +20,7 @@ From Frank https://gist.github.com/Fank/11127158
 */
 
 
-#include "steamworker.h"
+#include "steam.h"
 
 #include <string>
 #include <thread>
@@ -121,7 +121,7 @@ void SteamGet::stop()
 // --------------------------------------------------------------------------------------
 
 
-void SteamWorker::init(AbstractExt *extension, std::string &extension_path, Poco::DateTime &current_dateTime)
+void Steam::init(AbstractExt *extension, std::string &extension_path, Poco::DateTime &current_dateTime)
 {
 	extension_ptr = extension;
 	steam_run_flag = new std::atomic<bool>(false);
@@ -157,13 +157,13 @@ void SteamWorker::init(AbstractExt *extension, std::string &extension_path, Poco
 }
 
 
-void SteamWorker::stop()
+void Steam::stop()
 {
 	*steam_run_flag = false;
 }
 
 
-std::string SteamWorker::convertSteamIDtoBEGUID(const std::string &input_str)
+std::string Steam::convertSteamIDtoBEGUID(const std::string &input_str)
 // From Frank https://gist.github.com/Fank/11127158
 // Modified to use libpoco
 {
@@ -187,7 +187,7 @@ std::string SteamWorker::convertSteamIDtoBEGUID(const std::string &input_str)
 }
 
 
-std::vector<std::string> SteamWorker::generateSteamIDStrings(std::vector<std::string> &steamIDs)
+std::vector<std::string> Steam::generateSteamIDStrings(std::vector<std::string> &steamIDs)
 // Steam Only Allows 100 SteamIDs at a time
 {
 	std::string steamIDs_str;
@@ -218,7 +218,7 @@ std::vector<std::string> SteamWorker::generateSteamIDStrings(std::vector<std::st
 }
 
 
-void SteamWorker::updateSteamBans(std::vector<std::string> &steamIDs)
+void Steam::updateSteamBans(std::vector<std::string> &steamIDs)
 {
 	bool loadBans = false;
 
@@ -307,7 +307,7 @@ void SteamWorker::updateSteamBans(std::vector<std::string> &steamIDs)
 }
 
 
-void SteamWorker::updateSteamFriends(std::vector<std::string> &steamIDs)
+void Steam::updateSteamFriends(std::vector<std::string> &steamIDs)
 {
 	// Lose Duplicate steamIDs for Steam WEB API Query
 	std::sort(steamIDs.begin(), steamIDs.end());
@@ -379,7 +379,7 @@ void SteamWorker::updateSteamFriends(std::vector<std::string> &steamIDs)
 }
 
 
-void SteamWorker::addQuery(const int &unique_id, bool queryFriends, bool queryVacBans, std::vector<std::string> &steamIDs)
+void Steam::addQuery(const int &unique_id, bool queryFriends, bool queryVacBans, std::vector<std::string> &steamIDs)
 {
 	if (*steam_run_flag)
 	{
@@ -401,7 +401,7 @@ void SteamWorker::addQuery(const int &unique_id, bool queryFriends, bool queryVa
 }
 
 
-void SteamWorker::run()
+void Steam::run()
 {
 	std::string result;
 	std::vector<SteamQuery> query_queue_copy;

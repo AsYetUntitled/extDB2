@@ -19,8 +19,6 @@ along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 #pragma once
 
-#include "abstract_ext.h"
-
 #include <Poco/AbstractCache.h>
 #include <Poco/ExpireCache.h>
 #include <Poco/SharedPtr.h>
@@ -29,6 +27,8 @@ along with this program. If not, see <http://www.gnu.org/licenses/>.
 #include <Poco/Net/TCPServerConnectionFactory.h>
 
 #include <Poco/Net/StreamSocket.h>
+
+#include "../abstract_ext.h"
 
 
 class RemoteConnection;

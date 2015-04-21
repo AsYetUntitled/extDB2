@@ -20,7 +20,7 @@ along with this program. If not, see <http://www.gnu.org/licenses/>.
 */
 
 
-#include "rconworker.h"
+#include "rcon.h"
 
 #include <atomic>
 #include <cstring>
@@ -34,7 +34,7 @@ along with this program. If not, see <http://www.gnu.org/licenses/>.
 	#include <boost/program_options.hpp>
 	#include <fstream>
 #else
-	#include "abstract_ext.h"
+	#include "../abstract_ext.h"
 #endif
 
 #include <boost/crc.hpp>
@@ -56,7 +56,7 @@ along with this program. If not, see <http://www.gnu.org/licenses/>.
 #include <Poco/Exception.h>
 
 
-void RconWorker::init(std::shared_ptr<spdlog::logger> ext_logger)
+void Rcon::init(std::shared_ptr<spdlog::logger> ext_logger)
 {
 	rcon_run_flag = new std::atomic<bool>(false);
 	rcon_login_flag = new std::atomic<bool>(false);
@@ -64,7 +64,7 @@ void RconWorker::init(std::shared_ptr<spdlog::logger> ext_logger)
 }
 
 
-void RconWorker::createKeepAlive()
+void Rcon::createKeepAlive()
 {
 	std::ostringstream cmdStream;
 	cmdStream.put(0xFFu);
@@ -109,7 +109,7 @@ void RconWorker::createKeepAlive()
 }
 
 
-void RconWorker::sendPacket()
+void Rcon::sendPacket()
 {
 	std::ostringstream cmdStream;
 	cmdStream.put(0xFFu);
@@ -166,7 +166,7 @@ void RconWorker::sendPacket()
 }
 
 
-void RconWorker::extractData(int pos, std::string &result)
+void Rcon::extractData(int pos, std::string &result)
 {
 	std::stringstream ss;
 	for(size_t i = pos; i < buffer_size; ++i)
@@ -177,7 +177,7 @@ void RconWorker::extractData(int pos, std::string &result)
 }
 
 
-void RconWorker::updateLogin(std::string address, int port, std::string password)
+void Rcon::updateLogin(std::string address, int port, std::string password)
 {
 	createKeepAlive();
 
@@ -189,7 +189,7 @@ void RconWorker::updateLogin(std::string address, int port, std::string password
 }
 
 
-void RconWorker::connect()
+void Rcon::connect()
 {
 	*rcon_login_flag = false;
 	*rcon_run_flag = true;
@@ -205,13 +205,13 @@ void RconWorker::connect()
 }
 
 
-bool RconWorker::status()
+bool Rcon::status()
 {
 	return *rcon_login_flag;
 }
 
 
-void RconWorker::run()
+void Rcon::run()
 {
 	Poco::Net::SocketAddress sa(rcon_login.address, rcon_login.port);
 	dgs.connect(sa);
@@ -220,7 +220,7 @@ void RconWorker::run()
 }
 
 
-void RconWorker::addCommand(std::string command)
+void Rcon::addCommand(std::string command)
 {
 	if (*rcon_run_flag)
 	{
@@ -230,13 +230,13 @@ void RconWorker::addCommand(std::string command)
 }
 
 
-void RconWorker::disconnect()
+void Rcon::disconnect()
 {
 	*rcon_run_flag = false;	
 }
 
 
-void RconWorker::mainLoop()
+void Rcon::mainLoop()
 {
 	*rcon_login_flag = false;
 
@@ -281,7 +281,7 @@ void RconWorker::mainLoop()
 					// Server Received Command Msg
 					std::string result;
 					extractData(9, result);
-					#if defined(RCONWORKER_APP) || (TESTING)
+					#if defined(Rcon_APP) || (TESTING)
 						if (result.empty())
 						{
 							logger->info("Server Received Command Msg EMPTY");
@@ -326,7 +326,7 @@ void RconWorker::mainLoop()
 							{
 								result = result + ptrElem->second[i];
 							}
-							#if defined(RCONWORKER_APP) || (TESTING)
+							#if defined(Rcon_APP) || (TESTING)
 								logger->info("Info: {0}", result);
 							#endif
 							rcon_msg_cache.remove(sequenceNum);
@@ -346,7 +346,7 @@ void RconWorker::mainLoop()
 					// Recieved Chat Messages
 					std::string result;
 					extractData(9, result);
-					#if defined(RCONWORKER_APP) || (TESTING)
+					#if defined(Rcon_APP) || (TESTING)
 						logger->info("CHAT: {0}", result);
 					#endif
 					
@@ -410,7 +410,7 @@ void RconWorker::mainLoop()
 				else if (elapsed_seconds >= 30)
 				{
 					// Keep Alive
-					#if defined(RCONWORKER_APP) || (TESTING)
+					#if defined(Rcon_APP) || (TESTING)
 						logger->info("Keep Alive Sending");
 					#endif
 
@@ -418,7 +418,7 @@ void RconWorker::mainLoop()
 
 					dgs.sendBytes(keepAlivePacket.data(), keepAlivePacket.size());
 
-					#if defined(RCONWORKER_APP) || (TESTING)
+					#if defined(Rcon_APP) || (TESTING)
 						logger->info("Keep Alive Sent");
 					#endif
 				}

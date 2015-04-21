@@ -33,11 +33,13 @@ endif()
 SET(SOURCES
 	../src/memory_allocator.cpp
 	../src/ext.cpp
+	../src/pbo.cpp
 	../src/sanitize.cpp
-	../src/rconworker.cpp
-	../src/redisworker.cpp
-	../src/remoteserver.cpp
-	../src/steamworker.cpp
+	#../src/backends/http.cpp
+	../src/backends/rcon.cpp
+	../src/backends/redis.cpp
+	../src/backends/remoteserver.cpp
+	../src/backends/steam.cpp
 	../src/protocols/abstract_protocol.cpp
 	../src/protocols/redis_raw.cpp
 	../src/protocols/sql_custom.cpp
@@ -48,6 +50,7 @@ SET(SOURCES
 	../src/protocols/misc.cpp
 	../src/protocols/rcon.cpp
 	../src/protocols/steam.cpp
+	../src/protocols/steam_v2.cpp
 )
 
 SET(COMPILE_EXTENSION TRUE CACHE BOOL "Compile extDB2")
@@ -159,6 +162,9 @@ endif()
 
 if(${WIN32})
 	# Windows
+	if(HAVE_IPHLAPI)
+	  target_link_libraries(${EXECUTABLE_NAME} iphlpapi)
+	endif()
 	target_link_libraries(${EXECUTABLE_NAME} ${Boost_LIBRARIES}  ${POCO_LIBRARIES} ${MYSQL_LIBRARY} ${TBB_MALLOC_LIBRARY})
 	add_definitions(-DUNICODE -D_UNICODE -DWIN32_LEAN_AND_MEAN)
 	SET_TARGET_PROPERTIES(${EXECUTABLE_NAME} PROPERTIES LINK_FLAGS " /MANIFEST:NO /ERRORREPORT:NONE")

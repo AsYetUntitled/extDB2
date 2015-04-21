@@ -18,19 +18,19 @@ along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 #pragma once
 
-#include "abstract_ext.h"
-#include "redis/redisasyncclient.h"
-
 #include <condition_variable>
 #include <mutex>
+
+#include "../abstract_ext.h"
+#include "../redis/redisasyncclient.h"
 
 
 class AbstractExt;
 
-class RedisWorker
+class Redis
 {
     public:
-		RedisWorker(boost::asio::io_service &ioService, RedisAsyncClient &redisClient, AbstractExt *extension)
+		Redis(boost::asio::io_service &ioService, RedisAsyncClient &redisClient, AbstractExt *extension)
 			: ioService(ioService), redisClient(redisClient)
         {
 			extension_ptr = extension;

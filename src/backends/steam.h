@@ -35,7 +35,7 @@ along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 #include <Poco/Net/HTTPClientSession.h>
 
-#include "abstract_ext.h"
+#include "../abstract_ext.h"
 
 
 class SteamGet: public Poco::Runnable
@@ -65,7 +65,7 @@ class SteamGet: public Poco::Runnable
 };
 
 
-class SteamWorker: public Poco::Runnable
+class Steam: public Poco::Runnable
 {
 	public:
 		void run();

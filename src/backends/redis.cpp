@@ -16,15 +16,15 @@ along with this program. If not, see <http://www.gnu.org/licenses/>.
 */
 
 
-#include "redisworker.h"
+#include "redis.h"
 
 #include <condition_variable>
 #include <mutex>
 
-#include "abstract_ext.h"
+#include "../abstract_ext.h"
 
 
-void RedisWorker::onConnect(bool connected, const std::string &errorMessage, std::condition_variable &cnd, std::mutex &cnd_mutex, bool &cnd_bool)
+void Redis::onConnect(bool connected, const std::string &errorMessage, std::condition_variable &cnd, std::mutex &cnd_mutex, bool &cnd_bool)
 {
 	if (connected)
 	{
@@ -50,13 +50,13 @@ void RedisWorker::onConnect(bool connected, const std::string &errorMessage, std
 }
 
 
-void RedisWorker::command(std::vector<std::string> &args, const int unique_id)
+void Redis::command(std::vector<std::string> &args, const int unique_id)
 {
-    redisClient.command(args, boost::bind(&RedisWorker::processResult, this, _1, unique_id));
+    redisClient.command(args, boost::bind(&Redis::processResult, this, _1, unique_id));
 }
 
 
-void RedisWorker::processResult(const RedisValue &value, const int unique_id)
+void Redis::processResult(const RedisValue &value, const int unique_id)
 {
     #ifdef DEBUG_TESTING
         extension_ptr->console->info("processResult: {0}", value.toString());
