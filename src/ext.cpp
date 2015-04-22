@@ -53,13 +53,14 @@ along with this program. If not, see <http://www.gnu.org/licenses/>.
 #include <Poco/Data/SQLite/SQLiteException.h>
 
 #include "abstract_ext.h"
-#include "backends/http.h"
+//#include "backends/http.h"
 #include "backends/rcon.h"
 #include "backends/redis.h"
 #include "backends/remoteserver.h"
 #include "backends/steam.h"
 
 #include "protocols/abstract_protocol.h"
+//#include "protocols/http_raw.h"
 #include "protocols/redis_raw.h"
 #include "protocols/sql_custom.h"
 #include "protocols/sql_custom_v2.h"
@@ -72,82 +73,100 @@ along with this program. If not, see <http://www.gnu.org/licenses/>.
 #include "protocols/steam_v2.h"
 
 
-Ext::Ext(std::string dll_path, boost::program_options::parsed_options options, bool status)
+Ext::Ext(std::string dll_path, std::unordered_map<std::string, std::string> options, bool status)
 {
 	try
 	{
+		extDB_info.var = options["VAR"];
 		bool conf_found = false;
 		#ifdef _WIN32
 			bool conf_randomized = false;
 		#endif
+		
+		boost::filesystem::path extDB_config_path;
+		std::string extDB_config_str;
 
-		boost::filesystem::path extDB_config_path(dll_path);
-
-		extDB_config_path = extDB_config_path.parent_path();
-	  	extDB_config_path /= "extdb-conf.ini";
-
-		std::string extDB_config_str = extDB_config_path.make_preferred().string();
-
-		if (boost::filesystem::exists(extDB_config_str))
+		if (options.count("WORK") > 0)
 		{
-			conf_found = true;
-			extDB_info.path = extDB_config_path.parent_path().string();
-		}
-		else if (boost::filesystem::exists("extdb-conf.ini"))
-		{
-			conf_found = true;
-			extDB_config_path = boost::filesystem::path("extdb-conf.ini");
-			extDB_info.path = boost::filesystem::current_path().string();
+			extDB_config_str = options["extDB2-work"];
+			extDB_config_path /= "extdb-conf.ini";
+			if (boost::filesystem::exists(extDB_config_str))
+			{
+				conf_found = true;
+				extDB_config_path = boost::filesystem::path(extDB_config_str);
+				extDB_info.path = extDB_config_path.parent_path().string();
+			}
 		}
 		else
 		{
-			#ifdef _WIN32	// Windows Only, Linux Arma2 Doesn't have extension Support
-				// Search for Randomize Config File -- Legacy Security Support For Arma2Servers
+			extDB_config_path = extDB_config_path.parent_path();
+			extDB_config_path /= "extdb-conf.ini";
 
-				extDB_config_path = extDB_config_path.parent_path();
-				extDB_config_str = extDB_config_path.make_preferred().string();
+			std::string extDB_config_str = extDB_config_path.make_preferred().string();
 
-				std::regex expression("extdb-conf.*ini");
+			if (boost::filesystem::exists(extDB_config_str))
+			{
+				conf_found = true;
+				extDB_info.path = extDB_config_path.parent_path().string();
+			}
+			else if (boost::filesystem::exists("extdb-conf.ini"))
+			{
+				conf_found = true;
+				extDB_config_path = boost::filesystem::path("extdb-conf.ini");
+				extDB_info.path = boost::filesystem::current_path().string();
+			}
+			else
+			{
+				#ifdef _WIN32	// Windows Only, Linux Arma2 Doesn't have extension Support
+					// Search for Randomize Config File -- Legacy Security Support For Arma2Servers
 
-				if (!extDB_config_str.empty())
-				{
-					// CHECK DLL PATH FOR CONFIG)
-					for (boost::filesystem::directory_iterator it(extDB_config_str); it != boost::filesystem::directory_iterator(); ++it)
+					extDB_config_path = extDB_config_path.parent_path();
+					extDB_config_str = extDB_config_path.make_preferred().string();
+
+					std::regex expression("extdb-conf.*ini");
+
+					if (!extDB_config_str.empty())
 					{
-						if (is_regular_file(it->path()))
+						// CHECK DLL PATH FOR CONFIG)
+						for (boost::filesystem::directory_iterator it(extDB_config_str); it != boost::filesystem::directory_iterator(); ++it)
 						{
-							if(std::regex_search(it->path().string(), expression))
+							if (is_regular_file(it->path()))
 							{
-								conf_found = true;
-								conf_randomized = true;
-								extDB_config_path = boost::filesystem::path(it->path().string());
-								extDB_info.path = boost::filesystem::path(extDB_config_str).string();
-								break;
+								if(std::regex_search(it->path().string(), expression))
+								{
+									conf_found = true;
+									conf_randomized = true;
+									extDB_config_path = boost::filesystem::path(it->path().string());
+									extDB_info.path = boost::filesystem::path(extDB_config_str).string();
+									break;
+								}
 							}
 						}
 					}
-				}
 
-				// CHECK ARMA ROOT DIRECTORY FOR CONFIG
-				if (!conf_found)
-				{
-					for(boost::filesystem::directory_iterator it(boost::filesystem::current_path()); it !=  boost::filesystem::directory_iterator(); ++it)
+					// CHECK ARMA ROOT DIRECTORY FOR CONFIG
+					if (!conf_found)
 					{
-						if (is_regular_file(it->path()))
+						for(boost::filesystem::directory_iterator it(boost::filesystem::current_path()); it !=  boost::filesystem::directory_iterator(); ++it)
 						{
-							if(std::regex_search(it->path().string(), expression))
+							if (is_regular_file(it->path()))
 							{
-								conf_found = true;
-								conf_randomized = true;
-								extDB_config_path = boost::filesystem::path(it->path().string());
-								extDB_info.path = boost::filesystem::current_path().string();
-								break;
+								if(std::regex_search(it->path().string(), expression))
+								{
+									conf_found = true;
+									conf_randomized = true;
+									extDB_config_path = boost::filesystem::path(it->path().string());
+									extDB_info.path = boost::filesystem::current_path().string();
+									break;
+								}
 							}
 						}
 					}
-				}
-			#endif
+				#endif
+			}
 		}
+
+
 
 		if (conf_found)
 		{
@@ -701,7 +720,7 @@ void Ext::addProtocol(char *output, const int &output_size, const std::string &d
 		{
 			if (boost::iequals(protocol, std::string("HTTP_RAW")) == 1)
 			{
-				unordered_map_protocol[protocol_name] = std::unique_ptr<AbstractProtocol> (new HTTP_RAW());
+				//unordered_map_protocol[protocol_name] = std::unique_ptr<AbstractProtocol> (new HTTP_RAW());
 			}
 			else if (boost::iequals(protocol, std::string("REDIS_RAW")) == 1)
 			{
@@ -1156,6 +1175,11 @@ void Ext::callExtension(char *output, const int &output_size, const char *functi
 									logger->info("Extension Output Size: {0}", outputsize_str);
 									std::strcpy(output, outputsize_str.c_str());
 								}
+								else if (tokens[1] == "VAR")
+								{
+									logger->info("Extension Output Size: {0}", extDB_info.var);
+									std::strcpy(output, extDB_info.var.c_str());
+								}
 								else
 								{
 									std::strcpy(output, "[0,\"Error Invalid Format\"]");
@@ -1272,12 +1296,26 @@ void Ext::callExtension(char *output, const int &output_size, const char *functi
 		char result[81] = {0};
 		std::string input_str;
 
+		
 		boost::program_options::options_description desc("Options");
 		desc.add_options()
-			("extDB2-var", boost::program_options::value<std::string>(), "extDB2 Variable")
-			("extDB2-conf", boost::program_options::value<std::string>(), "extDB2 Config File")
-			("extDB2-work", boost::program_options::value<std::string>(), "extDB2 Work Directory");
-		boost::program_options::parsed_options options = boost::program_options::command_line_parser(nNumberofArgs, pszArgs).options(desc).allow_unregistered().run();
+			("extDB2_VAR", boost::program_options::value<std::string>(), "extDB2 Variable")
+			("extDB2_WORK", boost::program_options::value<std::string>(), "extDB2 Work Directory");
+
+		boost::program_options::variables_map bpo_options;
+		boost::program_options::store(boost::program_options::parse_command_line(nNumberofArgs, pszArgs, desc), bpo_options);
+
+		std::unordered_map<std::string, std::string> options;
+
+		if (bpo_options.count("extDB2_WORK") > 0)
+		{
+			options["WORK"] = bpo_options["extDB2_WORK"].as<std::string>();
+		}
+		if (bpo_options.count("extDB2_VAR") > 0)
+		{
+			options["VAR"] = bpo_options["extDB2_VAR"].as<std::string>();
+		}
+		
 		Ext *extension;
 		extension = new Ext(std::string(""), options, true);
 
