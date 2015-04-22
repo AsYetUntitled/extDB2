@@ -31,7 +31,7 @@ along with this program. If not, see <http://www.gnu.org/licenses/>.
 #include "spdlog/spdlog.h"
 
 
-#define EXTDB_VERSION "50"
+#define EXTDB_VERSION "51"
 #define EXTDB_CONF_VERSION 3
 
 class Redis;
@@ -77,6 +77,7 @@ class AbstractExt
 		// extDB Info
 		struct extDBInfo
 		{
+			std::string var;
 			std::string path;
 			std::string log_path;
 			bool logger_flush=true;

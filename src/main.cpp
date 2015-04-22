@@ -1,7 +1,5 @@
 
 #include <boost/filesystem.hpp>
-#include <boost/program_options.hpp>
-
 #include "ext.h"
 
 
@@ -17,7 +15,9 @@ namespace
 	extension_init(void)
 	{
 		bool status = true;
-		std::vector<std::string> args;
+		//std::vector<std::string> args;
+		std::string arg;
+		std::unordered_map<std::string, std::string> options;
 
 		FILE *fh = fopen ("/proc/self/cmdline", "r"); // /proc/self  :D
 		if (!fh)
@@ -29,17 +29,27 @@ namespace
 			char buffer[4096];
 			while (fgets (buffer, 4096, fh))
 			{
-				args.push_back(buffer);
+				//args.push_back(buffer);
+				arg = buffer;
+				if (arg.size() >= 12)
+				{
+					found = arg.find("-extDB2_VAR=");
+					if (found == 0)
+					{
+						options["VAR"] = arg.substr(12);
+					}
+					else
+					{
+						found = arg.find("-extDB2_WORK=");
+						if (found == 0)
+						{
+							options["WORK"] = arg.substr(12);
+						}
+					}
+				}
 			};
 		};
-		fclose (fh);
-		boost::program_options::options_description desc("Options");
-		desc.add_options()
-			("extDB2-var", boost::program_options::value<std::string>(), "extDB2 Variable")
-			("extDB2-conf", boost::program_options::value<std::string>(), "extDB2 Config File")
-			("extDB2-work", boost::program_options::value<std::string>(), "extDB2 Work Directory");
-		boost::program_options::parsed_options options = boost::program_options::command_line_parser(args).options(desc).allow_unregistered().run();
-
+		fclose(fh);
 
 		Dl_info dl_info;
 		dladdr((void*)extension_init, &dl_info);
@@ -82,8 +92,7 @@ namespace
 					bool status = true;
 					int nArgs;
 					LPWSTR *pszArgsW = CommandLineToArgvW(GetCommandLineW(), &nArgs);
-					std::vector< std::string > args;
-					args.reserve(nArgs - 1);
+					std::unordered_map<std::string, std::string> options;
 
 					if (nArgs == NULL)
 					{
@@ -91,18 +100,29 @@ namespace
 					}
 					else
 					{
+						std::size_t found;
+						std::string arg;
 						for (int i = 0; i < nArgs; i++)
 						{
-							std::string arg = CW2A(pszArgsW[i]);
-							args.push_back(std::move(arg));
-						};
+							arg = CW2A(pszArgsW[i]);
+							if (arg.size() >= 12)
+							{
+								found = arg.find("-extDB2_VAR=");
+								if (found == 0)
+								{
+									options["VAR"] = arg.substr(12);
+								}
+								else
+								{
+									found = arg.find("-extDB2_WORK=");
+									if (found == 0)
+									{
+										options["WORK"] = arg.substr(12);
+									}
+								}
+							}
+						}
 					}
-					boost::program_options::options_description desc("Options");
-					desc.add_options()
-						("extDB2-var", boost::program_options::value<std::string>(), "extDB2 Variable")
-						("extDB2-conf", boost::program_options::value<std::string>(), "extDB2 Config File")
-						("extDB2-work", boost::program_options::value<std::string>(), "extDB2 Work Directory");
-					boost::program_options::parsed_options options = boost::program_options::command_line_parser(args).options(desc).allow_unregistered().run();
 
 					WCHAR path[MAX_PATH + 1];
 					GetModuleFileNameW((HINSTANCE)&__ImageBase, path, (MAX_PATH + 1));

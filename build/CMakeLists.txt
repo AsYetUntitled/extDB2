@@ -41,6 +41,7 @@ SET(SOURCES
 	../src/backends/remoteserver.cpp
 	../src/backends/steam.cpp
 	../src/protocols/abstract_protocol.cpp
+	../src/protocols/http_raw.cpp
 	../src/protocols/redis_raw.cpp
 	../src/protocols/sql_custom.cpp
 	../src/protocols/sql_custom_v2.cpp
@@ -118,7 +119,11 @@ set(Boost_USE_STATIC_RUNTIME ON)
 if(${WIN32})
 	add_definitions(-D _WIN32_WINNT=0x0600)
 endif()
-find_package(Boost REQUIRED COMPONENTS chrono date_time filesystem program_options random regex system thread)
+if (COMPILE_EXTENSION)
+	find_package(Boost REQUIRED COMPONENTS chrono date_time filesystem random regex system thread)
+else()
+	find_package(Boost REQUIRED COMPONENTS chrono date_time filesystem program_options random regex system thread)
+endif()
 if(Boost_FOUND)
 	include_directories(${Boost_INCLUDE_DIRS})
 else()

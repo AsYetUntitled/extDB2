@@ -40,7 +40,7 @@ along with this program. If not, see <http://www.gnu.org/licenses/>.
 class Ext: public AbstractExt
 {
 	public:
-		Ext(std::string path, boost::program_options::parsed_options options, bool status);
+		Ext(std::string path, std::unordered_map<std::string, std::string> options, bool status);
 		~Ext();
 		void stop();	
 		void callExtension(char *output, const int &output_size, const char *function);
