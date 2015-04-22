@@ -30,7 +30,7 @@ class HTTP_RAW: public AbstractProtocol
 		bool callProtocol(std::string input_str, std::string &result, const int unique_id=-1);
 
 	private:
-		std::string uri;
+		bool http_raw_return;
 
 		HTTP *http_pool;
 };

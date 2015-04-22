@@ -18,29 +18,18 @@ along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 #pragma once
 
-#include <list>
-#include <memory>
+#include <memory> 
 #include <mutex>
-#include <thread>
+#include <list>
 
-#include <Poco/Net/AcceptCertificateHandler.h>
-#include <Poco/Net/Context.h>
 #include <Poco/Net/HTTPClientSession.h>
-#include <Poco/Net/HTTPSessionFactory.h>
-#include <Poco/Net/HTTPSessionInstantiator.h>
-#include <Poco/Net/SSLManager.h>
-#include <Poco/URI.h>
-
-#include <Poco/Net/ConsoleCertificateHandler.h>
-#include <Poco/Net/PrivateKeyPassphraseHandler.h>
-#include <Poco/Net/KeyConsoleHandler.h>
 
 
 class HTTP
 {
 	public:
 
-		HTTP(std::string uri, int maxSessions);
+		HTTP(std::string host, int port, int maxSessions);
 		~HTTP();
 			
 		std::unique_ptr<Poco::Net::HTTPClientSession> get();
@@ -49,15 +38,10 @@ class HTTP
 
 	private:
 
-		Poco::URI      _uri;
 		int            _maxSessions;
+		std::string	   _host;
+		int			   _port;
 
 		std::mutex     mutex;
 		std::list< std::unique_ptr<Poco::Net::HTTPClientSession> >  _idleSessions;
-
-		Poco::SharedPtr<Poco::Net::AcceptCertificateHandler> ptrCert;
-
-		//Poco::SharedPtr<Poco::Net::PrivateKeyPassphraseHandler> pConsoleHandler;
-		//Poco::SharedPtr<Poco::Net::InvalidCertificateHandler> pInvalidCertHandler;
-		Poco::Net::Context::Ptr context;
 };

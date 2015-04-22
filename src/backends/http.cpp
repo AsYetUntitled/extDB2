@@ -18,36 +18,12 @@ along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 #include "http.h"
 
-#include <memory>
-#include <thread>
-
-#include <Poco/Net/AcceptCertificateHandler.h>
-#include <Poco/Net/Context.h>
 #include <Poco/Net/HTTPClientSession.h>
-#include <Poco/Net/HTTPSessionFactory.h>
-#include <Poco/Net/HTTPSessionInstantiator.h>
-#include <Poco/Net/SSLManager.h>
-#include <Poco/URI.h>
-
-//#include <Poco/Net/ConsoleCertificateHandler.h>
-//#include <Poco/Net/PrivateKeyPassphraseHandler.h>
-//#include <Poco/Net/KeyConsoleHandler.h>
-
-#include <Poco/SharedPtr.h>
 
 
-HTTP::HTTP(std::string uri, int maxSessions):
-    _uri(uri),
-	_maxSessions(maxSessions)
+HTTP::HTTP(std::string host, int port, int maxSessions):
+	_maxSessions(maxSessions), _host(host), _port(port)
 {
-	Poco::Net::HTTPSessionFactory::defaultFactory().registerProtocol("http", new Poco::Net::HTTPSessionInstantiator);
-	Poco::Net::HTTPSessionFactory::defaultFactory().registerProtocol("https", new Poco::Net::HTTPSessionInstantiator);
-	ptrCert = new Poco::Net::AcceptCertificateHandler(false);
-
-	//pConsoleHandler = new Poco::Net::KeyConsoleHandler(false);
-	//pInvalidCertHandler = new Poco::Net::ConsoleCertificateHandler(false);
-	context = new Poco::Net::Context(Poco::Net::Context::CLIENT_USE, "", "", "", Poco::Net::Context::VERIFY_RELAXED, 9, false, "ALL:!ADH:!LOW:!EXP:!MD5:@STRENGTH");
-	Poco::Net::SSLManager::instance().initializeClient(0, ptrCert, context);
 }
 
 
@@ -61,7 +37,7 @@ std::unique_ptr<Poco::Net::HTTPClientSession> HTTP::get()
 	std::unique_ptr<Poco::Net::HTTPClientSession> session;
 	if (_idleSessions.empty())
 	{
-		session.reset(Poco::Net::HTTPSessionFactory::defaultFactory().createClientSession(_uri));
+		session.reset(new Poco::Net::HTTPClientSession(_host, _port));
 	}
 	else
 	{

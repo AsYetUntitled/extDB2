@@ -22,7 +22,6 @@ along with this program. If not, see <http://www.gnu.org/licenses/>.
 #include <unordered_map>
 
 #include <boost/asio.hpp>
-#include <boost/program_options.hpp>
 #include <boost/thread/thread.hpp>
 
 #include <Poco/Data/SessionPool.h>

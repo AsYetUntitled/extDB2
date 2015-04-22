@@ -36,8 +36,14 @@ bool HTTP_RAW::init(AbstractExt *extension, const std::string &database_id, cons
 {
 	extension_ptr = extension;
 	int max_sessions = extension_ptr->pConf->getInt(database_id + ".MaxSessions", extension_ptr->extDB_info.max_threads);
-	uri = extension_ptr->pConf->getString(database_id + ".URI", "");
-	http_pool = new HTTP(uri, max_sessions);
+	std::string host = extension_ptr->pConf->getString(database_id + ".HOST", "");
+	int port = extension_ptr->pConf->getInt(database_id + ".PORT", 80);
+	http_pool = new HTTP(host, port, max_sessions);
+
+	if (init_str == "RAW_RETURN")
+	{
+		http_raw_return = true;
+	}
 	return true;
 }
 
@@ -60,14 +66,24 @@ bool HTTP_RAW::callProtocol(std::string input_str, std::string &result, const in
 		Poco::Net::HTTPResponse res;
 		if (res.getStatus() == Poco::Net::HTTPResponse::HTTP_OK)
 		{
-			result = "[1,[";
+			result.clear();
 			std::istream &is = session->receiveResponse(res);
 			char c;
 			while (is.read(&c, sizeof(c)))
 			{
 				result.push_back(c);
 			}
-			result += "]]";
+			if (!http_raw_return)
+			{
+				result = "[1,[" + result + "]]";
+			}
+		}
+		else
+		{
+			if (!http_raw_return)
+			{
+				result = "[0,\"Error\"]";
+			}
 		}
 		#ifdef DEBUG_TESTING
 			extension_ptr->console->info("extDB2: HTTP_RAW: Trace: Result: {0}", result);
