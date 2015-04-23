@@ -92,11 +92,11 @@ list(APPEND POCO_LIBRARIES ${POCO_Net_LIBRARY})
 findpkg_finish(POCO_Net)
 
 # Look for Poco's Net SSL package
-findpkg_begin(POCO_NetSSL)
-set(POCO_NetSSL_LIBRARY_NAMES PocoNetSSLmt PocoNetSSL)
-find_library(POCO_NetSSL_LIBRARY NAMES ${POCO_NetSSL_LIBRARY_NAMES} HINTS ${POCO_LIB_SEARCH_PATH} ${POCO_PKGC_LIBRARY_DIRS} PATH_SUFFIXES Linux/i686)
-list(APPEND POCO_LIBRARIES ${POCO_NetSSL_LIBRARY})
-findpkg_finish(POCO_NetSSL)
+#findpkg_begin(POCO_NetSSL)
+#set(POCO_NetSSL_LIBRARY_NAMES PocoNetSSLmt PocoNetSSL)
+#find_library(POCO_NetSSL_LIBRARY NAMES ${POCO_NetSSL_LIBRARY_NAMES} HINTS ${POCO_LIB_SEARCH_PATH} ${POCO_PKGC_LIBRARY_DIRS} PATH_SUFFIXES Linux/i686)
+#list(APPEND POCO_LIBRARIES ${POCO_NetSSL_LIBRARY})
+#findpkg_finish(POCO_NetSSL)
 
 # Look for Poco's Foundation package
 findpkg_begin(POCO_Foundation)
