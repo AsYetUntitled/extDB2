@@ -30,6 +30,7 @@ along with this program. If not, see <http://www.gnu.org/licenses/>.
 #include <Poco/Net/HTTPClientSession.h>
 #include <Poco/Net/HTTPRequest.h>
 #include <Poco/Net/HTTPResponse.h>
+#include <Poco/NumberFormatter.h>
 
 #include "abstract_protocol.h"
 
@@ -54,17 +55,13 @@ bool HTTP_RAW::init(AbstractExt *extension, const std::string &database_id, cons
 		auth = false;
 	}
 
- 	if (boost::iequals(init_str, std::string("RAW_RETURN")))
+ 	if (boost::iequals(init_str, std::string("FULL_RETURN")))
 	{
-		http_return = 0;
-	}
-	else if (boost::iequals(init_str, std::string("FULL_RETURN")))
-	{
-		http_return = 2;
+		http_return = 1;
 	}
 	else
 	{
-		http_return = 1;
+		http_return = 0;
 	}
 
 	return true;
@@ -82,11 +79,11 @@ bool HTTP_RAW::callProtocol(std::string input_str, std::string &result, const in
 			extension_ptr->logger->info("extDB2: HTTP_RAW: Trace: Input: {0}", input_str);
 		#endif
 
-		std::unique_ptr<Poco::Net::HTTPClientSession> session = http_pool->get();
-
-		Poco::Net::HTTPRequest request(Poco::Net::HTTPMessage::HTTP_1_1);
 		if (input_str.size() >= 4)
 		{
+			std::unique_ptr<Poco::Net::HTTPClientSession> session = http_pool->get();
+			Poco::Net::HTTPRequest request(Poco::Net::HTTPMessage::HTTP_1_1);
+			
 			if (input_str.substr(0,4) == "POST")
 			{
 				request.setMethod(Poco::Net::HTTPRequest::HTTP_POST);
@@ -112,33 +109,44 @@ bool HTTP_RAW::callProtocol(std::string input_str, std::string &result, const in
 				result.push_back(c);
 			}
 
+			std::string http_status_code = Poco::NumberFormatter::format(res.getStatus());
 			switch (http_return)
 			{
-				case 0: // RAW_RETURN
-				{
-					break;
-				}
-				case 1: //
+				case 0: //
 				{
 					if (res.getStatus() == Poco::Net::HTTPResponse::HTTP_OK)
 					{
 						result = "[1," + result + "]";
+						http_pool->putBack(session);
 					}
 					else
 					{
-						result = "[0,\"Error\"]"; // TODO HTTP Response STATUS
+						result = "[0,\"Error: HTTP Status Code: " + http_status_code + "\"]"; // TODO HTTP Response STATUS
+						#ifdef DEBUG_TESTING
+							extension_ptr->console->error("extDB2: HTTP_RAW: Error: HTTP Status Code {0}", http_status_code);
+							extension_ptr->console->error("extDB2: HTTP_RAW: Error: {0}", input_str);
+						#endif
+						extension_ptr->logger->error("extDB2: HTTP_RAW: Error: HTTP Status Code {0}", http_status_code);
+						extension_ptr->logger->error("extDB2: HTTP_RAW: Error: {0}", input_str);
 					}
 					break;
 				}
-				case 2: // FULL_RETURN
+				case 1: // FULL_RETURN
 				{
 					if (res.getStatus() == Poco::Net::HTTPResponse::HTTP_OK)
 					{
-						result = "[1," + std::to_string(res.getStatus()) + "," + result + "]";
+						result = "[1," + http_status_code + "," + result + "]";
+						http_pool->putBack(session);
 					}
 					else
 					{
-						result = "[0," + std::to_string(res.getStatus()) + "," + result + "]"; // TODO Log HTTP STATUS ERROR
+						result = "[0," + http_status_code + "," + result + "]"; // TODO Log HTTP STATUS ERROR
+						#ifdef DEBUG_TESTING
+							extension_ptr->console->error("extDB2: HTTP_RAW: Error: HTTP Status Code {0}", http_status_code);
+							extension_ptr->console->error("extDB2: HTTP_RAW: Error: {0}", input_str);
+						#endif
+						extension_ptr->logger->error("extDB2: HTTP_RAW: Error: HTTP Status Code {0}", http_status_code);
+						extension_ptr->logger->error("extDB2: HTTP_RAW: Error: {0}", input_str);
 					}
 					break;
 				}
@@ -147,6 +155,10 @@ bool HTTP_RAW::callProtocol(std::string input_str, std::string &result, const in
 		else
 		{
 			result = "[0,\"Error\"]"; // TODO Invalid Command / String
+			#ifdef DEBUG_TESTING
+				extension_ptr->console->error("extDB2: HTTP_RAW: Error: Input to Short {0}", input_str);
+			#endif
+			extension_ptr->logger->error("extDB2: HTTP_RAW: Error: Input to Short {0}", input_str);
 		}
 		#ifdef DEBUG_TESTING
 			extension_ptr->console->info("extDB2: HTTP_RAW: Trace: Result: {0}", result);
