@@ -84,52 +84,69 @@ bool HTTP_RAW::callProtocol(std::string input_str, std::string &result, const in
 
 		std::unique_ptr<Poco::Net::HTTPClientSession> session = http_pool->get();
 
-		Poco::Net::HTTPRequest request(Poco::Net::HTTPRequest::HTTP_GET, input_str, Poco::Net::HTTPMessage::HTTP_1_1);
-		if (auth)
+		Poco::Net::HTTPRequest request(Poco::Net::HTTPMessage::HTTP_1_1);
+		if (input_str.size() >= 4)
 		{
-			http_basic_credentials.authenticate(request);
+			if (input_str.substr(0,4) == "POST")
+			{
+				request.setMethod(Poco::Net::HTTPRequest::HTTP_POST);
+				request.setURI(input_str.substr(5));
+			}
+			else if (input_str.substr(0,4) == "GET:")
+			{
+				request.setMethod(Poco::Net::HTTPRequest::HTTP_GET);
+				request.setURI(input_str.substr(4));
+			}
+			if (auth)
+			{
+				http_basic_credentials.authenticate(request);
+			}
+			session->sendRequest(request);
+
+			Poco::Net::HTTPResponse res;
+			std::istream &is = session->receiveResponse(res);
+
+			char c;
+			while (is.read(&c, sizeof(c)))
+			{
+				result.push_back(c);
+			}
+
+			switch (http_return)
+			{
+				case 0: // RAW_RETURN
+				{
+					break;
+				}
+				case 1: //
+				{
+					if (res.getStatus() == Poco::Net::HTTPResponse::HTTP_OK)
+					{
+						result = "[1," + result + "]";
+					}
+					else
+					{
+						result = "[0,\"Error\"]"; // TODO HTTP Response STATUS
+					}
+					break;
+				}
+				case 2: // FULL_RETURN
+				{
+					if (res.getStatus() == Poco::Net::HTTPResponse::HTTP_OK)
+					{
+						result = "[1," + std::to_string(res.getStatus()) + "," + result + "]";
+					}
+					else
+					{
+						result = "[0," + std::to_string(res.getStatus()) + "," + result + "]"; // TODO Log HTTP STATUS ERROR
+					}
+					break;
+				}
+			}
 		}
-		session->sendRequest(request);
-
-		Poco::Net::HTTPResponse res;
-		std::istream &is = session->receiveResponse(res);
-
-		char c;
-		while (is.read(&c, sizeof(c)))
+		else
 		{
-			result.push_back(c);
-		}
-
-		switch (http_return)
-		{
-			case 0: // RAW_RETURN
-			{
-				break;
-			}
-			case 1: //
-			{
-				if (res.getStatus() == Poco::Net::HTTPResponse::HTTP_OK)
-				{
-					result = "[1," + result + "]";
-				}
-				else
-				{
-					result = "[0,\"Error\"]";
-				}
-				break;
-			}
-			case 2: // FULL_RETURN
-			{
-				if (res.getStatus() == Poco::Net::HTTPResponse::HTTP_OK)
-				{
-					result = "[1," + std::to_string(res.getStatus()) + "," + result + "]";
-				}
-				else
-				{
-					result = "[0," + std::to_string(res.getStatus()) + "," + result + "]";
-				}
-				break;
-			}
+			result = "[0,\"Error\"]"; // TODO Invalid Command / String
 		}
 		#ifdef DEBUG_TESTING
 			extension_ptr->console->info("extDB2: HTTP_RAW: Trace: Result: {0}", result);
