@@ -20,6 +20,8 @@ along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 #include "abstract_protocol.h"
 
+#include <Poco/Net/HTTPBasicCredentials.h>
+
 #include "../backends/http.h"
 
 
@@ -30,7 +32,10 @@ class HTTP_RAW: public AbstractProtocol
 		bool callProtocol(std::string input_str, std::string &result, const int unique_id=-1);
 
 	private:
-		bool http_raw_return;
+		int http_return;
 
 		HTTP *http_pool;
+
+		Poco::Net::HTTPBasicCredentials http_basic_credentials;
+		bool 		   auth;
 };

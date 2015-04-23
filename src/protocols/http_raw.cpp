@@ -24,6 +24,8 @@ along with this program. If not, see <http://www.gnu.org/licenses/>.
 #include <sstream>
 #include <memory>
 
+#include <boost/algorithm/string.hpp>
+
 #include <Poco/Exception.h>
 #include <Poco/Net/HTTPClientSession.h>
 #include <Poco/Net/HTTPRequest.h>
@@ -36,14 +38,35 @@ bool HTTP_RAW::init(AbstractExt *extension, const std::string &database_id, cons
 {
 	extension_ptr = extension;
 	int max_sessions = extension_ptr->pConf->getInt(database_id + ".MaxSessions", extension_ptr->extDB_info.max_threads);
-	std::string host = extension_ptr->pConf->getString(database_id + ".HOST", "");
-	int port = extension_ptr->pConf->getInt(database_id + ".PORT", 80);
+	std::string host = extension_ptr->pConf->getString(database_id + ".Host", "127.0.0.1");
+
+	int port = extension_ptr->pConf->getInt(database_id + ".Port", 80);
 	http_pool = new HTTP(host, port, max_sessions);
 
-	if (init_str == "RAW_RETURN")
+	if (extension_ptr->pConf->has(database_id + ".Username"))
 	{
-		http_raw_return = true;
+		http_basic_credentials.setUsername(extension_ptr->pConf->getString(database_id + ".Username", ""));
+		http_basic_credentials.setPassword(extension_ptr->pConf->getString(database_id + ".Password", ""));
+		auth = true;
 	}
+	else
+	{
+		auth = false;
+	}
+
+ 	if (boost::iequals(init_str, std::string("RAW_RETURN")))
+	{
+		http_return = 0;
+	}
+	else if (boost::iequals(init_str, std::string("FULL_RETURN")))
+	{
+		http_return = 2;
+	}
+	else
+	{
+		http_return = 1;
+	}
+
 	return true;
 }
 
@@ -60,29 +83,52 @@ bool HTTP_RAW::callProtocol(std::string input_str, std::string &result, const in
 		#endif
 
 		std::unique_ptr<Poco::Net::HTTPClientSession> session = http_pool->get();
-		
+
 		Poco::Net::HTTPRequest request(Poco::Net::HTTPRequest::HTTP_GET, input_str, Poco::Net::HTTPMessage::HTTP_1_1);
-		session->sendRequest(request);
-		Poco::Net::HTTPResponse res;
-		if (res.getStatus() == Poco::Net::HTTPResponse::HTTP_OK)
+		if (auth)
 		{
-			result.clear();
-			std::istream &is = session->receiveResponse(res);
-			char c;
-			while (is.read(&c, sizeof(c)))
-			{
-				result.push_back(c);
-			}
-			if (!http_raw_return)
-			{
-				result = "[1,[" + result + "]]";
-			}
+			http_basic_credentials.authenticate(request);
 		}
-		else
+		session->sendRequest(request);
+
+		Poco::Net::HTTPResponse res;
+		std::istream &is = session->receiveResponse(res);
+
+		char c;
+		while (is.read(&c, sizeof(c)))
 		{
-			if (!http_raw_return)
+			result.push_back(c);
+		}
+
+		switch (http_return)
+		{
+			case 0: // RAW_RETURN
 			{
-				result = "[0,\"Error\"]";
+				break;
+			}
+			case 1: //
+			{
+				if (res.getStatus() == Poco::Net::HTTPResponse::HTTP_OK)
+				{
+					result = "[1," + result + "]";
+				}
+				else
+				{
+					result = "[0,\"Error\"]";
+				}
+				break;
+			}
+			case 2: // FULL_RETURN
+			{
+				if (res.getStatus() == Poco::Net::HTTPResponse::HTTP_OK)
+				{
+					result = "[1," + std::to_string(res.getStatus()) + "," + result + "]";
+				}
+				else
+				{
+					result = "[0," + std::to_string(res.getStatus()) + "," + result + "]";
+				}
+				break;
 			}
 		}
 		#ifdef DEBUG_TESTING
