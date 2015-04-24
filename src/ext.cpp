@@ -79,7 +79,6 @@ Ext::Ext(std::string dll_path, std::unordered_map<std::string, std::string> opti
 {
 	try
 	{
-		extDB_info.var = options["VAR"];
 		bool conf_found = false;
 		#ifdef _WIN32
 			bool conf_randomized = false;
@@ -90,23 +89,23 @@ Ext::Ext(std::string dll_path, std::unordered_map<std::string, std::string> opti
 
 		if (options.count("WORK") > 0)
 		{
-			extDB_config_str = options["extDB2-work"];
+			extDB_config_path = options["extDB2-work"];
 			extDB_config_path /= "extdb-conf.ini";
-			if (boost::filesystem::exists(extDB_config_str))
+			if (boost::filesystem::exists(extDB_config_path))
 			{
 				conf_found = true;
-				extDB_config_path = boost::filesystem::path(extDB_config_str);
 				extDB_info.path = extDB_config_path.parent_path().string();
+			}
+			else
+			{
+				extDB_config_path = extDB_config_path.parent_path();
+				search(extDB_config_path, conf_found, conf_randomized);
 			}
 		}
 		else
 		{
-			extDB_config_path = extDB_config_path.parent_path();
-			extDB_config_path /= "extdb-conf.ini";
-
-			std::string extDB_config_str = extDB_config_path.make_preferred().string();
-
-			if (boost::filesystem::exists(extDB_config_str))
+			extDB_config_path = extDB_config_path.parent_path() /= "extdb_conf.ini";
+			if (boost::filesystem::exists(extDB_config_path))
 			{
 				conf_found = true;
 				extDB_info.path = extDB_config_path.parent_path().string();
@@ -115,60 +114,29 @@ Ext::Ext(std::string dll_path, std::unordered_map<std::string, std::string> opti
 			{
 				conf_found = true;
 				extDB_config_path = boost::filesystem::path("extdb-conf.ini");
-				extDB_info.path = boost::filesystem::current_path().string();
+				extDB_info.path = extDB_config_path.parent_path().string();
 			}
 			else
 			{
 				#ifdef _WIN32	// Windows Only, Linux Arma2 Doesn't have extension Support
-					// Search for Randomize Config File -- Legacy Security Support For Arma2Servers
+					// Search for Randomize Config File -- Legacy Security Support For Arma2Servers		
 
 					extDB_config_path = extDB_config_path.parent_path();
-					extDB_config_str = extDB_config_path.make_preferred().string();
-
-					std::regex expression("extdb-conf.*ini");
-
+					// CHECK DLL PATH FOR CONFIG)
 					if (!extDB_config_str.empty())
 					{
-						// CHECK DLL PATH FOR CONFIG)
-						for (boost::filesystem::directory_iterator it(extDB_config_str); it != boost::filesystem::directory_iterator(); ++it)
-						{
-							if (is_regular_file(it->path()))
-							{
-								if(std::regex_search(it->path().string(), expression))
-								{
-									conf_found = true;
-									conf_randomized = true;
-									extDB_config_path = boost::filesystem::path(it->path().string());
-									extDB_info.path = boost::filesystem::path(extDB_config_str).string();
-									break;
-								}
-							}
-						}
+						search(extDB_config_path, conf_found, conf_randomized);
 					}
 
 					// CHECK ARMA ROOT DIRECTORY FOR CONFIG
 					if (!conf_found)
 					{
-						for(boost::filesystem::directory_iterator it(boost::filesystem::current_path()); it !=  boost::filesystem::directory_iterator(); ++it)
-						{
-							if (is_regular_file(it->path()))
-							{
-								if(std::regex_search(it->path().string(), expression))
-								{
-									conf_found = true;
-									conf_randomized = true;
-									extDB_config_path = boost::filesystem::path(it->path().string());
-									extDB_info.path = boost::filesystem::current_path().string();
-									break;
-								}
-							}
-						}
+						extDB_config_path = boost::filesystem::current_path().string();
+						search(extDB_config_path, conf_found, conf_randomized);
 					}
 				#endif
 			}
 		}
-
-
 
 		if (conf_found)
 		{
@@ -340,6 +308,9 @@ Ext::Ext(std::string dll_path, std::unordered_map<std::string, std::string> opti
 				logger->info("extDB2: Detected {0} Cores, Setting up {1} Worker Threads (config settings)", detected_cpu_cores, extDB_info.max_threads);
 			}
 
+			// Save -extDB_VAR value for retreiving later
+			extDB_info.var = options["VAR"];
+
 			// Setup ASIO Worker Pool
 			io_work_ptr.reset(new boost::asio::io_service::work(io_service));
 			for (int i = 0; i < extDB_info.max_threads; ++i)
@@ -396,6 +367,27 @@ void Ext::stop()
 		rcon_thread.join();
 	}
 }
+
+#ifdef _WIN32
+	void Ext::search(boost::filesystem::path &extDB_config_path, bool &conf_found, bool &conf_randomized)
+	{
+		std::regex expression("extdb-conf.*ini");
+		for (boost::filesystem::directory_iterator it(extDB_config_path); it != boost::filesystem::directory_iterator(); ++it)
+		{
+			if (is_regular_file(it->path()))
+			{
+				if(std::regex_search(it->path().string(), expression))
+				{
+					conf_found = true;
+					conf_randomized = true;
+					extDB_config_path = boost::filesystem::path(it->path().string());
+					extDB_info.path = boost::filesystem::current_path().string();
+					break;
+				}
+			}
+		}
+	}
+#endif
 
 
 Poco::Data::Session Ext::getDBSession_mutexlock(AbstractExt::DBConnectionInfo &database)

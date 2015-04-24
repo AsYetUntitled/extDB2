@@ -22,6 +22,9 @@ along with this program. If not, see <http://www.gnu.org/licenses/>.
 #include <unordered_map>
 
 #include <boost/asio.hpp>
+#ifdef _WIN32
+	#include <boost/filesystem.hpp>
+#endif
 #include <boost/thread/thread.hpp>
 
 #include <Poco/Data/SessionPool.h>
@@ -83,6 +86,11 @@ class Ext: public AbstractExt
 		// Results
 		std::unordered_map<int, resultData> stored_results;
 		std::mutex mutex_results;  // Using Same Lock for Unique ID aswell
+
+		#ifdef _WIN32
+			// Search for randomized config file
+			void search(boost::filesystem::path &extDB_config_path, bool &conf_found, bool &conf_randomized);
+		#endif
 
 		// RCon
 		void connectRcon(char *output, const int &output_size, const std::string &rcon_conf);
