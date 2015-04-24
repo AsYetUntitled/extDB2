@@ -36,6 +36,6 @@ class HTTP_RAW: public AbstractProtocol
 
 		HTTP *http_pool;
 
+		bool auth = false;
 		Poco::Net::HTTPBasicCredentials http_basic_credentials;
-		bool 		   auth;
 };

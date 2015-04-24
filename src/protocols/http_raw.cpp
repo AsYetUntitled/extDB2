@@ -38,33 +38,63 @@ along with this program. If not, see <http://www.gnu.org/licenses/>.
 bool HTTP_RAW::init(AbstractExt *extension, const std::string &database_id, const std::string init_str)
 {
 	extension_ptr = extension;
-	int max_sessions = extension_ptr->pConf->getInt(database_id + ".MaxSessions", extension_ptr->extDB_info.max_threads);
-	std::string host = extension_ptr->pConf->getString(database_id + ".Host", "127.0.0.1");
 
+	std::string host = extension_ptr->pConf->getString(database_id + ".Host", "127.0.0.1");
 	int port = extension_ptr->pConf->getInt(database_id + ".Port", 80);
+	int max_sessions = extension_ptr->pConf->getInt(database_id + ".MaxSessions", extension_ptr->extDB_info.max_threads);
 	http_pool = new HTTP(host, port, max_sessions);
 
-	if (extension_ptr->pConf->has(database_id + ".Username"))
+	bool status;
+	if (extension_ptr->pConf->hasOption(database_id + ".Type"))
 	{
-		http_basic_credentials.setUsername(extension_ptr->pConf->getString(database_id + ".Username", ""));
-		http_basic_credentials.setPassword(extension_ptr->pConf->getString(database_id + ".Password", ""));
-		auth = true;
+		std::string database_type = extension_ptr->pConf->getString(database_id) + ".Type";
+		if (boost::iequals(database_type, std::string("HTTP")))
+		{
+			if (extension_ptr->pConf->has(database_id + ".Username"))
+			{
+				http_basic_credentials.setUsername(extension_ptr->pConf->getString(database_id + ".Username", ""));
+				http_basic_credentials.setPassword(extension_ptr->pConf->getString(database_id + ".Password", ""));
+				auth = true;
+			}			
+		 	if (boost::iequals(init_str, std::string("FULL_RETURN")))
+			{
+				http_return = 1;
+				#ifdef DEBUG_TESTING
+					extension_ptr->console->info("extDB2: HTTP_RAW: Initialized");
+				#endif
+				extension_ptr->logger->info("extDB2: HTTP_RAW: Initialized");
+			}
+			else
+			{
+				http_return = 0;
+				#ifdef DEBUG_TESTING
+					extension_ptr->console->info("extDB2: HTTP_RAW: Initialized: Full Return");
+				#endif
+				extension_ptr->logger->info("extDB2: HTTP_RAW: Initialized: Full Return");
+			}
+			status = true;
+		}
+		else
+		{
+			#ifdef DEBUG_TESTING
+			extension_ptr->console->warn("extDB2: HTTP_RAW: Wrong Database Type in config file: {0}", extension_ptr->pConf->getString(database_id) + ".Type");
+				extension_ptr->console->warn("extDB2: HTTP_RAW: Database: {0}", database_id);
+			#endif
+				extension_ptr->logger->warn("extDB2: HTTP_RAW: Wrong Database Type in config file: {0}", extension_ptr->pConf->getString(database_id) + ".Type");
+			extension_ptr->logger->warn("extDB2: HTTP_RAW: Database: {0}", database_id);
+			status = false;
+		}
 	}
 	else
 	{
-		auth = false;
+		#ifdef DEBUG_TESTING
+			extension_ptr->console->warn("extDB2: HTTP_RAW: Missing HTTP Backend Info: {0}", database_id);
+		#endif
+		extension_ptr->logger->warn("extDB2: HTTP_RAW: Missing HTTP Backend Info: {0}", database_id);
+		status = false;
 	}
 
- 	if (boost::iequals(init_str, std::string("FULL_RETURN")))
-	{
-		http_return = 1;
-	}
-	else
-	{
-		http_return = 0;
-	}
-
-	return true;
+	return status;
 }
 
 
@@ -83,7 +113,7 @@ bool HTTP_RAW::callProtocol(std::string input_str, std::string &result, const in
 		{
 			std::unique_ptr<Poco::Net::HTTPClientSession> session = http_pool->get();
 			Poco::Net::HTTPRequest request(Poco::Net::HTTPMessage::HTTP_1_1);
-			
+
 			if (input_str.substr(0,4) == "POST")
 			{
 				request.setMethod(Poco::Net::HTTPRequest::HTTP_POST);
@@ -121,7 +151,7 @@ bool HTTP_RAW::callProtocol(std::string input_str, std::string &result, const in
 					}
 					else
 					{
-						result = "[0,\"Error: HTTP Status Code: " + http_status_code + "\"]"; // TODO HTTP Response STATUS
+						result = "[0,\"Error: HTTP Status Code: " + http_status_code + "\"]";
 						#ifdef DEBUG_TESTING
 							extension_ptr->console->error("extDB2: HTTP_RAW: Error: HTTP Status Code {0}", http_status_code);
 							extension_ptr->console->error("extDB2: HTTP_RAW: Error: {0}", input_str);
@@ -140,7 +170,7 @@ bool HTTP_RAW::callProtocol(std::string input_str, std::string &result, const in
 					}
 					else
 					{
-						result = "[0," + http_status_code + "," + result + "]"; // TODO Log HTTP STATUS ERROR
+						result = "[0," + http_status_code + "," + result + "]";
 						#ifdef DEBUG_TESTING
 							extension_ptr->console->error("extDB2: HTTP_RAW: Error: HTTP Status Code {0}", http_status_code);
 							extension_ptr->console->error("extDB2: HTTP_RAW: Error: {0}", input_str);
@@ -154,7 +184,7 @@ bool HTTP_RAW::callProtocol(std::string input_str, std::string &result, const in
 		}
 		else
 		{
-			result = "[0,\"Error\"]"; // TODO Invalid Command / String
+			result = "[0,\"Error\"]";
 			#ifdef DEBUG_TESTING
 				extension_ptr->console->error("extDB2: HTTP_RAW: Error: Input to Short {0}", input_str);
 			#endif
