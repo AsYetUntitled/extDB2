@@ -177,7 +177,6 @@ Ext::Ext(std::string dll_path, std::unordered_map<std::string, std::string> opti
 
 		//		File Logger
 		Poco::DateTime current_dateTime;
-		std::string log_filename = Poco::DateTimeFormatter::format(current_dateTime, "%H-%M-%S");
 
 		boost::filesystem::path log_relative_path;
 		log_relative_path = boost::filesystem::path(extDB_info.path);
@@ -186,9 +185,11 @@ Ext::Ext(std::string dll_path, std::unordered_map<std::string, std::string> opti
 		log_relative_path /= Poco::DateTimeFormatter::format(current_dateTime, "%Y");
 		log_relative_path /= Poco::DateTimeFormatter::format(current_dateTime, "%n");
 		log_relative_path /= Poco::DateTimeFormatter::format(current_dateTime, "%d");
+
 		extDB_info.log_path = log_relative_path.make_preferred().string();
 		boost::filesystem::create_directories(log_relative_path);
-		log_relative_path /= log_filename;
+
+		log_relative_path /= Poco::DateTimeFormatter::format(current_dateTime, "%H-%M-%S");
 
 		auto logger_temp = spdlog::rotating_logger_mt("extDB2 File Logger", log_relative_path.make_preferred().string(), 1048576 * 100, 3, extDB_info.logger_flush);
 		logger.swap(logger_temp);

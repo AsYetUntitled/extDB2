@@ -82,39 +82,47 @@ bool SQL_CUSTOM_V2::init(AbstractExt *extension, const std::string &database_id,
 	Poco::AutoPtr<Poco::Util::IniFileConfiguration> template_ini;
 	template_ini = new Poco::Util::IniFileConfiguration();
 
-	boost::filesystem::path SQL_CUSTOM_path(extension_ptr->extDB_info.path);
-	SQL_CUSTOM_path /= "extDB";
-	SQL_CUSTOM_path /= "SQL_CUSTOM_V2";
-	boost::filesystem::create_directories(SQL_CUSTOM_path); // Creating Directory if missing
+	boost::filesystem::path sql_custom_path(extension_ptr->extDB_info.path);
+	sql_custom_path /= "extDB";
+	sql_custom_path /= "SQL_CUSTOM_V2";
+	boost::filesystem::create_directories(sql_custom_path); // Creating Directory if missing
 
-	bool status = true;
-	if (status)
+	bool status = false;
+
+	boost::filesystem::path custom_ini_path(sql_custom_path);
+	custom_ini_path /= (init_str + ".ini");
+	std::string custom_ini_file;
+	if (boost::filesystem::exists(custom_ini_path))
 	{
-		std::string db_template_file_str;
-		Poco::StringTokenizer custom_ini_files(init_str, ",", Poco::StringTokenizer::TOK_TRIM);
-		for (auto &custom_ini_file : custom_ini_files)
+		if (boost::filesystem::is_regular_file(custom_ini_path))
 		{
-			boost::filesystem::path db_template_file(SQL_CUSTOM_path);
-			db_template_file /= (custom_ini_file + ".ini");
-			db_template_file_str = db_template_file.make_preferred().string();
-
+			status = true;
+			custom_ini_file = custom_ini_path.string();
+			template_ini->loadExtra(custom_ini_file);
 			#ifdef DEBUG_TESTING
-				extension_ptr->console->info("extDB2: SQL_CUSTOM_V2: Loading Template Filename: {0}", db_template_file_str);
+				extension_ptr->console->info("extDB2: SQL_CUSTOM_V2: Loading Template Filename: {0}", custom_ini_file);
 			#endif
-			extension_ptr->logger->info("extDB2: SQL_CUSTOM_V2: Loading Template Filename: {0}", db_template_file_str);
-
-			if (boost::filesystem::exists(db_template_file_str))
+			extension_ptr->logger->info("extDB2: SQL_CUSTOM_V2: Loading Template Filename: {0}", custom_ini_file);
+		}
+	}
+	else
+	{
+		custom_ini_path = sql_custom_path;
+		custom_ini_path /= init_str;
+		if (boost::filesystem::is_directory(custom_ini_path))
+		{
+			for (boost::filesystem::directory_iterator it(custom_ini_path); it != boost::filesystem::directory_iterator(); ++it)
 			{
-				template_ini->loadExtra(db_template_file_str);
-			}
-			else
-			{
-				status = false;
-				#ifdef DEBUG_TESTING
-					extension_ptr->console->warn("extDB2: SQL_CUSTOM_V2: Template File Not Found: {0}", db_template_file_str);
-				#endif
-				extension_ptr->logger->warn("extDB2: SQL_CUSTOM_V2: Template File Not Found: {0}", db_template_file_str);
-				break;
+				if (boost::filesystem::is_regular_file(it->path()))
+				{
+					status = true;
+					custom_ini_file = it->path().string();
+					template_ini->loadExtra(custom_ini_file);
+					#ifdef DEBUG_TESTING
+						extension_ptr->console->info("extDB2: SQL_CUSTOM_V2: Loading Template Filename: {0}", custom_ini_file);
+					#endif
+					extension_ptr->logger->info("extDB2: SQL_CUSTOM_V2: Loading Template Filename: {0}", custom_ini_file);
+				}
 			}
 		}
 	}
