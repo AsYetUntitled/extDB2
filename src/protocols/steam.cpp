@@ -35,8 +35,21 @@ From Frank https://gist.github.com/Fank/11127158
 
 bool STEAM::init(AbstractExt *extension, const std::string &database_id, const std::string init_str)
 {
+	bool status;
 	extension_ptr = extension;
-	return true;
+	if (extension_ptr->extDB_connectors_info.steam)
+	{
+		status = true;
+	}
+	else
+	{
+		#ifdef DEBUG_TESTING
+			extension_ptr->console->warn("extDB2: STEAM: Error VAC Not Started");
+		#endif
+		extension_ptr->logger->warn("extDB2: STEAM: Error VAC Not Started");
+		status = false;
+	}
+	return status;
 }
 
 

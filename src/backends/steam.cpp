@@ -332,48 +332,42 @@ void Steam::updateSteamFriends(std::vector<std::string> &steamIDs)
 		steam_get.update(query, pt);
 		steam_thread.start(steam_get);
 
-		int response = -2;
 		try
 		{
 			steam_thread.join(10000); // 10 Seconds
-			response = steam_get.getResponse();
+			switch (steam_get.getResponse())
+			{
+				case 1:
+					// SUCCESS STEAM QUERY
+					{
+						SteamFriends steam_info;
+						for (const auto &val : pt.get_child("friendslist.friends"))
+						{
+							std::string friendsteamID = val.second.get<std::string>("steamid", "");
+							if (!friendsteamID.empty())
+							{
+								steam_info.friends.push_back(friendsteamID);
+							}
+						}
+						SteamFriends_Cache->add(steamID, steam_info);
+					}
+					break;
+				case 0:
+					// HTTP ERROR
+					break;
+				case -1:
+					// ERROR STEAM QUERY
+					break;
+			}
 		}
 		catch (Poco::TimeoutException&)
 		{
 			steam_get.abort();
 			steam_thread.join();
-		}
-
-		switch (response)
-		{
-			case 1:
-				// SUCCESS STEAM QUERY
-				{
-					SteamFriends steam_info;
-					for (const auto &val : pt.get_child("friendslist.friends"))
-					{
-						std::string friendsteamID = val.second.get<std::string>("steamid", "");
-						if (!friendsteamID.empty())
-						{
-							steam_info.friends.push_back(friendsteamID);
-						}
-					}
-					SteamFriends_Cache->add(steamID, steam_info);
-				}
-				break;
-			case 0:
-				// HTTP ERROR
-				break;
-			case -1:
-				// ERROR STEAM QUERY
-				break;
-			case -2:
-				// Timeout
-				{
-					steam_get.abort();
-					steam_thread.join();
-				}
-				break;
+			#ifdef DEBUG_TESTING
+				extension_ptr->console->error("extDB2: Steam: Request Timed Out");
+			#endif
+			extension_ptr->logger->error("extDB2: Steam: Request Timed Out");
 		}
 	}
 }
@@ -518,7 +512,7 @@ void Steam::run()
 					}
 					result = "[1,[" + result + "]]";
 					AbstractExt::resultData result_data;
-					result_data.message = result;
+					result_data.message = std::move(result);
 					extension_ptr->saveResult_mutexlock(val.unique_id, result_data);
 				}
 			}
