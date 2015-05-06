@@ -15,7 +15,6 @@ namespace
 	extension_init(void)
 	{
 		bool status = true;
-		//std::vector<std::string> args;
 		std::string arg;
 		std::unordered_map<std::string, std::string> options;
 
@@ -29,7 +28,6 @@ namespace
 			char buffer[4096];
 			while (fgets (buffer, 4096, fh))
 			{
-				//args.push_back(buffer);
 				arg = buffer;
 				if (arg.size() >= 12)
 				{

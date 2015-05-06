@@ -104,6 +104,13 @@ bool SQL_CUSTOM_V2::init(AbstractExt *extension, const std::string &database_id,
 			#endif
 			extension_ptr->logger->info("extDB2: SQL_CUSTOM_V2: Loading Template Filename: {0}", custom_ini_file);
 		}
+		else
+		{
+			#ifdef DEBUG_TESTING
+				extension_ptr->console->info("extDB2: SQL_CUSTOM: Loading Template Error: Not Regular File: {0}", custom_ini_file);
+			#endif
+			extension_ptr->logger->info("extDB2: SQL_CUSTOM: Loading Template Error: Not Regular File: {0}", custom_ini_file);
+		}
 	}
 	else
 	{
@@ -122,6 +129,13 @@ bool SQL_CUSTOM_V2::init(AbstractExt *extension, const std::string &database_id,
 						extension_ptr->console->info("extDB2: SQL_CUSTOM_V2: Loading Template Filename: {0}", custom_ini_file);
 					#endif
 					extension_ptr->logger->info("extDB2: SQL_CUSTOM_V2: Loading Template Filename: {0}", custom_ini_file);
+				}
+				else
+				{
+					#ifdef DEBUG_TESTING
+						extension_ptr->console->info("extDB2: SQL_CUSTOM: Loading Template Error: Not Regular File: {0}", custom_ini_file);
+					#endif
+					extension_ptr->logger->info("extDB2: SQL_CUSTOM: Loading Template Error: Not Regular File: {0}", custom_ini_file);
 				}
 			}
 		}
