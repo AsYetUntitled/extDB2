@@ -46,14 +46,7 @@ set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
 # Setup C/C++ compiler options
 #################################################################################
 
-#include(cmake/CXX11.cmake)   ???
-#check_for_cxx11_compiler(CXX11_COMPILER)
-
-# If a C++11 compiler is available, then set the appropriate flags
-#if(CXX11_COMPILER)
-#    enable_cxx11()
-#    add_definitions(-DPOCO_ENABLE_CPP11)
-#endif()
+add_definitions(-DPOCO_ENABLE_CPP11)
 
 if(NOT MSVC_IDE)
   if(NOT CMAKE_BUILD_TYPE)
@@ -97,20 +90,18 @@ option(FORCE_OPENSSL "Force usage of OpenSSL even under windows" OFF)
 option(ENABLE_TESTS
   "Set to OFF|ON (default is OFF) to control build of POCO tests & samples" OFF)
 
-if(WIN32)
-	option(POCO_MT
-		"Set to OFF|ON (default is OFF) to control build of POCO as STATIC library" OFF)
-	option(POCO_MD
-		"Set to OFF|ON (default is OFF) to control build of POCO as STATIC library" ON)
-endif()
-
 option(POCO_STATIC
   "Set to OFF|ON (default is OFF) to control build of POCO as STATIC library" OFF)
 
 option(POCO_UNBUNDLED
   "Set to OFF|ON (default is OFF) to control linking dependencies as external" OFF)
 
-# Uncomment from next two lines to force statitc or dynamic library, default is autodetection
+if(MSVC)
+    option(POCO_MT
+      "Set to OFF|ON (default is OFF) to control build of POCO as /MT instead of /MD" OFF)
+endif()
+
+# Uncomment from next two lines to force static or dynamic library, default is autodetection
 if(POCO_STATIC)
     add_definitions( -DPOCO_STATIC -DPOCO_NO_AUTOMATIC_LIBS)
     set( LIB_MODE STATIC )
@@ -172,12 +163,14 @@ endif()
 
 
 #NetSSL
+
+
 if(WIN32 AND ENABLE_NETSSL_WIN)
     add_subdirectory(NetSSL_Win)
     list(APPEND Poco_COMPONENTS "NetSSL_Win")
 endif(WIN32 AND ENABLE_NETSSL_WIN)
 
-find_package(OpenSSL)		#TODO: Offical CMake Find OpenSSL only gets MD versions of library.
+find_package(OpenSSL)
 if(OPENSSL_FOUND)
     include_directories("${OPENSSL_INCLUDE_DIR}")
     if(ENABLE_NETSSL)
