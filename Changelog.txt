@@ -9,7 +9,7 @@
 
 	FIXED: Issue were STEAM / Redis Protocols wouldn't save result.
 
-	UPDATED: RemoteServer with basic blacklisting ips that failed to login over 3 tiems
+	UPDATED: RemoteServer with basic blacklisting ips that failed to login over 3 times
 
 	MINOR: Fixed console output on debug extension builds
 	MINOR: Updated Poco / Boost / MySQL / SPDLog Libraries
