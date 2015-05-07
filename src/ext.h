@@ -81,10 +81,10 @@ class Ext: public AbstractExt
 		std::mutex mutex_unordered_map_protocol;
 
 		// Unique ID
-		long unique_id_counter = 9816; // Can't be value 0 or 1
+		unsigned long unique_id_counter = 9816; // Can't be value 0 or 1
 
 		// Results
-		std::unordered_map<int, resultData> stored_results;
+		std::unordered_map<unsigned long, resultData> stored_results;
 		std::mutex mutex_results;  // Using Same Lock for Unique ID aswell
 
 		#ifdef _WIN32
