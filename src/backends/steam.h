@@ -72,7 +72,7 @@ class Steam: public Poco::Runnable
 		void stop();
 
 		void init(AbstractExt *extension, std::string &extension_path, Poco::DateTime &current_dateTime);
-		void addQuery(const unsigned long &unique_id, bool queryFriends, bool queryVacBans, std::vector<std::string> &steamIDs);
+		void addQuery(const unsigned int &unique_id, bool queryFriends, bool queryVacBans, std::vector<std::string> &steamIDs);
 
 	private:
 		AbstractExt *extension_ptr;

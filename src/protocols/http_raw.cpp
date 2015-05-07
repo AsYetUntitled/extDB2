@@ -98,7 +98,7 @@ bool HTTP_RAW::init(AbstractExt *extension, const std::string &database_id, cons
 }
 
 
-bool HTTP_RAW::callProtocol(std::string input_str, std::string &result, const bool async_method, const unsigned long unique_id)
+bool HTTP_RAW::callProtocol(std::string input_str, std::string &result, const bool async_method, const unsigned int unique_id)
 {
 	try
 	{

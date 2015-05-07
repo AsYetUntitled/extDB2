@@ -42,8 +42,8 @@ public:
 
 	AbstractExt *extension_ptr;
 
-	long unique_client_id_counter = 0;
-	long unique_client_id_counter_max = std::numeric_limits<long>::max();
+	int unique_client_id_counter = 0;
+	int unique_client_id_counter_max = std::numeric_limits<int>::max();
 	std::mutex id_mgr_mutex;
 
 	struct clients

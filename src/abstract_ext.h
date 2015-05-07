@@ -102,12 +102,12 @@ class AbstractExt
 		std::shared_ptr<spdlog::logger> logger;
 		std::shared_ptr<spdlog::logger> vacBans_logger;
 	
-		virtual void saveResult_mutexlock(const unsigned long &unique_id, const resultData &result_data)=0;
+		virtual void saveResult_mutexlock(const unsigned int &unique_id, const resultData &result_data)=0;
 
 		virtual Poco::Data::Session getDBSession_mutexlock(DBConnectionInfo &database)=0;
 		virtual Poco::Data::Session  getDBSession_mutexlock(DBConnectionInfo &database, Poco::Data::SessionPool::SessionDataPtr &session_data_ptr)=0;
 		
 		virtual void rconCommand(std::string str)=0;
-		virtual void steamQuery(const unsigned long &unique_id, bool queryFriends, bool queryVacBans, std::string &steamID, bool wakeup)=0;
-		virtual void steamQuery(const unsigned long &unique_id, bool queryFriends, bool queryVacBans, std::vector<std::string> &steamIDs, bool wakeup)=0;
+		virtual void steamQuery(const unsigned int &unique_id, bool queryFriends, bool queryVacBans, std::string &steamID, bool wakeup)=0;
+		virtual void steamQuery(const unsigned int &unique_id, bool queryFriends, bool queryVacBans, std::vector<std::string> &steamIDs, bool wakeup)=0;
 };

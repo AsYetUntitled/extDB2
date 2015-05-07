@@ -217,7 +217,7 @@ void MISC::getRandomString(std::string &input_str, bool uniqueString, std::strin
 }
 
 
-bool MISC::callProtocol(std::string input_str, std::string &result, const bool async_method, const unsigned long unique_id)
+bool MISC::callProtocol(std::string input_str, std::string &result, const bool async_method, const unsigned int unique_id)
 {
 	// Protocol
 	std::string command;

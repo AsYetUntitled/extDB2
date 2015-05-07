@@ -49,8 +49,8 @@ class Ext: public AbstractExt
 		void rconCommand(std::string str);
 
 	protected:
-		const unsigned long saveResult_mutexlock(const resultData &result_data);
-		void saveResult_mutexlock(const unsigned long &unique_id, const resultData &result_data);
+		const unsigned int saveResult_mutexlock(const resultData &result_data);
+		void saveResult_mutexlock(const unsigned int &unique_id, const resultData &result_data);
 
 		Poco::Thread rcon_thread;
 		Poco::Thread steam_thread;
@@ -58,8 +58,8 @@ class Ext: public AbstractExt
 		Poco::Data::Session getDBSession_mutexlock(AbstractExt::DBConnectionInfo &database);
 		Poco::Data::Session getDBSession_mutexlock(AbstractExt::DBConnectionInfo &database, Poco::Data::SessionPool::SessionDataPtr &session_data_ptr);
 
-		void steamQuery(const unsigned long &unique_id, bool queryFriends, bool queryVacBans, std::string &steamID, bool wakeup);
-		void steamQuery(const unsigned long &unique_id, bool queryFriends, bool queryVacBans, std::vector<std::string> &steamIDs, bool wakeup);
+		void steamQuery(const unsigned int &unique_id, bool queryFriends, bool queryVacBans, std::string &steamID, bool wakeup);
+		void steamQuery(const unsigned int &unique_id, bool queryFriends, bool queryVacBans, std::vector<std::string> &steamIDs, bool wakeup);
 
 	private:
 		// RCon
@@ -81,10 +81,10 @@ class Ext: public AbstractExt
 		std::mutex mutex_unordered_map_protocol;
 
 		// Unique ID
-		unsigned long unique_id_counter = 9816; // Can't be value 1
+		unsigned int unique_id_counter = 9816; // Can't be value 1
 
 		// Results
-		std::unordered_map<unsigned long, resultData> stored_results;
+		std::unordered_map<unsigned int, resultData> stored_results;
 		std::mutex mutex_results;  // Using Same Lock for Unique ID aswell
 
 		#ifdef _WIN32
@@ -102,8 +102,8 @@ class Ext: public AbstractExt
 		void connectDatabase(char *output, const int &output_size, const std::string &database_conf, const std::string &database_id);
 
 		// Results
-		void getSinglePartResult_mutexlock(char *output, const int &output_size, const unsigned long &unique_id);
-		void getMultiPartResult_mutexlock(char *output, const int &output_size, const unsigned long &unique_id);
+		void getSinglePartResult_mutexlock(char *output, const int &output_size, const unsigned int &unique_id);
+		void getMultiPartResult_mutexlock(char *output, const int &output_size, const unsigned int &unique_id);
 		
 		void getTCPRemote_mutexlock(char *output, const int &output_size);
 		void sendTCPRemote_mutexlock(std::string &input_str);
@@ -112,5 +112,5 @@ class Ext: public AbstractExt
 		void addProtocol(char *output, const int &output_size, const std::string &database_id, const std::string &protocol, const std::string &protocol_name, const std::string &init_data);
 		void syncCallProtocol(char *output, const int &output_size, std::string &input_str, std::string::size_type &input_str_length);
 		void onewayCallProtocol(const int &output_size, std::string &input_str);
-		void asyncCallProtocol(const int &output_size, const std::string &protocol, const std::string &data, const unsigned long &unique_id);
+		void asyncCallProtocol(const int &output_size, const std::string &protocol, const std::string &data, const unsigned int &unique_id);
 };

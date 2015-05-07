@@ -55,7 +55,7 @@ bool LOG::init(AbstractExt *extension, const std::string &database_id, const std
 }
 
 
-bool LOG::callProtocol(std::string input_str, std::string &result, const bool async_method, const unsigned long unique_id)
+bool LOG::callProtocol(std::string input_str, std::string &result, const bool async_method, const unsigned int unique_id)
 {
 	logger->info(input_str.c_str());
 	result = "[1]";

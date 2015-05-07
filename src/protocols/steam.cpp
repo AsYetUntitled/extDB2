@@ -68,7 +68,7 @@ bool STEAM::isNumber(const std::string &input_str)
 }
 
 
-bool STEAM::callProtocol(std::string input_str, std::string &result, const bool async_method, const unsigned long unique_id)
+bool STEAM::callProtocol(std::string input_str, std::string &result, const bool async_method, const unsigned int unique_id)
 {
 	#ifdef DEBUG_TESTING
 		extension_ptr->console->info("extDB2: STEAM: Trace: Input: {0}", input_str);

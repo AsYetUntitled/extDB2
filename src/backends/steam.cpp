@@ -373,7 +373,7 @@ void Steam::updateSteamFriends(std::vector<std::string> &steamIDs)
 }
 
 
-void Steam::addQuery(const unsigned long &unique_id, bool queryFriends, bool queryVacBans, std::vector<std::string> &steamIDs)
+void Steam::addQuery(const unsigned int &unique_id, bool queryFriends, bool queryVacBans, std::vector<std::string> &steamIDs)
 {
 	if (*steam_run_flag)
 	{

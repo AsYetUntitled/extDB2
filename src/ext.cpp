@@ -89,7 +89,7 @@ Ext::Ext(std::string dll_path, std::unordered_map<std::string, std::string> opti
 
 		if (options.count("WORK") > 0)
 		{
-			extDB_config_path = options["extDB2-work"];
+			extDB_config_path = options["WORK"];
 			extDB_config_path /= "extdb-conf.ini";
 			if (boost::filesystem::exists(extDB_config_path))
 			{
@@ -99,7 +99,9 @@ Ext::Ext(std::string dll_path, std::unordered_map<std::string, std::string> opti
 			else
 			{
 				extDB_config_path = extDB_config_path.parent_path();
-				search(extDB_config_path, conf_found, conf_randomized);
+				#ifdef _WIN32
+					search(extDB_config_path, conf_found, conf_randomized);
+				#endif
 			}
 		}
 		else
@@ -407,7 +409,7 @@ Poco::Data::Session Ext::getDBSession_mutexlock(AbstractExt::DBConnectionInfo &d
 }
 
 
-void Ext::steamQuery(const unsigned long &unique_id, bool queryFriends, bool queryVacBans, std::string &steamID, bool wakeup)
+void Ext::steamQuery(const unsigned int &unique_id, bool queryFriends, bool queryVacBans, std::string &steamID, bool wakeup)
 // Adds Query to Steam Protocol, wakeup option is to wakeup steam thread. Note: Steam thread periodically checks every minute anyway.
 {
 	std::vector<std::string> steamIDs;
@@ -420,7 +422,7 @@ void Ext::steamQuery(const unsigned long &unique_id, bool queryFriends, bool que
 }
 
 
-void Ext::steamQuery(const unsigned long &unique_id, bool queryFriends, bool queryVacBans, std::vector<std::string> &steamIDs, bool wakeup)
+void Ext::steamQuery(const unsigned int &unique_id, bool queryFriends, bool queryVacBans, std::vector<std::string> &steamIDs, bool wakeup)
 // Adds Query to Steam Protocol, wakeup option is to wakeup steam thread. Note: Steam thread periodically checks every minute anyway.
 {
 	steam.addQuery(unique_id, queryFriends, queryVacBans, steamIDs);
@@ -762,7 +764,7 @@ void Ext::addProtocol(char *output, const int &output_size, const std::string &d
 }
 
 
-void Ext::getSinglePartResult_mutexlock(char *output, const int &output_size, const unsigned long &unique_id)
+void Ext::getSinglePartResult_mutexlock(char *output, const int &output_size, const unsigned int &unique_id)
 // Gets Result String from unordered map array -- Result Formt == Single-Message
 //   If <=, then sends output to arma, and removes entry from unordered map array
 //   If >, sends [5] to indicate MultiPartResult
@@ -793,7 +795,7 @@ void Ext::getSinglePartResult_mutexlock(char *output, const int &output_size, co
 }
 
 
-void Ext::getMultiPartResult_mutexlock(char *output, const int &output_size, const unsigned long &unique_id)
+void Ext::getMultiPartResult_mutexlock(char *output, const int &output_size, const unsigned int &unique_id)
 // Gets Result String from unordered map array  -- Result Format = Multi-Message
 //   If length of String = 0, sends arma "", and removes entry from unordered map array
 //   If <=, then sends output to arma
@@ -831,18 +833,18 @@ void Ext::getMultiPartResult_mutexlock(char *output, const int &output_size, con
 }
 
 
-const unsigned long Ext::saveResult_mutexlock(const resultData &result_data)
+const unsigned int Ext::saveResult_mutexlock(const resultData &result_data)
 // Stores Result String and returns Unique ID, used by SYNC Calls where message > outputsize
 {
 	std::lock_guard<std::mutex> lock(mutex_results);
-	const unsigned long unique_id = unique_id_counter++;
+	const unsigned int unique_id = unique_id_counter++;
 	stored_results[unique_id] = std::move(result_data);
 	stored_results[unique_id].wait = false;
 	return unique_id;
 }
 
 
-void Ext::saveResult_mutexlock(const unsigned long &unique_id, const resultData &result_data)
+void Ext::saveResult_mutexlock(const unsigned int &unique_id, const resultData &result_data)
 // Stores Result String  in a unordered map array.
 //   Used when string > arma output char
 {
@@ -876,7 +878,7 @@ void Ext::getTCPRemote_mutexlock(char *output, const int &output_size)
 	{
 		resultData result_data;
 		result_data.message = std::move(result);
-		const unsigned long unique_id = saveResult_mutexlock(result_data);
+		const unsigned int unique_id = saveResult_mutexlock(result_data);
 		std::strcpy(output, Poco::NumberFormatter::format(unique_id).c_str());
 	}
 }
@@ -892,7 +894,7 @@ void Ext::sendTCPRemote_mutexlock(std::string &input_str)
 	}
 	else
 	{
-		long unique_client_id;
+		int unique_client_id;
 		if (Poco::NumberParser::tryParse(input_str.substr(2,(found-2)), unique_client_id))
 		{
 			std::lock_guard<std::mutex> lock(remote_server.clients_data_mutex);
@@ -938,7 +940,7 @@ void Ext::syncCallProtocol(char *output, const int &output_size, std::string &in
 			}
 			else
 			{
-				const unsigned long unique_id = saveResult_mutexlock(result_data);
+				const unsigned int unique_id = saveResult_mutexlock(result_data);
 				std::strcpy(output, ("[2,\"" + Poco::NumberFormatter::format(unique_id) + "\"]").c_str());
 			}
 		}
@@ -967,7 +969,7 @@ void Ext::onewayCallProtocol(const int &output_size, std::string &input_str)
 }
 
 
-void Ext::asyncCallProtocol(const int &output_size, const std::string &protocol, const std::string &data, const unsigned long &unique_id)
+void Ext::asyncCallProtocol(const int &output_size, const std::string &protocol, const std::string &data, const unsigned int &unique_id)
 // ASync + Save callProtocol
 // We check if Protocol exists here, since its a thread (less time spent blocking arma) and it shouldnt happen anyways
 {
@@ -1031,7 +1033,7 @@ void Ext::callExtension(char *output, const int &output_size, const char *functi
 							// Do this so if someone manages to get server, the error message wont get stored in the result unordered map
 							if (unordered_map_protocol.find(protocol) != unordered_map_protocol.end())
 							{
-								unsigned long unique_id;
+								unsigned int unique_id;
 								{
 									std::lock_guard<std::mutex> lock(mutex_results);
 									unique_id = unique_id_counter++;
@@ -1052,13 +1054,13 @@ void Ext::callExtension(char *output, const int &output_size, const char *functi
 				}
 				case '4': // GET -- Single-Part Message Format
 				{
-					const unsigned long unique_id = Poco::NumberParser::parse(input_str.substr(2));
+					const unsigned int unique_id = Poco::NumberParser::parse(input_str.substr(2));
 					getSinglePartResult_mutexlock(output, output_size, unique_id);
 					break;
 				}
 				case '5': // GET -- Multi-Part Message Format
 				{
-					const unsigned long unique_id = Poco::NumberParser::parse(input_str.substr(2));
+					const unsigned int unique_id = Poco::NumberParser::parse(input_str.substr(2));
 					getMultiPartResult_mutexlock(output, output_size, unique_id);
 					break;
 				}

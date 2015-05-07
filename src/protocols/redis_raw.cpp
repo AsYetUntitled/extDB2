@@ -73,7 +73,7 @@ bool REDIS_RAW::init(AbstractExt *extension, const std::string &database_id, con
 }
 
 
-bool REDIS_RAW::callProtocol(std::string input_str, std::string &result, const bool async_method, const unsigned long unique_id)
+bool REDIS_RAW::callProtocol(std::string input_str, std::string &result, const bool async_method, const unsigned int unique_id)
 {
 	#ifdef DEBUG_TESTING
 		extension_ptr->console->info("extDB2: REDIS_RAW: Trace: Input: {0}", input_str);
