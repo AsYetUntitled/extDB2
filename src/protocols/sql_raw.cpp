@@ -91,7 +91,7 @@ bool SQL_RAW::init(AbstractExt *extension, const std::string &database_id, const
 }
 
 
-bool SQL_RAW::callProtocol(std::string input_str, std::string &result, const int unique_id)
+bool SQL_RAW::callProtocol(std::string input_str, std::string &result, const bool async_method, const unsigned long unique_id)
 {
 	try
 	{

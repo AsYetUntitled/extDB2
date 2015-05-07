@@ -73,9 +73,8 @@ bool REDIS_RAW::init(AbstractExt *extension, const std::string &database_id, con
 }
 
 
-bool REDIS_RAW::callProtocol(std::string input_str, std::string &result, const int unique_id)
+bool REDIS_RAW::callProtocol(std::string input_str, std::string &result, const bool async_method, const unsigned long unique_id)
 {
-	bool status = true;
 	#ifdef DEBUG_TESTING
 		extension_ptr->console->info("extDB2: REDIS_RAW: Trace: Input: {0}", input_str);
 	#endif
@@ -83,14 +82,13 @@ bool REDIS_RAW::callProtocol(std::string input_str, std::string &result, const i
 		extension_ptr->logger->info("extDB2: REDIS_RAW: Trace: Input: {0}", input_str);
 	#endif
 
-	if (unique_id == -1)
+	if (!async_method)
 	{
 		#ifdef DEBUG_TESTING
 			extension_ptr->console->warn("extDB2: STEAM: SYNC MODE NOT SUPPORTED");
 		#endif
 		extension_ptr->logger->warn("extDB2: STEAM: SYNC MODE NOT SUPPORTED");
 		result = "[0, \"STEAM: SYNC MODE NOT SUPPORTED\"]";
-		status = false;
 	}
 	else
 	{
@@ -127,5 +125,5 @@ bool REDIS_RAW::callProtocol(std::string input_str, std::string &result, const i
 			}
 		}
 	}
-	return status;
+	return true;
 }

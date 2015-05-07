@@ -49,8 +49,8 @@ class Ext: public AbstractExt
 		void rconCommand(std::string str);
 
 	protected:
-		const int saveResult_mutexlock(const resultData &result_data);
-		void saveResult_mutexlock(const int &unique_id, const resultData &result_data);
+		const unsigned long saveResult_mutexlock(const resultData &result_data);
+		void saveResult_mutexlock(const unsigned long &unique_id, const resultData &result_data);
 
 		Poco::Thread rcon_thread;
 		Poco::Thread steam_thread;
@@ -58,8 +58,8 @@ class Ext: public AbstractExt
 		Poco::Data::Session getDBSession_mutexlock(AbstractExt::DBConnectionInfo &database);
 		Poco::Data::Session getDBSession_mutexlock(AbstractExt::DBConnectionInfo &database, Poco::Data::SessionPool::SessionDataPtr &session_data_ptr);
 
-		void steamQuery(const int &unique_id, bool queryFriends, bool queryVacBans, std::string &steamID, bool wakeup);
-		void steamQuery(const int &unique_id, bool queryFriends, bool queryVacBans, std::vector<std::string> &steamIDs, bool wakeup);
+		void steamQuery(const unsigned long &unique_id, bool queryFriends, bool queryVacBans, std::string &steamID, bool wakeup);
+		void steamQuery(const unsigned long &unique_id, bool queryFriends, bool queryVacBans, std::vector<std::string> &steamIDs, bool wakeup);
 
 	private:
 		// RCon
@@ -81,7 +81,7 @@ class Ext: public AbstractExt
 		std::mutex mutex_unordered_map_protocol;
 
 		// Unique ID
-		unsigned long unique_id_counter = 9816; // Can't be value 0 or 1
+		unsigned long unique_id_counter = 9816; // Can't be value 1
 
 		// Results
 		std::unordered_map<unsigned long, resultData> stored_results;
@@ -112,5 +112,5 @@ class Ext: public AbstractExt
 		void addProtocol(char *output, const int &output_size, const std::string &database_id, const std::string &protocol, const std::string &protocol_name, const std::string &init_data);
 		void syncCallProtocol(char *output, const int &output_size, std::string &input_str, std::string::size_type &input_str_length);
 		void onewayCallProtocol(const int &output_size, std::string &input_str);
-		void asyncCallProtocol(const int &output_size, const std::string &protocol, const std::string &data, const int &unique_id);
+		void asyncCallProtocol(const int &output_size, const std::string &protocol, const std::string &data, const unsigned long &unique_id);
 };

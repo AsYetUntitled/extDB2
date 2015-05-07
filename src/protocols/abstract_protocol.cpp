@@ -27,7 +27,7 @@ AbstractProtocol::~AbstractProtocol()
 {
 }
 
-bool AbstractProtocol::callProtocol(std::string input_str, std::string &result, const int unique_id)
+bool AbstractProtocol::callProtocol(std::string input_str, std::string &result, const bool async_method, const unsigned long unique_id)
 {
 	// Returning False disables saveResult from extDB, used in VAC Protocol
 	//  i.e return False when you are offloading work to another thread that will manage Result itself

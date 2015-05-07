@@ -451,7 +451,7 @@ void Steam::run()
 			result.clear();
 			for (auto &val: query_queue_copy)
 			{
-				if (val.unique_id > 0)
+				if (val.unique_id > 1)
 				{
 					result.clear();
 					if (val.queryFriends)

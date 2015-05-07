@@ -931,7 +931,7 @@ void SQL_CUSTOM_V2::callPreparedStatement(std::string call_name, Custom_Call_Uno
 }
 
 
-bool SQL_CUSTOM_V2::callProtocol(std::string input_str, std::string &result, const int unique_id)
+bool SQL_CUSTOM_V2::callProtocol(std::string input_str, std::string &result, const bool async_method, const unsigned long unique_id)
 {
 	#ifdef DEBUG_TESTING
 		extension_ptr->console->info("extDB2: SQL_CUSTOM_V2: Trace: UniqueID: {0} Input: {1}", unique_id, input_str);

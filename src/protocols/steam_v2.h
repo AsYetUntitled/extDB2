@@ -25,7 +25,7 @@ class STEAM_V2: public AbstractProtocol
 {
 	public:
 		bool init(AbstractExt *extension, const std::string &database_id, const std::string init_str);
-		bool callProtocol(std::string input_str, std::string &result, const int unique_id=-1);
+		bool callProtocol(std::string input_str, std::string &result, const bool async_method, const unsigned long unique_id=1);
 
 	private:
 		bool isNumber(const std::string &input_str);

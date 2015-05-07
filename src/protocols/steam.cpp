@@ -68,7 +68,7 @@ bool STEAM::isNumber(const std::string &input_str)
 }
 
 
-bool STEAM::callProtocol(std::string input_str, std::string &result, const int unique_id)
+bool STEAM::callProtocol(std::string input_str, std::string &result, const bool async_method, const unsigned long unique_id)
 {
 	#ifdef DEBUG_TESTING
 		extension_ptr->console->info("extDB2: STEAM: Trace: Input: {0}", input_str);
@@ -77,15 +77,14 @@ bool STEAM::callProtocol(std::string input_str, std::string &result, const int u
 		extension_ptr->logger->info("extDB2: STEAM: Trace: Input: {0}", input_str);
 	#endif
 
-	bool status = true;
-	if (unique_id == -1)
+
+	if (!async_method)
 	{
 		#ifdef DEBUG_TESTING
 			extension_ptr->console->warn("extDB2: STEAM: SYNC MODE NOT SUPPORTED");
 		#endif
 		extension_ptr->logger->warn("extDB2: STEAM: SYNC MODE NOT SUPPORTED");
 		result = "[0, \"STEAM: SYNC MODE NOT SUPPORTED\"]";
-		status = false;
 	}
 	else
 	{
@@ -101,6 +100,7 @@ bool STEAM::callProtocol(std::string input_str, std::string &result, const int u
 		{
 			Poco::StringTokenizer tokens(input_str.substr(found+1), ":");
 			std::vector<std::string> steamIDs;
+			bool status = true;
 			for (auto &token : tokens)
 			{
 				if (isNumber(token))
@@ -137,10 +137,9 @@ bool STEAM::callProtocol(std::string input_str, std::string &result, const int u
 					#endif
 					extension_ptr->logger->warn("extDB2: STEAM: Invalid Query Type: {0}", steam_query);
 					result = "[0, \"STEAM: Invalid Query Type\"]";
-					status = false;
 				}
 			}
 		}
 	}
-	return status;
+	return true;
 }

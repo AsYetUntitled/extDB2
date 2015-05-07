@@ -43,7 +43,7 @@ bool RCON::init(AbstractExt *extension,  const std::string &database_id, const s
 }
 
 
-bool RCON::callProtocol(std::string input_str, std::string &result, const int unique_id)
+bool RCON::callProtocol(std::string input_str, std::string &result, const bool async_method, const unsigned long unique_id)
 {
 	#ifdef DEBUG_TESTING
 		extension_ptr->console->info("extDB2: RCON: Trace: Input: {0}", input_str);

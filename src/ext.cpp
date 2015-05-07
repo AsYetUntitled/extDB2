@@ -407,7 +407,7 @@ Poco::Data::Session Ext::getDBSession_mutexlock(AbstractExt::DBConnectionInfo &d
 }
 
 
-void Ext::steamQuery(const int &unique_id, bool queryFriends, bool queryVacBans, std::string &steamID, bool wakeup)
+void Ext::steamQuery(const unsigned long &unique_id, bool queryFriends, bool queryVacBans, std::string &steamID, bool wakeup)
 // Adds Query to Steam Protocol, wakeup option is to wakeup steam thread. Note: Steam thread periodically checks every minute anyway.
 {
 	std::vector<std::string> steamIDs;
@@ -420,7 +420,7 @@ void Ext::steamQuery(const int &unique_id, bool queryFriends, bool queryVacBans,
 }
 
 
-void Ext::steamQuery(const int &unique_id, bool queryFriends, bool queryVacBans, std::vector<std::string> &steamIDs, bool wakeup)
+void Ext::steamQuery(const unsigned long &unique_id, bool queryFriends, bool queryVacBans, std::vector<std::string> &steamIDs, bool wakeup)
 // Adds Query to Steam Protocol, wakeup option is to wakeup steam thread. Note: Steam thread periodically checks every minute anyway.
 {
 	steam.addQuery(unique_id, queryFriends, queryVacBans, steamIDs);
@@ -831,18 +831,18 @@ void Ext::getMultiPartResult_mutexlock(char *output, const int &output_size, con
 }
 
 
-const int Ext::saveResult_mutexlock(const resultData &result_data)
+const unsigned long Ext::saveResult_mutexlock(const resultData &result_data)
 // Stores Result String and returns Unique ID, used by SYNC Calls where message > outputsize
 {
 	std::lock_guard<std::mutex> lock(mutex_results);
-	const int unique_id = unique_id_counter++;
+	const unsigned long unique_id = unique_id_counter++;
 	stored_results[unique_id] = std::move(result_data);
 	stored_results[unique_id].wait = false;
 	return unique_id;
 }
 
 
-void Ext::saveResult_mutexlock(const int &unique_id, const resultData &result_data)
+void Ext::saveResult_mutexlock(const unsigned long &unique_id, const resultData &result_data)
 // Stores Result String  in a unordered map array.
 //   Used when string > arma output char
 {
@@ -876,7 +876,7 @@ void Ext::getTCPRemote_mutexlock(char *output, const int &output_size)
 	{
 		resultData result_data;
 		result_data.message = std::move(result);
-		const int unique_id = saveResult_mutexlock(result_data);
+		const unsigned long unique_id = saveResult_mutexlock(result_data);
 		std::strcpy(output, Poco::NumberFormatter::format(unique_id).c_str());
 	}
 }
@@ -892,13 +892,13 @@ void Ext::sendTCPRemote_mutexlock(std::string &input_str)
 	}
 	else
 	{
-		int unique_id;
-		if (Poco::NumberParser::tryParse(input_str.substr(2,(found-2)), unique_id))
+		int unique_client_id;
+		if (Poco::NumberParser::tryParse(input_str.substr(2,(found-2)), unique_client_id))
 		{
 			std::lock_guard<std::mutex> lock(remote_server.clients_data_mutex);
-			if (remote_server.clients_data.count(unique_id) != 0)
+			if (remote_server.clients_data.count(unique_client_id) != 0)
 			{
-				remote_server.clients_data[unique_id].outputs.push_back(input_str.substr(found+1));
+				remote_server.clients_data[unique_client_id].outputs.push_back(input_str.substr(found+1));
 			}
 		}
 		else
@@ -931,14 +931,14 @@ void Ext::syncCallProtocol(char *output, const int &output_size, std::string &in
 			resultData result_data;
 			result_data.message.reserve(output_size);
 
-			const_itr->second->callProtocol(input_str.substr(found+1), result_data.message);
+			const_itr->second->callProtocol(input_str.substr(found+1), result_data.message, false);
 			if (result_data.message.length() <= output_size)
 			{
 				std::strcpy(output, result_data.message.c_str());
 			}
 			else
 			{
-				const int unique_id = saveResult_mutexlock(result_data);
+				const unsigned long unique_id = saveResult_mutexlock(result_data);
 				std::strcpy(output, ("[2,\"" + Poco::NumberFormatter::format(unique_id) + "\"]").c_str());
 			}
 		}
@@ -961,19 +961,19 @@ void Ext::onewayCallProtocol(const int &output_size, std::string &input_str)
 		{
 			resultData result_data;
 			result_data.message.reserve(output_size);
-			const_itr->second->callProtocol(input_str.substr(found+1), result_data.message, 0);
+			const_itr->second->callProtocol(input_str.substr(found+1), result_data.message, true);
 		}
 	}
 }
 
 
-void Ext::asyncCallProtocol(const int &output_size, const std::string &protocol, const std::string &data, const int &unique_id)
+void Ext::asyncCallProtocol(const int &output_size, const std::string &protocol, const std::string &data, const unsigned long &unique_id)
 // ASync + Save callProtocol
 // We check if Protocol exists here, since its a thread (less time spent blocking arma) and it shouldnt happen anyways
 {
 	resultData result_data;
 	result_data.message.reserve(output_size);
-	if (unordered_map_protocol[protocol].get()->callProtocol(data, result_data.message, unique_id))
+	if (unordered_map_protocol[protocol].get()->callProtocol(data, result_data.message, true, unique_id))
 	{
 		saveResult_mutexlock(unique_id, result_data);
 	}
@@ -1031,7 +1031,7 @@ void Ext::callExtension(char *output, const int &output_size, const char *functi
 							// Do this so if someone manages to get server, the error message wont get stored in the result unordered map
 							if (unordered_map_protocol.find(protocol) != unordered_map_protocol.end())
 							{
-								int unique_id;
+								unsigned long unique_id;
 								{
 									std::lock_guard<std::mutex> lock(mutex_results);
 									unique_id = unique_id_counter++;
