@@ -15,7 +15,6 @@ namespace
 	extension_init(void)
 	{
 		bool status = true;
-		std::string arg;
 		std::unordered_map<std::string, std::string> options;
 
 		FILE *fh = fopen ("/proc/self/cmdline", "r"); // /proc/self  :D
@@ -25,27 +24,30 @@ namespace
 		}
 		else
 		{
-			char buffer[4096];
-			while (fgets (buffer, 4096, fh))
-			{
-				arg = buffer;
-				if (arg.size() >= 12)
+			std::size_t found;
+   			char *arg = 0;
+   			size_t size = 0;
+   			while(getdelim(&arg, &size, 0, fh) != -1)
+   			{
+      			std::string argument_str(arg);
+				if (argument_str.size() >= 12)
 				{
-					found = arg.find("-extDB2_VAR=");
+					found = argument_str.find("-extDB2_VAR=");
 					if (found == 0)
 					{
-						options["VAR"] = arg.substr(12);
+						options["VAR"] = argument_str.substr(12);
 					}
 					else
 					{
-						found = arg.find("-extDB2_WORK=");
+						found = argument_str.find("-extDB2_WORK=");
 						if (found == 0)
 						{
-							options["WORK"] = arg.substr(12);
+							options["WORK"] = argument_str.substr(13);
 						}
 					}
 				}
-			};
+   			}
+   			free(arg);
 		};
 		fclose(fh);
 
