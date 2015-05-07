@@ -892,7 +892,7 @@ void Ext::sendTCPRemote_mutexlock(std::string &input_str)
 	}
 	else
 	{
-		int unique_client_id;
+		long unique_client_id;
 		if (Poco::NumberParser::tryParse(input_str.substr(2,(found-2)), unique_client_id))
 		{
 			std::lock_guard<std::mutex> lock(remote_server.clients_data_mutex);
