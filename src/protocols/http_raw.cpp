@@ -47,7 +47,7 @@ bool HTTP_RAW::init(AbstractExt *extension, const std::string &database_id, cons
 	bool status;
 	if (extension_ptr->pConf->hasOption(database_id + ".Type"))
 	{
-		std::string database_type = extension_ptr->pConf->getString(database_id) + ".Type";
+		std::string database_type = extension_ptr->pConf->getString(database_id + ".Type", "");
 		if (boost::iequals(database_type, std::string("HTTP")))
 		{
 			if (extension_ptr->pConf->has(database_id + ".Username"))
@@ -77,10 +77,10 @@ bool HTTP_RAW::init(AbstractExt *extension, const std::string &database_id, cons
 		else
 		{
 			#ifdef DEBUG_TESTING
-			extension_ptr->console->warn("extDB2: HTTP_RAW: Wrong Database Type in config file: {0}", extension_ptr->pConf->getString(database_id) + ".Type");
+				extension_ptr->console->warn("extDB2: HTTP_RAW: Wrong Database Type in config file: {0}", extension_ptr->pConf->getString(database_id + ".Type", ""));
 				extension_ptr->console->warn("extDB2: HTTP_RAW: Database: {0}", database_id);
 			#endif
-				extension_ptr->logger->warn("extDB2: HTTP_RAW: Wrong Database Type in config file: {0}", extension_ptr->pConf->getString(database_id) + ".Type");
+				extension_ptr->logger->warn("extDB2: HTTP_RAW: Wrong Database Type in config file: {0}", extension_ptr->pConf->getString(database_id + ".Type", ""));
 			extension_ptr->logger->warn("extDB2: HTTP_RAW: Database: {0}", database_id);
 			status = false;
 		}
