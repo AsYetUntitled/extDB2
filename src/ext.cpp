@@ -219,7 +219,7 @@ Ext::Ext(std::string dll_path, std::unordered_map<std::string, std::string> opti
 			#endif
 		#endif
 
-		#ifdef DEBUG_TESTING
+		#ifdef TEST_APP
 			console->info("Welcome to extDB Test Application");
 			console->info("OutputSize is set to 80 for Test Application, just so it is readable");
 			console->info("OutputSize for Arma3 is more like 10k in size ");
