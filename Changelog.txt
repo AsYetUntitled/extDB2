@@ -1,5 +1,22 @@
 -------------------------------------------------------------------------------
-50 WIP:
+51 :
+	ADDED: HTTP_RAW Protocol (Basic Auth, GET, POST support)
+	ADDED: STEAM_V2 (Removed case insensitive for performance reasons)
+
+	ADDED: -extDB2_VAR  -extDB2_WORK commandline arguments  (Linux + Windows)
+			_VAR is retreivable via "9:VAR", before extension lock
+			_WORK defines custom location for extdb-conf.ini / extDB directories
+
+	FIXED: Issue were STEAM / Redis Protocols wouldn't save result.
+
+	UPDATED: RemoteServer with basic blacklisting ips that failed to login over 3 tiems
+
+	MINOR: Fixed console output on debug extension builds
+	MINOR: Updated Poco / Boost / MySQL / SPDLog Libraries
+	MINOR: Tweaked Compiler Flags
+
+-------------------------------------------------------------------------------
+50 :
 	ADDED: V2 SQL Protocols, empty results return [] instead of [[]]
 
 	FIXED: Loading STEAM Protocol

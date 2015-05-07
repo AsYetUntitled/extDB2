@@ -15,6 +15,7 @@ None
   
 ### Features
 
+ - Commandline Arguments Support
  - ASync Support
  - Unique ID for Messages
  - Multi-Part Messages  
@@ -26,6 +27,7 @@ None
 
 ### Supported Backends
 
+ - HTTP
  - MySQL
  - SQLite
  - Redis
@@ -33,18 +35,19 @@ None
 
 #### Protocols
 
+ - HTTP_RAW (Support for Auth, GET, POST)
  - REDIS_RAW (Ability to whitelist allowed commands)
- - SQL_CUSTOM (Ability to define sql prepared statements in a .ini file)
+ - SQL_CUSTOM    (Ability to define sql prepared statements in a .ini file)
+ - SQL_CUSTOM_V2 (Ability to define sql prepared statements in a .ini file)
  - SQL_RAW
  - LOG (Custom Logfiles)
  - MISC (has beguid, crc32, md4/5, time + time offset)
  - RCON (Ability to whitelist allowed commands)
- - STEAM (Ability to Query Steam for VAC Bans / Friend Info)
-
+ - STEAM    (Ability to Query Steam for VAC Bans / Friend Info)
+ - STEAM_V2 (Ability to Query Steam for VAC Bans / Friend Info)
 
 #### WIP
 
- - Improve TCPServer code Security wise  
  - Improve RCon Code
  - Improve Redis Support i.e exceptional handling + AUTH
 
