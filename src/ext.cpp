@@ -914,7 +914,7 @@ void Ext::syncCallProtocol(char *output, const int &output_size, std::string &in
 {
 	const std::string::size_type found = input_str.find(":",2);
 
-	if ((found==std::string::npos) || (found == (input_str.size() - 1)))
+	if ((found==std::string::npos) || (found == (input_str_length - 1)))
 	{
 		std::strcpy(output, "[0,\"Error Invalid Format\"]");
 		logger->error("extDB2: Invalid Format: {0}", input_str);
