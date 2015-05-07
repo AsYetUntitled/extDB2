@@ -762,7 +762,7 @@ void Ext::addProtocol(char *output, const int &output_size, const std::string &d
 }
 
 
-void Ext::getSinglePartResult_mutexlock(char *output, const int &output_size, const int &unique_id)
+void Ext::getSinglePartResult_mutexlock(char *output, const int &output_size, const unsigned long &unique_id)
 // Gets Result String from unordered map array -- Result Formt == Single-Message
 //   If <=, then sends output to arma, and removes entry from unordered map array
 //   If >, sends [5] to indicate MultiPartResult
@@ -793,7 +793,7 @@ void Ext::getSinglePartResult_mutexlock(char *output, const int &output_size, co
 }
 
 
-void Ext::getMultiPartResult_mutexlock(char *output, const int &output_size, const int &unique_id)
+void Ext::getMultiPartResult_mutexlock(char *output, const int &output_size, const unsigned long &unique_id)
 // Gets Result String from unordered map array  -- Result Format = Multi-Message
 //   If length of String = 0, sends arma "", and removes entry from unordered map array
 //   If <=, then sends output to arma
@@ -1052,13 +1052,13 @@ void Ext::callExtension(char *output, const int &output_size, const char *functi
 				}
 				case '4': // GET -- Single-Part Message Format
 				{
-					const int unique_id = Poco::NumberParser::parse(input_str.substr(2));
+					const unsigned long unique_id = Poco::NumberParser::parse(input_str.substr(2));
 					getSinglePartResult_mutexlock(output, output_size, unique_id);
 					break;
 				}
 				case '5': // GET -- Multi-Part Message Format
 				{
-					const int unique_id = Poco::NumberParser::parse(input_str.substr(2));
+					const unsigned long unique_id = Poco::NumberParser::parse(input_str.substr(2));
 					getMultiPartResult_mutexlock(output, output_size, unique_id);
 					break;
 				}

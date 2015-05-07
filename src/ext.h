@@ -102,8 +102,8 @@ class Ext: public AbstractExt
 		void connectDatabase(char *output, const int &output_size, const std::string &database_conf, const std::string &database_id);
 
 		// Results
-		void getSinglePartResult_mutexlock(char *output, const int &output_size, const int &unique_id);
-		void getMultiPartResult_mutexlock(char *output, const int &output_size, const int &unique_id);
+		void getSinglePartResult_mutexlock(char *output, const int &output_size, const unsigned long &unique_id);
+		void getMultiPartResult_mutexlock(char *output, const int &output_size, const unsigned long &unique_id);
 		
 		void getTCPRemote_mutexlock(char *output, const int &output_size);
 		void sendTCPRemote_mutexlock(std::string &input_str);
