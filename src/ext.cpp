@@ -84,11 +84,11 @@ Ext::Ext(std::string dll_path, std::unordered_map<std::string, std::string> opti
 			bool conf_randomized = false;
 		#endif
 		
-		boost::filesystem::path extDB_config_path(dll_path);
-		std::string extDB_config_str;
+		boost::filesystem::path extDB_config_path;
 
 		if (options.count("WORK") > 0)
 		{
+			// Override extDB2 Location
 			extDB_config_path = options["WORK"];
 			extDB_config_path /= "extdb-conf.ini";
 			if (boost::filesystem::exists(extDB_config_path))
@@ -98,21 +98,26 @@ Ext::Ext(std::string dll_path, std::unordered_map<std::string, std::string> opti
 			}
 			else
 			{
-				extDB_config_path = extDB_config_path.parent_path();
+				// Override extDB2 Location -- Randomized Search
 				#ifdef _WIN32
+					extDB_config_path = extDB_config_path.parent_path();
 					search(extDB_config_path, conf_found, conf_randomized);
 				#endif
 			}
 		}
 		else
 		{
-			extDB_config_path = extDB_config_path.parent_path() /= "extdb_conf.ini";
-			if (boost::filesystem::exists(extDB_config_path))
+			// extDB2 DLL Location   This fails on Windows why ????
+			extDB_config_path = dll_path;
+			extDB_config_path = extDB_config_path.parent_path();
+			extDB_config_path /= "extdb-conf.ini";
+			if (boost::filesystem::is_regular_file(extDB_config_path))
 			{
 				conf_found = true;
 				extDB_info.path = extDB_config_path.parent_path().string();
 			}
-			else if (boost::filesystem::exists("extdb-conf.ini"))
+			// extDB2 Arma3 Location
+			else if (boost::filesystem::is_regular_file("extdb-conf.ini"))
 			{
 				conf_found = true;
 				extDB_config_path = boost::filesystem::path("extdb-conf.ini");
@@ -125,10 +130,7 @@ Ext::Ext(std::string dll_path, std::unordered_map<std::string, std::string> opti
 
 					extDB_config_path = extDB_config_path.parent_path();
 					// CHECK DLL PATH FOR CONFIG)
-					if (!extDB_config_str.empty())
-					{
-						search(extDB_config_path, conf_found, conf_randomized);
-					}
+					search(extDB_config_path, conf_found, conf_randomized);
 
 					// CHECK ARMA ROOT DIRECTORY FOR CONFIG
 					if (!conf_found)
@@ -377,14 +379,14 @@ void Ext::stop()
 		std::regex expression("extdb-conf.*ini");
 		for (boost::filesystem::directory_iterator it(extDB_config_path); it != boost::filesystem::directory_iterator(); ++it)
 		{
-			if (is_regular_file(it->path()))
+			if (boost::filesystem::is_regular_file(it->path()))
 			{
 				if(std::regex_search(it->path().string(), expression))
 				{
 					conf_found = true;
 					conf_randomized = true;
 					extDB_config_path = boost::filesystem::path(it->path().string());
-					extDB_info.path = boost::filesystem::current_path().string();
+					extDB_info.path = extDB_config_path.parent_path().string();
 					break;
 				}
 			}
