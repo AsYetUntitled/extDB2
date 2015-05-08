@@ -1,4 +1,5 @@
 
+#include <boost/algorithm/string.hpp>
 #include <boost/filesystem.hpp>
 #include "ext.h"
 
@@ -30,6 +31,7 @@ namespace
    			while(getdelim(&arg, &size, 0, fh) != -1)
    			{
       			std::string argument_str(arg);
+      			boost::erase_all(argument_str, "\"");
 				if (argument_str.size() >= 12)
 				{
 					found = argument_str.find("-extDB2_VAR=");
@@ -101,23 +103,24 @@ namespace
 					else
 					{
 						std::size_t found;
-						std::string arg;
+						std::string argument_str;
 						for (int i = 0; i < nArgs; i++)
 						{
-							arg = CW2A(pszArgsW[i]);
-							if (arg.size() >= 12)
+							argument_str = CW2A(pszArgsW[i]);
+							boost::erase_all(argument_str, "\"");
+							if (argument_str.size() >= 12)
 							{
-								found = arg.find("-extDB2_VAR=");
+								found = argument_str.find("-extDB2_VAR=");
 								if (found == 0)
 								{
-									options["VAR"] = arg.substr(12);
+									options["VAR"] = argument_str.substr(12);
 								}
 								else
 								{
-									found = arg.find("-extDB2_WORK=");
+									found = argument_str.find("-extDB2_WORK=");
 									if (found == 0)
 									{
-										options["WORK"] = arg.substr(12);
+										options["WORK"] = argument_str.substr(13);
 									}
 								}
 							}
