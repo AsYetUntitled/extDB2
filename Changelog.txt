@@ -1,4 +1,8 @@
 -------------------------------------------------------------------------------
+52 :
+	FIXED: Loading extdb-conf.ini
+
+-------------------------------------------------------------------------------
 51 :
 	ADDED: HTTP_RAW Protocol (Basic Auth, GET, POST support)
 	ADDED: STEAM_V2 (Removed case insensitive for performance reasons)
