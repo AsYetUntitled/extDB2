@@ -84,7 +84,7 @@ Ext::Ext(std::string dll_path, std::unordered_map<std::string, std::string> opti
 			bool conf_randomized = false;
 		#endif
 		
-		boost::filesystem::path extDB_config_path;
+		boost::filesystem::path extDB_config_path(dll_path);
 		std::string extDB_config_str;
 
 		if (options.count("WORK") > 0)
