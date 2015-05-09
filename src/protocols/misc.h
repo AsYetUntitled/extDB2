@@ -23,7 +23,6 @@ along with this program. If not, see <http://www.gnu.org/licenses/>.
 #include <boost/crc.hpp>
 #include <boost/random/random_device.hpp>
 #include <boost/random/uniform_int_distribution.hpp>
-#include <boost/thread/thread.hpp>
 
 #include <Poco/MD4Engine.h>
 #include <Poco/MD5Engine.h>

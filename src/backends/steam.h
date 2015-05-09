@@ -31,7 +31,6 @@ along with this program. If not, see <http://www.gnu.org/licenses/>.
 #include <Poco/AbstractCache.h>
 #include <Poco/DateTime.h>
 #include <Poco/ExpireCache.h>
-#include <Poco/SharedPtr.h>
 
 #include <Poco/Net/HTTPClientSession.h>
 
@@ -57,7 +56,7 @@ class SteamGet: public Poco::Runnable
 		std::string path;
 		std::string steam_api_key;
 
-		Poco::SharedPtr<Poco::Net::HTTPClientSession> session;
+		std::unique_ptr<Poco::Net::HTTPClientSession> session;
 
 		boost::property_tree::ptree *pt;
 
@@ -116,8 +115,8 @@ class Steam: public Poco::Runnable
 		
 		std::string STEAM_api_key;
 		RConBan rconBanSettings;
-		Poco::SharedPtr<Poco::ExpireCache<std::string, SteamVACBans> > SteamVacBans_Cache; // 1 Hour (3600000)
-		Poco::SharedPtr<Poco::ExpireCache<std::string, SteamFriends> > SteamFriends_Cache; // 1 Hour (3600000)
+		std::unique_ptr<Poco::ExpireCache<std::string, SteamVACBans> > SteamVacBans_Cache; // 1 Hour (3600000)
+		std::unique_ptr<Poco::ExpireCache<std::string, SteamFriends> > SteamFriends_Cache; // 1 Hour (3600000)
 
 		void updateSteamBans(std::vector<std::string> &steamIDs);
 		void updateSteamFriends(std::vector<std::string> &steamIDs);

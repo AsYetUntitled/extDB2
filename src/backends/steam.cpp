@@ -54,7 +54,7 @@ From Frank https://gist.github.com/Fank/11127158
 void SteamGet::init(AbstractExt *extension)
 {
 	extension_ptr = extension;
-	session = new Poco::Net::HTTPClientSession("api.steampowered.com", 80);
+	session.reset(new Poco::Net::HTTPClientSession("api.steampowered.com", 80));
 }
 
 
@@ -134,8 +134,8 @@ void Steam::init(AbstractExt *extension, std::string &extension_path, Poco::Date
 	rconBanSettings.BanDuration = extension_ptr->pConf->getString("VAC.BanDuration", "0");
 	rconBanSettings.BanMessage = extension_ptr->pConf->getString("VAC.BanMessage", "VAC Ban");
 
-	SteamVacBans_Cache = new Poco::ExpireCache<std::string, SteamVACBans>(extension_ptr->pConf->getInt("STEAM.BanCacheTime", 3600000));
-	SteamFriends_Cache = new Poco::ExpireCache<std::string, SteamFriends>(extension_ptr->pConf->getInt("STEAM.FriendsCacheTime", 3600000));
+	SteamVacBans_Cache.reset(new Poco::ExpireCache<std::string, SteamVACBans>(extension_ptr->pConf->getInt("STEAM.BanCacheTime", 3600000)));
+	SteamFriends_Cache.reset(new Poco::ExpireCache<std::string, SteamFriends>(extension_ptr->pConf->getInt("STEAM.FriendsCacheTime", 3600000)));
 
 	if (rconBanSettings.autoBan)
 	{

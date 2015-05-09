@@ -23,7 +23,6 @@ along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 #include <Poco/AbstractCache.h>
 #include <Poco/ExpireCache.h>
-#include <Poco/SharedPtr.h>
 
 #include <limits>
 
@@ -37,7 +36,7 @@ void RemoteServer::init(AbstractExt *extension)
 
 void RemoteServer::setup(const std::string &remote_conf)
 {
-	blacklist_cache = new Poco::ExpireCache<std::string, bool>(extension_ptr->pConf->getInt(remote_conf + ".BlacklistTime", 3600000));
+	blacklist_cache.reset(new Poco::ExpireCache<std::string, bool>(extension_ptr->pConf->getInt(remote_conf + ".BlacklistTime", 3600000)));
 
 	pParams = new Poco::Net::TCPServerParams();
 	pParams->setMaxThreads(extension_ptr->pConf->getInt(remote_conf + ".MaxThreads", 4));

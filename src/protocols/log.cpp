@@ -18,6 +18,8 @@ along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 #include "log.h"
 
+#include <boost/filesystem.hpp>
+
 
 bool LOG::init(AbstractExt *extension, const std::string &database_id, const std::string init_str)
 {

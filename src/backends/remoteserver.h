@@ -21,7 +21,6 @@ along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 #include <Poco/AbstractCache.h>
 #include <Poco/ExpireCache.h>
-#include <Poco/SharedPtr.h>
 #include <Poco/Net/TCPServer.h>
 #include <Poco/Net/TCPServerConnection.h>
 #include <Poco/Net/TCPServerConnectionFactory.h>
@@ -59,7 +58,7 @@ public:
 	
 	std::atomic<bool> *inputs_flag;
 
-	Poco::SharedPtr<Poco::ExpireCache<std::string, bool> > blacklist_cache;
+	std::unique_ptr<Poco::ExpireCache<std::string, bool> > blacklist_cache;
 
 private:
 	Poco::Net::TCPServerParams* pParams;

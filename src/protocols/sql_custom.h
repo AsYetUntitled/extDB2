@@ -22,8 +22,8 @@ along with this program. If not, see <http://www.gnu.org/licenses/>.
 #include <unordered_map>
 
 #include <Poco/DynamicAny.h>
-#include <Poco/StringTokenizer.h>
 #include <Poco/MD5Engine.h>
+#include <Poco/StringTokenizer.h>
 
 #include "abstract_protocol.h"
 
