@@ -26,7 +26,7 @@ along with this program. If not, see <http://www.gnu.org/licenses/>.
 #include <Poco/Util/IniFileConfiguration.h>
 
 #include "backends/redis.h"
-#include "redis/redisasyncclient.h"
+#include "redisclient/redisasyncclient.h"
 
 #include "spdlog/spdlog.h"
 

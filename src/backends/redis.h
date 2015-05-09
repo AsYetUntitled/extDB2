@@ -22,7 +22,7 @@ along with this program. If not, see <http://www.gnu.org/licenses/>.
 #include <mutex>
 
 #include "../abstract_ext.h"
-#include "../redis/redisasyncclient.h"
+#include "../redisclient/redisasyncclient.h"
 
 
 class AbstractExt;

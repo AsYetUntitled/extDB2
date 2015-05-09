@@ -3,32 +3,33 @@
  * License: MIT
  */
 
-#pragma once
+#ifndef REDISCLIENT_REDISPARSER_H
+#define REDISCLIENT_REDISPARSER_H
 
 #include <stack>
+#include <vector>
 
 #include "redisvalue.h"
-
+#include "config.h"
 
 class RedisParser
 {
 public:
-    inline RedisParser();
+    REDIS_CLIENT_DECL RedisParser();
 
-    enum ParseResult
-    {
+    enum ParseResult {
         Completed,
         Incompleted,
         Error,
     };
 
-    inline std::pair<size_t, ParseResult> parse(const char *ptr, size_t size);
+    REDIS_CLIENT_DECL std::pair<size_t, ParseResult> parse(const char *ptr, size_t size);
 
-    inline RedisValue result();
+    REDIS_CLIENT_DECL RedisValue result();
 
 protected:
-    inline std::pair<size_t, ParseResult> parseChunk(const char *ptr, size_t size);
-    inline std::pair<size_t, ParseResult> parseArray(const char *ptr, size_t size);
+    REDIS_CLIENT_DECL std::pair<size_t, ParseResult> parseChunk(const char *ptr, size_t size);
+    REDIS_CLIENT_DECL std::pair<size_t, ParseResult> parseArray(const char *ptr, size_t size);
 
     static inline bool isChar(int c)
     {
@@ -41,8 +42,7 @@ protected:
     }
 
 private:
-    enum State
-    {
+    enum State {
         Start = 0,
 
         String = 1,
@@ -66,7 +66,7 @@ private:
     } state;
 
     long int bulkSize;
-    std::string string;
+    std::vector<char> buf;
     std::stack<long int> arrayStack;
     std::stack<RedisValue> valueStack;
 
@@ -77,4 +77,8 @@ private:
     static const char arrayReply = '*';
 };
 
+#ifdef REDIS_CLIENT_HEADER_ONLY
 #include "impl/redisparser.cpp"
+#endif
+
+#endif // REDISCLIENT_REDISPARSER_H

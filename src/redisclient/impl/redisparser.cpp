@@ -3,7 +3,8 @@
  * License: MIT
  */
 
-#pragma once
+#ifndef REDISCLIENT_REDISPARSER_CPP
+#define REDISCLIENT_REDISPARSER_CPP
 
 #include <sstream>
 
@@ -116,7 +117,7 @@ std::pair<size_t, RedisParser::ParseResult> RedisParser::parseChunk(const char *
         switch(state)
         {
             case Start:
-                string.clear();
+                buf.clear();
                 switch(c)
                 {
                     case stringReply:
@@ -147,7 +148,7 @@ std::pair<size_t, RedisParser::ParseResult> RedisParser::parseChunk(const char *
                 }
                 else if( isChar(c) && !isControl(c) )
                 {
-                    string += c;
+                    buf.push_back(c);
                 }
                 else
                 {
@@ -162,7 +163,7 @@ std::pair<size_t, RedisParser::ParseResult> RedisParser::parseChunk(const char *
                 }
                 else if( isChar(c) && !isControl(c) )
                 {
-                    string += c;
+                    buf.push_back(c);
                 }
                 else
                 {
@@ -173,7 +174,7 @@ std::pair<size_t, RedisParser::ParseResult> RedisParser::parseChunk(const char *
             case BulkSize:
                 if( c == '\r' )
                 {
-                    if( string.empty() )
+                    if( buf.empty() )
                     {
                         state = Start;
                         return std::make_pair(i + 1, Error);
@@ -185,7 +186,7 @@ std::pair<size_t, RedisParser::ParseResult> RedisParser::parseChunk(const char *
                 }
                 else if( isdigit(c) || c == '-' )
                 {
-                    string += c;
+                    buf.push_back(c);
                 }
                 else
                 {
@@ -194,11 +195,24 @@ std::pair<size_t, RedisParser::ParseResult> RedisParser::parseChunk(const char *
                 }
                 break;
             case StringLF:
+                if( c == '\n')
+                {
+                    state = Start;
+                    valueStack.push(buf);
+                    return std::make_pair(i + 1, Completed);
+                }
+                else
+                {
+                    state = Start;
+                    return std::make_pair(i + 1, Error);
+                }
+                break;
             case ErrorLF:
                 if( c == '\n')
                 {
                     state = Start;
-                    valueStack.push(string);
+                    RedisValue::ErrorTag tag;
+                    valueStack.push(RedisValue(buf, tag));
                     return std::make_pair(i + 1, Completed);
                 }
                 else
@@ -210,8 +224,10 @@ std::pair<size_t, RedisParser::ParseResult> RedisParser::parseChunk(const char *
             case BulkSizeLF:
                 if( c == '\n' )
                 {
-                    bulkSize = strtol(string.c_str(), 0, 10);
-                    string.clear();
+                    // TODO optimize me
+                    std::string tmp(buf.begin(), buf.end());
+                    bulkSize = strtol(tmp.c_str(), 0, 10);
+                    buf.clear();
 
                     if( bulkSize == -1 )
                     {
@@ -230,14 +246,14 @@ std::pair<size_t, RedisParser::ParseResult> RedisParser::parseChunk(const char *
                     }
                     else
                     {
-                        string.reserve(bulkSize);
+                        buf.reserve(bulkSize);
 
                         long int available = size - i - 1;
                         long int canRead = std::min(bulkSize, available);
 
                         if( canRead > 0 )
                         {
-                            string.assign(ptr + i + 1, ptr + i + canRead + 1);
+                            buf.assign(ptr + i + 1, ptr + i + canRead + 1);
                         }
 
                         i += canRead;
@@ -266,7 +282,7 @@ std::pair<size_t, RedisParser::ParseResult> RedisParser::parseChunk(const char *
                 long int available = size - i;
                 long int canRead = std::min(available, bulkSize);
 
-                string.insert(string.end(), ptr + i, ptr + canRead);
+                buf.insert(buf.end(), ptr + i, ptr + canRead);
                 bulkSize -= canRead;
                 i += canRead - 1;
 
@@ -300,7 +316,7 @@ std::pair<size_t, RedisParser::ParseResult> RedisParser::parseChunk(const char *
                 if( c == '\n')
                 {
                     state = Start;
-                    valueStack.push(string);
+                    valueStack.push(buf);
                     return std::make_pair(i + 1, Completed);
                 }
                 else
@@ -312,7 +328,7 @@ std::pair<size_t, RedisParser::ParseResult> RedisParser::parseChunk(const char *
             case ArraySize:
                 if( c == '\r' )
                 {
-                    if( string.empty() )
+                    if( buf.empty() )
                     {
                         state = Start;
                         return std::make_pair(i + 1, Error);
@@ -324,7 +340,7 @@ std::pair<size_t, RedisParser::ParseResult> RedisParser::parseChunk(const char *
                 }
                 else if( isdigit(c) || c == '-' )
                 {
-                    string += c;
+                    buf.push_back(c);
                 }
                 else
                 {
@@ -335,8 +351,10 @@ std::pair<size_t, RedisParser::ParseResult> RedisParser::parseChunk(const char *
             case ArraySizeLF:
                 if( c == '\n' )
                 {
-                    long int arraySize = strtol(string.c_str(), 0, 10);
-                    string.clear();
+                    // TODO optimize me
+                    std::string tmp(buf.begin(), buf.end());
+                    long int arraySize = strtol(tmp.c_str(), 0, 10);
+                    buf.clear();
                     std::vector<RedisValue> array;
 
                     if( arraySize == -1 || arraySize == 0)
@@ -360,9 +378,9 @@ std::pair<size_t, RedisParser::ParseResult> RedisParser::parseChunk(const char *
 
                         if( i + 1 != size )
                         {
-                            std::pair<size_t, ParseResult> result = parseArray(ptr + i + 1, size - i - 1);
-                            result.first += i + 1;
-                            return result;
+                            std::pair<size_t, ParseResult> parseResult = parseArray(ptr + i + 1, size - i - 1);
+                            parseResult.first += i + 1;
+                            return parseResult;
                         }
                         else
                         {
@@ -379,7 +397,7 @@ std::pair<size_t, RedisParser::ParseResult> RedisParser::parseChunk(const char *
             case Integer:
                 if( c == '\r' )
                 {
-                    if( string.empty() )
+                    if( buf.empty() )
                     {
                         state = Start;
                         return std::make_pair(i + 1, Error);
@@ -391,7 +409,7 @@ std::pair<size_t, RedisParser::ParseResult> RedisParser::parseChunk(const char *
                 }
                 else if( isdigit(c) || c == '-' )
                 {
-                    string += c;
+                    buf.push_back(c);
                 }
                 else
                 {
@@ -402,9 +420,11 @@ std::pair<size_t, RedisParser::ParseResult> RedisParser::parseChunk(const char *
             case IntegerLF:
                 if( c == '\n' )
                 {
-                    long int value = strtol(string.c_str(), 0, 10);
+                    // TODO optimize me
+                    std::string tmp(buf.begin(), buf.end());
+                    long int value = strtol(tmp.c_str(), 0, 10);
 
-                    string.clear();
+                    buf.clear();
 
                     valueStack.push(value);
                     state = Start;
@@ -442,3 +462,5 @@ RedisValue RedisParser::result()
         return RedisValue();
     }
 }
+
+#endif // REDISCLIENT_REDISPARSER_CPP
