@@ -130,7 +130,10 @@ Ext::Ext(std::string dll_path, std::unordered_map<std::string, std::string> opti
 
 					extDB_config_path = extDB_config_path.parent_path();
 					// CHECK DLL PATH FOR CONFIG)
-					search(extDB_config_path, conf_found, conf_randomized);
+					if (!extDB_config_path.string().empty())
+					{
+						search(extDB_config_path, conf_found, conf_randomized);
+					}
 
 					// CHECK ARMA ROOT DIRECTORY FOR CONFIG
 					if (!conf_found)
