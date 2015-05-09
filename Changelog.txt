@@ -1,4 +1,15 @@
 -------------------------------------------------------------------------------
+53 :
+	FIXED: Another small fix for loading extdb-conf.ini
+	FIXED: More Fixes for Steam Protocol
+
+	FIXED: Commandline arguments (removed " from arguments)
+	FIXED: -extDB_VAR fixed parsing for Windows
+
+	MINOR: Some Code Improvements
+
+
+-------------------------------------------------------------------------------
 52 :
 	FIXED: Loading extdb-conf.ini
 

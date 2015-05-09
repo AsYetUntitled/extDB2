@@ -46,6 +46,7 @@ From Frank https://gist.github.com/Fank/11127158
 
 #include <Poco/DateTimeFormatter.h>
 #include <Poco/NumberParser.h>
+#include <Poco/SharedPtr.h>
 #include <Poco/Thread.h>
 #include <Poco/Types.h>
 #include <Poco/Exception.h>
