@@ -24,9 +24,6 @@ From Frank https://gist.github.com/Fank/11127158
 
 #include <string>
 
-#include <boost/property_tree/ptree.hpp>
-#include <boost/property_tree/json_parser.hpp>
-
 #include <Poco/StringTokenizer.h>
 
 #include "../backends/steam.h"
@@ -62,7 +59,6 @@ bool STEAM_V2::callProtocol(std::string input_str, std::string &result, const bo
 	#ifdef DEBUG_LOGGING
 		extension_ptr->logger->info("extDB2: STEAM_V2: Trace: Input: {0}", input_str);
 	#endif
-
 
 	if (!async_method)
 	{
@@ -127,5 +123,5 @@ bool STEAM_V2::callProtocol(std::string input_str, std::string &result, const bo
 			}
 		}
 	}
-	return true;
+	return (!result.empty());  // If result is empty due to error, save error message
 }

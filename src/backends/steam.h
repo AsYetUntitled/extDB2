@@ -22,8 +22,8 @@ along with this program. If not, see <http://www.gnu.org/licenses/>.
 #include <iostream>
 #include <thread>
 
-#include <boost/property_tree/ptree.hpp>
-#include <boost/property_tree/json_parser.hpp>
+#include "Poco/Dynamic/Var.h"
+#include "Poco/JSON/Parser.h"
 
 #include <Poco/MD5Engine.h>
 #include <Poco/DigestEngine.h>
@@ -47,7 +47,7 @@ class SteamGet: public Poco::Runnable
 
 		void abort();
 
-		void update(std::string &input_str, boost::property_tree::ptree &ptree);
+		void update(std::string &update_path, Poco::Dynamic::Var &var);
 		int getResponse();
 
 	private:
@@ -58,7 +58,8 @@ class SteamGet: public Poco::Runnable
 
 		std::unique_ptr<Poco::Net::HTTPClientSession> session;
 
-		boost::property_tree::ptree *pt;
+		Poco::Dynamic::Var *json;
+		Poco::JSON::Parser parser;
 
 		int response=-1;
 };
@@ -71,6 +72,7 @@ class Steam: public Poco::Runnable
 		void stop();
 
 		void init(AbstractExt *extension, std::string &extension_path, Poco::DateTime &current_dateTime);
+		void initBanslogger();
 		void addQuery(const unsigned int &unique_id, bool queryFriends, bool queryVacBans, std::vector<std::string> &steamIDs);
 
 	private:
@@ -129,4 +131,6 @@ class Steam: public Poco::Runnable
 		std::atomic<bool> *steam_run_flag;
 
 		SteamGet steam_get;
+
+		std::string log_filename;
 };

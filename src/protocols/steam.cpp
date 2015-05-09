@@ -25,8 +25,6 @@ From Frank https://gist.github.com/Fank/11127158
 #include <string>
 
 #include <boost/algorithm/string.hpp>
-#include <boost/property_tree/ptree.hpp>
-#include <boost/property_tree/json_parser.hpp>
 
 #include <Poco/StringTokenizer.h>
 
@@ -141,5 +139,5 @@ bool STEAM::callProtocol(std::string input_str, std::string &result, const bool 
 			}
 		}
 	}
-	return true;
+	return (!result.empty());  // If result is empty due to error, save error message
 }
