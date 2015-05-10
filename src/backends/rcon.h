@@ -23,6 +23,7 @@ along with this program. If not, see <http://www.gnu.org/licenses/>.
 #pragma once
 
 #include <atomic>
+#include <memory>
 #include <thread>
 
 #include <boost/crc.hpp>
@@ -34,9 +35,7 @@ along with this program. If not, see <http://www.gnu.org/licenses/>.
 #include <Poco/ExpireCache.h>
 #include <Poco/Stopwatch.h>
 
-#ifndef RCON_APP
-	#include "../abstract_ext.h"
-#endif
+#include "../abstract_ext.h"
 
 
 class Rcon: public Poco::Runnable
@@ -59,6 +58,17 @@ class Rcon: public Poco::Runnable
 
 	private:
 		typedef std::pair< int, std::unordered_map < int, std::string > > RconMultiPartMsg;
+
+		// Inputs are strings + Outputs are strings.  Info is not kept for long, so no point converting to a different datatype
+		struct RconPlayerInfo   
+		{
+			std::string number;
+			std::string ip;
+			std::string port;
+			std::string guid;
+			bool verified;
+			std::string player_name;
+		};
 
 		struct RconPacket
 		{

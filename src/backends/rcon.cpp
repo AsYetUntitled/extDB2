@@ -128,13 +128,14 @@ void Rcon::sendPacket()
 		switch(rcon_packet.sequenceNum)
 		{
 			case 2:
-				cmdStream.put(0x02); // seq number
+				cmdStream.put(2); // seq number
 				break;
 			case 1:
-				cmdStream.put(0x01); // seq number
+				cmdStream.put(1); // seq number
 				break;
 			default:
-				cmdStream.put(0x00); // seq number
+				//cmdStream.put(0x00); // seq number
+				cmdStream.put(0); // seq number
 		}
 		
 		cmdStream << rcon_packet.cmd;
@@ -301,20 +302,61 @@ void Rcon::processMessage(int &sequenceNum, std::string &message)
 		case 2: //Player Listings
 		{
 			logger->info("Server Msg0: {0}", message);
-			/*
 			Poco::StringTokenizer tokens(message, "\n");
-			for (int i = 2; i < (tokens.count() - 1); ++i)
+			for (int i = 3; i < (tokens.count() - 1); ++i)
 			{
-				if (boost::algorithm::ends_with(tokens[i], ".pbo")
+				std::string playerinfo = tokens[i];
+				playerinfo.erase(std::unique(playerinfo.begin(), playerinfo.end(), [](char a, char b) { return a == ' ' && b == ' '; } ), playerinfo.end() );
+				Poco::StringTokenizer player_tokens(playerinfo, " ");
+				for (auto token : player_tokens)
 				{
-					info.push_back(tokens[i].substr(0, tokens[i].size() - 4));
+					logger->info("Server Msg0-0: {0}", token);
+				}
+				if (player_tokens.count() >= 5)
+				{
+					RconPlayerInfo player_data;
+
+					/*
+							struct RconPlayerInfo   
+							{
+								std::string number;
+								std::string ip;
+								std::string port;
+								std::string guid;
+								bool verified;
+								std::string player_name;
+							};
+					*/
+
+					player_data.number = player_tokens[0]; // RCon Player Number
+
+					auto found = player_tokens[1].find(":");
+					player_data.ip = player_tokens[1].substr(0,found-1)
+					player_data.port = player_tokens[1].substr(found+1)
+
+					player_data.ping =player_tokens[2]; // Ping
+
+					if (boost::algorithm::ends_with(player_tokens[3], "(OK)"))
+					{
+						player_data.verified = true;
+						player_data.guid = player_tokens[3].substr(0,(player_tokens.size()-4));
+					}
+					else
+					{
+						player_data.verified = false;
+						player_data.guid = player_tokens[3].substr(0,(player_tokens.size()-12));
+					}
+					found = tokens[i].find(")");
+					player_data.name = tokens[i].substr(found+2)
 				}
 				else
 				{
-					info.push_back(tokens[i]);
+					// ERROR
 				}
+
+
+
 			}
-			*/
 		}
 		break;
 
@@ -367,7 +409,7 @@ void Rcon::processMessage(int &sequenceNum, std::string &message)
 			#else
 				for(auto &info : info_vector)
 				{
-					logger->info("Server Mission: {0}", info_vector[i]);
+					logger->info("Server Mission: {0}", info);
 				}
 			#endif
 		}
@@ -411,7 +453,8 @@ void Rcon::mainLoop()
 				else
 				{
 					// Login Failed
-					logger->warn("Rcon: Failed Login... Disconnecting");
+					
+					logger->warn("Rcon: ACK: {0}", sequenceNum);
 					*rcon_login_flag = false;
 					disconnect();
 					break;
@@ -421,8 +464,9 @@ void Rcon::mainLoop()
 			{
 				// Rcon Server Ack Message Received
 				sequenceNum = buffer[8];
+				logger->warn("Rcon: ACK: {0}", sequenceNum);
 				
-				if (!(buffer_size > 9))
+				if (!((buffer[9] == 0x00) && (buffer_size > 9)))
 				{
 					// Server Received Command Msg
 					std::string result;
@@ -478,12 +522,10 @@ void Rcon::mainLoop()
 				}
 				else
 				{
-					// Recieved Chat Messages
+					// Received Chat Messages
 					std::string result;
 					extractData(9, result);
-					#if defined(Rcon_APP) || (TESTING)
-						logger->info("CHAT: {0}", result);
-					#endif
+					logger->info("CHAT: {0}", result);
 					
 					// Respond to Server Msgs i.e chat messages, to prevent timeout
 					rcon_packet.packetCode = 0x02;
@@ -547,17 +589,13 @@ void Rcon::mainLoop()
 				else if (elapsed_seconds >= 30)
 				{
 					// Keep Alive
-					#if defined(Rcon_APP) || (TESTING)
-						logger->info("Keep Alive Sending");
-					#endif
+					logger->info("Keep Alive Sending");
 
 					rcon_timer.restart();
 
 					dgs.sendBytes(keepAlivePacket.data(), keepAlivePacket.size());
 
-					#if defined(Rcon_APP) || (TESTING)
-						logger->info("Keep Alive Sent");
-					#endif
+					logger->info("Keep Alive Sent");
 				}
 				else if (*rcon_login_flag)
 				{
@@ -592,6 +630,7 @@ void Rcon::mainLoop()
 			disconnect();
 		}
 	}
+	logger->warn("Rcon: Stopping...");
 }
 
 
@@ -693,6 +732,7 @@ void Rcon::mainLoop()
 			console->info();
 
 			std::string input_str;
+			unsigned int unique_id = 1;
 			for (;;) {
 				std::getline(std::cin, input_str);
 				if (input_str == "quit")
@@ -704,11 +744,11 @@ void Rcon::mainLoop()
 				}
 				else if (input_str == "players")
 				{
-					rcon.getPlayers(input_str, 1);	
+					rcon.getPlayers(input_str, unique_id);	
 				}
 				else if (input_str == "missions")
 				{
-					rcon.getMissions(input_str, 1);	
+					rcon.getMissions(input_str, unique_id);	
 				}
 				else
 				{
