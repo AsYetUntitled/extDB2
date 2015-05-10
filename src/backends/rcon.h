@@ -34,20 +34,27 @@ along with this program. If not, see <http://www.gnu.org/licenses/>.
 #include <Poco/ExpireCache.h>
 #include <Poco/Stopwatch.h>
 
-#include "../abstract_ext.h"
+#ifndef RCON_APP
+	#include "../abstract_ext.h"
+#endif
 
 
 class Rcon: public Poco::Runnable
 {
 	public:
 		void init(std::shared_ptr<spdlog::logger> console);
+		#ifndef RCON_APP
+			void Rcon::extInit(AbstractExt *extension);
+		#endif
 		void updateLogin(std::string address, int port, std::string password);
 		
 		void run();
 		void disconnect();
 		bool status();
 		
-		void addCommand(std::string command);
+		void addCommand(std::string &command);
+		void getMissions(std::string &command, unsigned int &unique_id);
+		void getPlayers(std::string &command, unsigned int &unique_id);
 
 
 	private:
@@ -58,6 +65,7 @@ class Rcon: public Poco::Runnable
 			char *cmd;
 			char cmd_char_workaround;
 			unsigned char packetCode;
+			int sequenceNum;
 		};
 		RconPacket rcon_packet;
 
@@ -66,7 +74,6 @@ class Rcon: public Poco::Runnable
 			char *password;
 			std::string address;
 			int port;
-
 			bool auto_reconnect;
 		};
 		RconLogin rcon_login;
@@ -88,8 +95,15 @@ class Rcon: public Poco::Runnable
 		std::atomic<bool> *rcon_run_flag;
 		std::atomic<bool> *rcon_login_flag;
 		
-		std::vector< std::string > rcon_commands;
+		std::vector<std::pair<int, std::string> > rcon_commands;
 		std::mutex mutex_rcon_commands;
+
+
+		std::vector<unsigned int> missions_requests;
+		std::mutex mutex_missions_requests;
+
+		std::vector<unsigned int> players_requests;
+		std::mutex mutex_players_requests;
 
 		// Functions
 		void connect();
@@ -98,4 +112,10 @@ class Rcon: public Poco::Runnable
 		void createKeepAlive();
 		void sendPacket();
 		void extractData(int pos, std::string &result);
+
+		void processMessage(int &sequenceNum, std::string &message);
+
+		#ifndef RCON_APP
+			AbstractExt *extension_ptr;
+		#endif
 };
