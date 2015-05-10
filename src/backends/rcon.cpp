@@ -47,9 +47,6 @@ along with this program. If not, see <http://www.gnu.org/licenses/>.
 #include <Poco/Net/SocketAddress.h>
 #include <Poco/Net/NetException.h>
 
-#include <Poco/NumberFormatter.h>
-#include <Poco/Timestamp.h>
-#include <Poco/DateTimeFormatter.h>
 #include <Poco/Stopwatch.h>
 #include <Poco/Thread.h>
 

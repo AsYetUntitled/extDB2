@@ -178,17 +178,17 @@ void RemoteConnection::mainLoop()
 	bool store_receive = false;
 	std::string store_str;
 
-	int unique_id;
+	int unique_client_id;
 	{
 		std::lock_guard<std::mutex> lock(remoteServer_ptr->id_mgr_mutex);
 		while (true) // Limited Number of connected clients, so need to worry about all clientIDs beening used up
 		{
-			unique_id = remoteServer_ptr->unique_client_id_counter++;
+			unique_client_id = remoteServer_ptr->unique_client_id_counter++;
 			if (remoteServer_ptr->unique_client_id_counter >= remoteServer_ptr->unique_client_id_counter_max)
 			{
 				remoteServer_ptr->unique_client_id_counter = 0;
 			}
-			if (remoteServer_ptr->clients_data.count(unique_id) == 0) // Check if clientID is in use
+			if (remoteServer_ptr->clients_data.count(unique_client_id) == 0) // Check if clientID is in use
 			{
 				break;
 			}
@@ -201,14 +201,14 @@ void RemoteConnection::mainLoop()
 		{
 			// TIMEOUT
 			std::lock_guard<std::mutex> lock(remoteServer_ptr->clients_data_mutex);
-			if (!remoteServer_ptr->clients_data[unique_id].outputs.empty())
+			if (!remoteServer_ptr->clients_data[unique_client_id].outputs.empty())
 			{
-				for (auto &output : remoteServer_ptr->clients_data[unique_id].outputs)
+				for (auto &output : remoteServer_ptr->clients_data[unique_client_id].outputs)
 				{
 					send_str = output + "\n\r";
 					socket().sendBytes(send_str.c_str(), send_str.size());
 				}
-				remoteServer_ptr->clients_data[unique_id].outputs.clear();
+				remoteServer_ptr->clients_data[unique_client_id].outputs.clear();
 			}
 		}
 		else
@@ -257,7 +257,7 @@ void RemoteConnection::mainLoop()
 						else if (boost::iequals(recv_str, std::string("#SEND")) == 1)
 						{
 							std::lock_guard<std::mutex> lock(remoteServer_ptr->inputs_mutex);
-							std::string temp_str = Poco::NumberFormatter::format(unique_id) + ":" + store_str;
+							std::string temp_str = Poco::NumberFormatter::format(unique_client_id) + ":" + store_str;
 							remoteServer_ptr->inputs.push_back(std::move(temp_str));
 							*remoteServer_ptr->inputs_flag = true;
 						}
@@ -311,7 +311,7 @@ void RemoteConnection::mainLoop()
 	}
 	{
 		std::lock_guard<std::mutex> lock(remoteServer_ptr->clients_data_mutex);
-		remoteServer_ptr->clients_data.erase(unique_id);
+		remoteServer_ptr->clients_data.erase(unique_client_id);
 	}
 }
 

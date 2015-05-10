@@ -33,7 +33,6 @@ along with this program. If not, see <http://www.gnu.org/licenses/>.
 #include <Poco/Data/SQLite/Connector.h>
 #include <Poco/Data/SQLite/SQLiteException.h>
 
-#include <Poco/String.h>
 #include <Poco/StringTokenizer.h>
 #include <Poco/Util/AbstractConfiguration.h>
 #include <Poco/Util/IniFileConfiguration.h>
