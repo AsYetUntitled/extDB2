@@ -65,8 +65,9 @@ class Rcon: public Poco::Runnable
 			std::string number;
 			std::string ip;
 			std::string port;
+			std::string ping;
 			std::string guid;
-			bool verified;
+			std::string verified;
 			std::string player_name;
 		};
 

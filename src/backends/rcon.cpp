@@ -301,13 +301,17 @@ void Rcon::processMessage(int &sequenceNum, std::string &message)
 	{
 		case 2: //Player Listings
 		{
+			std::string player_str;
+			std::vector<RconPlayerInfo> info_vector;
+
 			logger->info("Server Msg0: {0}", message);
+			
 			Poco::StringTokenizer tokens(message, "\n");
 			for (int i = 3; i < (tokens.count() - 1); ++i)
 			{
-				std::string playerinfo = tokens[i];
-				playerinfo.erase(std::unique(playerinfo.begin(), playerinfo.end(), [](char a, char b) { return a == ' ' && b == ' '; } ), playerinfo.end() );
-				Poco::StringTokenizer player_tokens(playerinfo, " ");
+				player_str = tokens[i];
+				player_str.erase(std::unique(player_str.begin(), player_str.end(), [](char a, char b) { return a == ' ' && b == ' '; } ), player_str.end() );
+				Poco::StringTokenizer player_tokens(player_str, " ");
 				for (auto token : player_tokens)
 				{
 					logger->info("Server Msg0-0: {0}", token);
@@ -316,47 +320,70 @@ void Rcon::processMessage(int &sequenceNum, std::string &message)
 				{
 					RconPlayerInfo player_data;
 
-					/*
-							struct RconPlayerInfo   
-							{
-								std::string number;
-								std::string ip;
-								std::string port;
-								std::string guid;
-								bool verified;
-								std::string player_name;
-							};
-					*/
-
-					player_data.number = player_tokens[0]; // RCon Player Number
+					player_data.number = player_tokens[0];
 
 					auto found = player_tokens[1].find(":");
-					player_data.ip = player_tokens[1].substr(0,found-1)
-					player_data.port = player_tokens[1].substr(found+1)
+					player_data.ip = player_tokens[1].substr(0, found - 1);
+					player_data.port = player_tokens[1].substr(found + 1);
 
-					player_data.ping =player_tokens[2]; // Ping
+					player_data.ping = player_tokens[2];
 
 					if (boost::algorithm::ends_with(player_tokens[3], "(OK)"))
 					{
-						player_data.verified = true;
-						player_data.guid = player_tokens[3].substr(0,(player_tokens.size()-4));
+						player_data.verified = "true";
+						player_data.guid = player_tokens[3].substr(0, (player_tokens.count() - 4));
 					}
 					else
 					{
-						player_data.verified = false;
-						player_data.guid = player_tokens[3].substr(0,(player_tokens.size()-12));
+						player_data.verified = "false";
+						player_data.guid = player_tokens[3].substr(0, (player_tokens.count() - 12));
 					}
 					found = tokens[i].find(")");
-					player_data.name = tokens[i].substr(found+2)
+					player_data.player_name = tokens[i].substr(found + 2);
+
+					info_vector.push_back(std::move(player_data));
 				}
 				else
 				{
-					// ERROR
+					logger->info("Error: Wrong RconPlayerInfo count: {0}",player_tokens.count());
+				}
+			}
+			
+			#ifndef RCON_APP
+				std::string result;
+				if (info_vector.empty())
+				{
+					result  = "[1,[]]";
+				}
+				else
+				{
+					result = "[1,[";
+					for(auto &info : info_vector)
+					{
+						result += "[\"" + info.number + "\""; //TODO Add Ability to Limit the Info returned i.e most people wont need ip/port for security reasons
+						result += "\"" + info.ip + "\",";
+						result += info.port + ",";
+						result += info.ping + ",";
+						result += "\"" + info.guid + "\",";
+						result += "\"" + info.verified + "\",";
+						result += "\"" + info.player_name + "\"],";
+					}
+					result.pop_back();
+					result += "]]";
+					logger->info("Server Mission: {0}", result);
 				}
 
-
-
-			}
+				AbstractExt::resultData result_data;
+				result_data.message = result;
+				{
+					std::lock_guard<std::mutex> lock(mutex_players_requests);
+					for (auto unique_id : players_requests)
+					{
+						extension_ptr->saveResult_mutexlock(unique_id, result_data);
+					}
+					players_requests.clear();
+				}
+			#endif
 		}
 		break;
 
