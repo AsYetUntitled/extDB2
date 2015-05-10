@@ -32,6 +32,7 @@ along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 #ifdef RCON_APP
 	#include <boost/program_options.hpp>
+	#include <boost/thread/thread.hpp>
 	#include <fstream>
 #else
 	#include "../abstract_ext.h"
@@ -278,7 +279,8 @@ void Rcon::mainLoop()
 					// Server Received Command Msg
 					std::string result;
 					extractData(9, result);
-					#if defined(Rcon_APP) || (TESTING)
+					#if defined(RCON_APP) || (DEBUG_TESTING)
+						logger->info("Server sequenceNum: {0}", sequenceNum);
 						if (result.empty())
 						{
 							logger->info("Server Received Command Msg EMPTY");
@@ -494,12 +496,12 @@ void Rcon::mainLoop()
 		}
 		catch(boost::program_options::error& e)
 		{
-			std::cout << "ERROR: " << e.what() << std::endl;
-			std::cout << desc << std::endl;
+			console->error("ERROR: {0}", e.what());
+			console->error("ERROR: Desc {0}", desc);
 			return 1;
 		}
 
-		BERcon rcon;
+		Rcon rcon;
 		rcon.init(console);
 		rcon.updateLogin(options["ip"].as<std::string>(), options["port"].as<int>(), options["password"].as<std::string>());
 		Poco::Thread thread;

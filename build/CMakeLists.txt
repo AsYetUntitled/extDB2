@@ -33,7 +33,6 @@ endif()
 SET(SOURCES
 	../src/memory_allocator.cpp
 	../src/ext.cpp
-	#../src/pbo.cpp
 	../src/sanitize.cpp
 	../src/backends/http.cpp
 	../src/backends/rcon.cpp
@@ -69,7 +68,7 @@ if (COMPILE_TEST_APPLICATION)
 	add_definitions(-DTEST_APP)
 	message(STATUS "Building Test Application")
 elseif (COMPILE_RCON_APPLICATION)
-	SET(SOURCES ../src/rconworker.cpp) # Override Sources
+	SET(SOURCES ../src/backends/rcon.cpp) # Override Sources
 	set(EXECUTABLE_NAME "extDB2-rcon")
 	add_executable(${EXECUTABLE_NAME} ${SOURCES})
 	add_definitions(-DRCON_APP)
