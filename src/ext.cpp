@@ -327,8 +327,7 @@ Ext::Ext(std::string dll_path, std::unordered_map<std::string, std::string> opti
 			}
 
  			// Initialize so have atomic setup correctly
- 			rcon.reset( new Rcon(io_service, logger));
-			rcon->init();
+ 			rcon.reset(new Rcon(io_service, logger));
 			remote_server.init(this);
 
 			// Initialize so have atomic setup correctly + Setup VAC Ban Logger
@@ -489,7 +488,7 @@ void Ext::connectRcon(char *output, const int &output_size, const std::string &r
 void Ext::rconCommand(std::string input_str)
 // Adds RCon Command to be sent to Server.
 {
-	rcon->addCommand(input_str);
+//	rcon->addCommand(input_str);
 }
 
 
