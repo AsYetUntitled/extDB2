@@ -55,7 +55,6 @@ class Rcon
 
 	private:
 		//boost::asio::deadline_timer     timer;
-
 		std::shared_ptr<spdlog::logger> logger;
 
 		// Inputs are strings + Outputs are strings.  Info is not kept for long, so no point converting to a different datatype just to convert back to string for armaserver
@@ -81,6 +80,8 @@ class Rcon
 		typedef std::pair< int, std::unordered_map < int, std::string > > RconMultiPartMsg;
 		struct RconSocket
 		{
+			int id;
+			
 			std::atomic<bool> *rcon_run_flag;
 			std::atomic<bool> *rcon_login_flag;
 
@@ -95,6 +96,8 @@ class Rcon
 
 		RconSocket rcon_socket_1;
 		RconSocket rcon_socket_2;
+
+		std::atomic<int> *active_socket;
 
 		char *rcon_password;
 		

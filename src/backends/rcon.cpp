@@ -54,7 +54,11 @@ along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 Rcon::Rcon(boost::asio::io_service& io_service, std::shared_ptr<spdlog::logger> spdlog)
 {
+	active_socket = new std::atomic<int>(1);
 	
+	rcon_socket_1.id = 1;
+	rcon_socket_2.id = 2;
+
 	rcon_socket_1.rcon_run_flag = new std::atomic<bool>(false);
 	rcon_socket_2.rcon_run_flag = new std::atomic<bool>(false);
 
@@ -88,10 +92,29 @@ Rcon::~Rcon(void)
 unsigned char Rcon::getSequenceNum(RconSocket &rcon_socket)
 {
 	std::lock_guard<std::mutex> lock(rcon_socket.mutex_sequence_num_counter);
-	rcon_socket.sequence_num_counter = rcon_socket.sequence_num_counter + 1;
-	// TODO
-	// CHECK FOR > 200 Number  Reset RCon Connection
-	// START SECOND CONNECTION to Server using 2nd Socket. Add Timer to close 1st Socket
+
+	if (rcon_socket.sequence_num_counter > 200)
+	{
+		if (rcon_socket.sequence_num_counter < 255)
+		{
+			++(rcon_socket.sequence_num_counter);
+		}
+
+		*(rcon_socket.rcon_run_flag) = false;
+		// TODO Delayed Post to close socket
+		if (rcon_socket.id == 1)
+		{
+			connect(rcon_socket_1);
+		}
+		else
+		{
+			connect(rcon_socket_2);
+		}
+	}
+	else
+	{
+		++(rcon_socket.sequence_num_counter);
+	}
 	return rcon_socket.sequence_num_counter;
 }
 
@@ -112,7 +135,6 @@ void Rcon::start(std::string &address, unsigned int port, std::string &password)
 	delete rcon_password;
 	rcon_password = new char[password.size() + 1];
 	startReceive(rcon_socket_1);
-
 }
 
 
@@ -124,7 +146,8 @@ void Rcon::connectionHandler(RconSocket &rcon_socket, const boost::system::error
 	}
 	else
 	{
-		//ERROR
+		logger->info("Rcon: UDP Socket Connection Error");
+		disconnect();
 	}
 }
 
@@ -191,8 +214,8 @@ void Rcon::handleReceive(RconSocket &rcon_socket, const boost::system::error_cod
 	}
 	else
 	{
-		// TODO Error
-		// Reconnect
+		logger->info("Rcon: UDP handleReceive Error: {0}", error);
+		startReceive(rcon_socket);
 	}
 }
 
@@ -201,15 +224,18 @@ void Rcon::loginResponse(RconSocket &rcon_socket)
 {
 	if (rcon_socket.recv_buffer[8] == 0x01)
 	{
-		logger->warn("Rcon: Logged In");
 		*(rcon_socket.rcon_login_flag) = true;
+		resetSequenceNum(rcon_socket);
+
+		logger->info("Rcon: Login Success");
+		*active_socket = rcon_socket.id;
 	}
 	else
 	{
-		// Login Failed
-//		logger->warn("Rcon: ACK: {0}", sequenceNum);
 		*(rcon_socket.rcon_login_flag) = false;
 		disconnect();
+
+		logger->info("Rcon: Login Failed");
 	}
 }
 
@@ -297,7 +323,6 @@ void Rcon::extractData(RconSocket &rcon_socket, std::size_t &bytes_received, int
 
 void Rcon::createKeepAlive(RconSocket &rcon_socket)
 {
-	boost::crc_32_type crc32;
 	std::ostringstream cmdStream;
 	cmdStream.put(0xFFu);
 	cmdStream.put(0x01);
@@ -305,7 +330,7 @@ void Rcon::createKeepAlive(RconSocket &rcon_socket)
 	cmdStream.put('\0');
 
 	std::string cmd = cmdStream.str();
-	crc32.reset();
+	boost::crc_32_type crc32;
 	crc32.process_bytes(cmd.data(), cmd.length());
 	long int crcVal = crc32.checksum();
 
@@ -349,7 +374,6 @@ void Rcon::createKeepAlive(RconSocket &rcon_socket)
 
 void Rcon::sendPacket(RconSocket &rcon_socket, RconPacket &rcon_packet)
 {
-	boost::crc_32_type crc32;
 	std::ostringstream cmdStream;
 	cmdStream.put(0xFFu);
 	cmdStream.put(rcon_packet.packetCode);
@@ -369,7 +393,7 @@ void Rcon::sendPacket(RconSocket &rcon_socket, RconPacket &rcon_packet)
 	}
 
 	std::string cmd = cmdStream.str();
-	crc32.reset();
+	boost::crc_32_type crc32;
 	crc32.process_bytes(cmd.data(), cmd.length());
 	long int crcVal = crc32.checksum();
 
@@ -412,7 +436,6 @@ void Rcon::sendPacket(RconSocket &rcon_socket, RconPacket &rcon_packet)
 
 void Rcon::handleSent(const boost::system::error_code&,	std::size_t bytes_transferred)
 {
-	// TODO
 }
 
 
