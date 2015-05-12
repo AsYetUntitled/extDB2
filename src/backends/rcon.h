@@ -38,16 +38,15 @@ along with this program. If not, see <http://www.gnu.org/licenses/>.
 class Rcon
 {
 	public:
-		Rcon(boost::asio::io_service& io_service, std::shared_ptr<spdlog::logger> spdlog) : socket_(io_service), logger(spdlog){};
+		Rcon(boost::asio::io_service& io_service, std::shared_ptr<spdlog::logger> spdlog) : socket1_(io_service), socket2_(io_service), logger(spdlog){};
 		~Rcon();
 
 		void init();
 		#ifndef RCON_APP
 			void extInit(AbstractExt *extension);
 		#endif
-		void updateLogin(std::string &address, unsigned int port, std::string &password);
-		
-		void run();
+
+		void start(std::string &address, unsigned int port, std::string &password);
 		void disconnect();
 		bool status();
 		
@@ -56,10 +55,14 @@ class Rcon
 		void getPlayers(std::string &command, unsigned int &unique_id);
 
 	private:
-		boost::asio::ip::udp::socket socket_;
+		boost::asio::ip::udp::socket socket1_;
+		boost::asio::ip::udp::socket socket2_;
+
+		//boost::asio::deadline_timer     timer;
+
 		std::shared_ptr<spdlog::logger> logger;
 
-		boost::array<char, 4096> recv_buffer_;
+		boost::array<char, 8192> recv_buffer_;
 		
 		typedef std::pair< int, std::unordered_map < int, std::string > > RconMultiPartMsg;
 
@@ -86,7 +89,8 @@ class Rcon
 		char *rcon_password;
 
 		std::mutex mutex_sequence_num_counter;
-		unsigned char sequence_num_counter;
+		unsigned char sequence_num_counter1;
+		unsigned char sequence_num_counter2;
 
 
 		std::unique_ptr<Poco::ExpireCache<unsigned char, RconMultiPartMsg> > rcon_msg_cache;
@@ -106,26 +110,23 @@ class Rcon
 		std::mutex mutex_players_requests;
 
 		// Functions
-		void connect();
-		void mainLoop();
-		void startReceive();
+		void connect(boost::asio::ip::udp::socket &socket);
+		void startReceive(boost::asio::ip::udp::socket &socket, unsigned char &sequence_num_counter);
 
-		void createKeepAlive();
-		void sendPacket(RconPacket &rcon_packet);
+		void createKeepAlive(boost::asio::ip::udp::socket &socket, unsigned char &sequence_num_counter);
+		void sendPacket(RconPacket &rcon_packet, boost::asio::ip::udp::socket &socket, unsigned char &sequence_num_counter);
 		void extractData(int pos, std::string &result, std::size_t &bytes_received);
 
-		void processMessage(unsigned char &sequence_number, std::string &message);
+		unsigned char getSequenceNum(unsigned char &sequence_num_counter);
+		unsigned char resetSequenceNum(unsigned char &sequence_num_counter);
 
-		unsigned char Rcon::getSequenceNum();
-		unsigned char Rcon::resetSequenceNum();
-
-		void connectionHandler(const boost::system::error_code& error);
-		void handleReceive(const boost::system::error_code& error, std::size_t bytes_received);
+		void connectionHandler(boost::asio::ip::udp::socket &socket, unsigned char &sequence_num_counter, const boost::system::error_code& error);
+		void handleReceive(boost::asio::ip::udp::socket &socket, unsigned char &sequence_num_counter, const boost::system::error_code& error, std::size_t bytes_received);
 		void handleSent(const boost::system::error_code&, std::size_t bytes_transferred);
 
-		void loginResponse();
-		void serverResponse(std::size_t &bytes_received);
-		void chatMessage(std::size_t &bytes_received);
+		void loginResponse(boost::asio::ip::udp::socket &socket);
+		void serverResponse(boost::asio::ip::udp::socket &socket, std::size_t &bytes_received);
+		void chatMessage(boost::asio::ip::udp::socket &socket, std::size_t &bytes_received, unsigned char &sequence_num_counter);
 
 		#ifndef RCON_APP
 			AbstractExt *extension_ptr;

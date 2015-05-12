@@ -56,6 +56,7 @@ Rcon::~Rcon(void)
 {
 }
 
+
 void Rcon::init()
 {
 	rcon_run_flag = new std::atomic<bool>(false);
@@ -72,25 +73,25 @@ void Rcon::init()
 #endif
 
 
-unsigned char Rcon::getSequenceNum()
+unsigned char Rcon::getSequenceNum(unsigned char &sequence_num_counter)
 {
 	std::lock_guard<std::mutex> lock(mutex_sequence_num_counter);
 	sequence_num_counter = sequence_num_counter + 1;
 	// CHECK FOR > 200 Number  Reset RCon Connection
+	// START SECOND CONNECTION to Server using 2nd Socket. Add Timer to close 1st Socket
 	return sequence_num_counter;
 }
 
 
-unsigned char Rcon::resetSequenceNum()
+unsigned char Rcon::resetSequenceNum(unsigned char &sequence_num_counter)
 {
 	std::lock_guard<std::mutex> lock(mutex_sequence_num_counter);
 	sequence_num_counter = 0;
-	// CHECK FOR > 200 Number  Reset RCon Connection
 	return sequence_num_counter;
 }
 
 
-void Rcon::connectionHandler(const boost::system::error_code& error)
+void Rcon::connectionHandler(boost::asio::ip::udp::socket &socket, unsigned char &sequence_num_counter, const boost::system::error_code& error)
 {
 	if (!error)
 	{
@@ -104,27 +105,28 @@ void Rcon::connectionHandler(const boost::system::error_code& error)
 }
 
 
-void Rcon::updateLogin(std::string &address, unsigned int port, std::string &password)
+void Rcon::start(std::string &address, unsigned int port, std::string &password)  // TODO Socket1/2
 {
 	boost::asio::ip::udp::endpoint endpoint(boost::asio::ip::address::from_string(address), port);
-	socket_.async_connect(endpoint, boost::bind(&Rcon::connectionHandler, this, boost::asio::placeholders::error));
+	socket1_.async_connect(endpoint, boost::bind(&Rcon::connectionHandler, this, std::ref(socket1_), std::ref(sequence_num_counter1), boost::asio::placeholders::error));
 
 	delete rcon_password;
-	rcon_password = new char[password.size() + 1]; 
+	rcon_password = new char[password.size() + 1];
+	startReceive(socket1_, sequence_num_counter1);
 }
 
 
-void Rcon::startReceive()
+void Rcon::startReceive(boost::asio::ip::udp::socket &socket, unsigned char &sequence_num_counter)
 {
-	socket_.async_receive(
+	socket.async_receive(
 		boost::asio::buffer(recv_buffer_),
-		boost::bind(&Rcon::handleReceive, this,
+		boost::bind(&Rcon::handleReceive, this, std::ref(socket), std::ref(sequence_num_counter),
 		boost::asio::placeholders::error,
 		boost::asio::placeholders::bytes_transferred));
 }
 
 
-void Rcon::loginResponse()
+void Rcon::loginResponse(boost::asio::ip::udp::socket &socket)
 {
 	if (recv_buffer_[8] == 0x01)
 	{
@@ -141,7 +143,7 @@ void Rcon::loginResponse()
 }
 
 
-void Rcon::serverResponse(std::size_t &bytes_received)
+void Rcon::serverResponse(boost::asio::ip::udp::socket &socket, std::size_t &bytes_received)
 {
 	// Rcon Server Ack Message Received
 	unsigned char sequenceNum = recv_buffer_[8];
@@ -196,7 +198,7 @@ void Rcon::serverResponse(std::size_t &bytes_received)
 }
 
 
-void Rcon::chatMessage(std::size_t &bytes_received)
+void Rcon::chatMessage(boost::asio::ip::udp::socket &socket, std::size_t &bytes_received, unsigned char &sequence_num_counter)
 {
 	// Received Chat Messages
 	std::string result;
@@ -207,11 +209,11 @@ void Rcon::chatMessage(std::size_t &bytes_received)
 	RconPacket rcon_packet;
 	rcon_packet.packetCode = 0x02;
 	rcon_packet.cmd_char_workaround = recv_buffer_[8];
-	sendPacket(rcon_packet);
+	sendPacket(rcon_packet, socket, sequence_num_counter);
 }
 
 
-void Rcon::handleReceive(const boost::system::error_code& error, std::size_t bytes_received)
+void Rcon::handleReceive(boost::asio::ip::udp::socket &socket, unsigned char &sequence_num_counter, const boost::system::error_code& error, std::size_t bytes_received)
 {
 	if (!error)
 	{
@@ -221,16 +223,16 @@ void Rcon::handleReceive(const boost::system::error_code& error, std::size_t byt
 		switch(recv_buffer_[7])
 		{
 			case 0x00:
-				loginResponse();
+				loginResponse(socket);
 				break;
 			case 0x01:
-				serverResponse(bytes_received);
+				serverResponse(socket, bytes_received);
 				break;
 			case 0x02:
-				chatMessage(bytes_received);
+				chatMessage(socket, bytes_received, sequence_num_counter);
 				break;
 		};
-		startReceive();
+		startReceive(socket, sequence_num_counter);
 	}
 	else
 	{
@@ -246,7 +248,7 @@ void Rcon::handleSent(const boost::system::error_code&,	std::size_t bytes_transf
 }
 
 
-void Rcon::connect()
+void Rcon::connect(boost::asio::ip::udp::socket &socket)
 {
 	*rcon_login_flag = false;
 	*rcon_run_flag = true;
@@ -255,19 +257,19 @@ void Rcon::connect()
 	RconPacket rcon_packet;
 	rcon_packet.cmd = rcon_password;
 	rcon_packet.packetCode = 0x00;
-	sendPacket(rcon_packet);
+	//sendPacket(rcon_packet, socket);
 	logger->info("Rcon: Sent Login Info");
 }
 
 
 
-void Rcon::createKeepAlive()
+void Rcon::createKeepAlive(boost::asio::ip::udp::socket &socket, unsigned char &sequence_num_counter)
 {
 	boost::crc_32_type crc32;
 	std::ostringstream cmdStream;
 	cmdStream.put(0xFFu);
 	cmdStream.put(0x01);
-	cmdStream.put(getSequenceNum()); // Seq Number    unsigned char + 1
+	cmdStream.put(getSequenceNum(sequence_num_counter)); // Seq Number    unsigned char + 1
 	cmdStream.put('\0');
 
 	std::string cmd = cmdStream.str();
@@ -306,14 +308,14 @@ void Rcon::createKeepAlive()
 	std::shared_ptr<std::string> packet;
 	packet.reset(new std::string(cmdPacketStream.str()));
 
-	socket_.async_send(boost::asio::buffer(*packet),
+	socket.async_send(boost::asio::buffer(*packet),
 							boost::bind(&Rcon::handleSent, this,
 							boost::asio::placeholders::error,
 							boost::asio::placeholders::bytes_transferred));
 }
 
 
-void Rcon::sendPacket(RconPacket &rcon_packet)
+void Rcon::sendPacket(RconPacket &rcon_packet, boost::asio::ip::udp::socket &socket, unsigned char &sequence_num_counter)
 {
 	boost::crc_32_type crc32;
 	std::ostringstream cmdStream;
@@ -322,7 +324,7 @@ void Rcon::sendPacket(RconPacket &rcon_packet)
 	
 	if (rcon_packet.packetCode == 0x01) //Everything else
 	{
-		cmdStream.put(getSequenceNum());	
+		cmdStream.put(getSequenceNum(sequence_num_counter));	
 		cmdStream << rcon_packet.cmd;
 	}
 	else if (rcon_packet.packetCode == 0x02) //Respond to Chat Messages
@@ -369,7 +371,7 @@ void Rcon::sendPacket(RconPacket &rcon_packet)
 	std::shared_ptr<std::string> packet;
 	packet.reset( new std::string(cmdPacketStream.str()) );
 
-	socket_.async_send(boost::asio::buffer(*packet),
+	socket.async_send(boost::asio::buffer(*packet),
 							boost::bind(&Rcon::handleSent, this, 
 							boost::asio::placeholders::error,
 							boost::asio::placeholders::bytes_transferred));

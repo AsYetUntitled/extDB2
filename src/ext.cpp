@@ -473,7 +473,7 @@ void Ext::connectRcon(char *output, const int &output_size, const std::string &r
 	{
 		if (pConf->hasOption(rcon_conf + ".Port"))
 		{
-			rcon->updateLogin(pConf->getString((rcon_conf + ".IP"), "127.0.0.1"), pConf->getInt((rcon_conf + ".Port"), 2302), pConf->getString((rcon_conf + ".Password"), "password"));
+			rcon->start(pConf->getString((rcon_conf + ".IP"), "127.0.0.1"), pConf->getInt((rcon_conf + ".Port"), 2302), pConf->getString((rcon_conf + ".Password"), "password"));
 //			rcon_thread.start(rcon);  TODO
 			std::strcpy(output, "[1]");
 			extDB_connectors_info.rcon = true;
