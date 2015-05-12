@@ -139,6 +139,10 @@ class Rcon
 
 		void loginResponse(RconSocket &rcon_socket);
 		void serverResponse(RconSocket &rcon_socket, std::size_t &bytes_received);
+
+		void processMessage(RconSocket &rcon_socket, unsigned char &sequence_number, std::string &message);
+		void processMessageMission(std::string &message, unsigned int &unique_id);
+		void processMessagePlayers(std::string &message, unsigned int &unique_id);
 		void chatMessage(RconSocket &rcon_socket, std::size_t &bytes_received);
 
 		#ifndef RCON_APP

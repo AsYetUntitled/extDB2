@@ -54,7 +54,6 @@ class Ext: public AbstractExt
 		const unsigned int saveResult_mutexlock(const resultData &result_data);
 		void saveResult_mutexlock(const unsigned int &unique_id, const resultData &result_data);
 
-		Poco::Thread rcon_thread;
 		Poco::Thread steam_thread;
 
 		Poco::Data::Session getDBSession_mutexlock(AbstractExt::DBConnectionInfo &database);

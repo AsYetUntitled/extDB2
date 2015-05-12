@@ -372,7 +372,6 @@ void Ext::stop()
 	if (extDB_connectors_info.rcon)
 	{
 		rcon->disconnect();
-		rcon_thread.join();
 	}
 }
 
@@ -473,7 +472,6 @@ void Ext::connectRcon(char *output, const int &output_size, const std::string &r
 		if (pConf->hasOption(rcon_conf + ".Port"))
 		{
 			rcon->start(pConf->getString((rcon_conf + ".IP"), "127.0.0.1"), pConf->getInt((rcon_conf + ".Port"), 2302), pConf->getString((rcon_conf + ".Password"), "password"));
-//			rcon_thread.start(rcon);  TODO
 			std::strcpy(output, "[1]");
 			extDB_connectors_info.rcon = true;
 		}
@@ -488,7 +486,7 @@ void Ext::connectRcon(char *output, const int &output_size, const std::string &r
 void Ext::rconCommand(std::string input_str)
 // Adds RCon Command to be sent to Server.
 {
-//	rcon->addCommand(input_str);
+	rcon->sendCommand(input_str);
 }
 
 

@@ -301,7 +301,7 @@ void Rcon::serverResponse(RconSocket &rcon_socket, std::size_t &bytes_received)
 		// Server Received Command Msg
 		std::string result;
 		extractData(rcon_socket, bytes_received, 9, result);
-		//processMessage(sequenceNum, result);
+		processMessage(rcon_socket, sequenceNum, result);
 	}
 	else
 	{
@@ -337,11 +337,150 @@ void Rcon::serverResponse(RconSocket &rcon_socket, std::size_t &bytes_received)
 				{
 					result = result + ptrElem->second[i];
 				}
-				//processMessage(sequenceNum, result);
+				processMessage(rcon_socket, sequenceNum, result);
 				rcon_socket.rcon_msg_cache->remove(sequenceNum);
 			}
 		}
 	}
+}
+
+
+void Rcon::processMessage(RconSocket &rcon_socket, unsigned char &sequence_number, std::string &message)
+{
+	unsigned int unique_id;
+	int request_type = 0;
+	{
+		std::lock_guard<std::mutex> lock(rcon_socket.mutex_requests);
+		if (rcon_socket.requests.count(sequence_number) > 0) // Just to be safe
+		{
+			unique_id = rcon_socket.requests[sequence_number].unique_id;
+			request_type = rcon_socket.requests[sequence_number].request_type;
+			rcon_socket.requests.erase(sequence_number);
+		}
+	}
+
+	#if defined(RCON_APP) || (DEBUG_TESTING)
+		logger->info("RCon: {0}", message);
+	#endif
+
+	switch(request_type)
+	{
+		case 1:
+			{
+				processMessageMission(message, unique_id);
+			}
+			break;
+		case 2:
+			{
+				processMessagePlayers(message, unique_id);
+			}
+			break;
+	}	
+}
+
+
+void Rcon::processMessageMission(std::string &message, unsigned int &unique_id)
+{
+	std::vector<std::string> info_vector;
+	Poco::StringTokenizer tokens(message, "\n");
+	for (int i = 1; i < (tokens.count()); ++i)
+	{
+		if (boost::algorithm::ends_with(tokens[i], ".pbo"))
+		{
+			info_vector.push_back(tokens[i].substr(0, tokens[i].size() - 4));
+		}
+		else
+		{
+			info_vector.push_back(tokens[i]);
+		}
+	}
+
+	AbstractExt::resultData result_data;
+	if (info_vector.empty())
+	{
+		result_data.message  = "[1,[]]";
+	}
+	else
+	{
+		result_data.message = "[1,[";
+		for(auto &info : info_vector)
+		{
+			result_data.message += info;
+			result_data.message += ",";
+			logger->info("Server Mission: {0}", info);
+		}
+		result_data.message.pop_back();
+		result_data.message += "]]";
+	}
+	extension_ptr->saveResult_mutexlock(unique_id, result_data);
+}
+
+
+void Rcon::processMessagePlayers(std::string &message, unsigned int &unique_id)
+{
+	std::vector<RconPlayerInfo> info_vector;
+
+	std::string player_str;
+	Poco::StringTokenizer tokens(message, "\n");
+	for (int i = 3; i < (tokens.count() - 1); ++i)
+	{
+		player_str = tokens[i];
+		player_str.erase(std::unique(player_str.begin(), player_str.end(), [](char a, char b) { return a == ' ' && b == ' '; } ), player_str.end() );
+
+		Poco::StringTokenizer player_tokens(player_str, " ");
+		if (player_tokens.count() >= 5)
+		{
+			RconPlayerInfo player_data;
+
+			player_data.number = player_tokens[0];
+			auto found = player_tokens[1].find(":");
+			player_data.ip = player_tokens[1].substr(0, found - 1);
+			player_data.port = player_tokens[1].substr(found + 1);
+			player_data.ping = player_tokens[2];
+
+			if (boost::algorithm::ends_with(player_tokens[3], "(OK)"))
+			{
+				player_data.verified = "true";
+				player_data.guid = player_tokens[3].substr(0, (player_tokens.count() - 4));
+			}
+			else
+			{
+				player_data.verified = "false";
+				player_data.guid = player_tokens[3].substr(0, (player_tokens.count() - 12));
+			}
+			found = tokens[i].find(")");
+			player_data.player_name = tokens[i].substr(found + 2);
+
+			info_vector.push_back(std::move(player_data));
+		}
+		else
+		{
+			logger->info("Error: Wrong RconPlayerInfo count: {0}",player_tokens.count());
+		}
+	}
+
+	AbstractExt::resultData result_data;
+	if (info_vector.empty())
+	{
+		result_data.message  = "[1,[]]";
+	}
+	else
+	{
+		result_data.message = "[1,[";
+		for(auto &info : info_vector)
+		{
+			result_data.message += "[\"" + info.number + "\""; //TODO Add Ability to Limit the Info returned i.e most people wont need ip/port for security reasons
+			result_data.message += "\"" + info.ip + "\",";
+			result_data.message += info.port + ",";
+			result_data.message += info.ping + ",";
+			result_data.message += "\"" + info.guid + "\",";
+			result_data.message += "\"" + info.verified + "\",";
+			result_data.message += "\"" + info.player_name + "\"],";
+		}
+		result_data.message.pop_back();
+		result_data.message += "]]";
+	}
+	extension_ptr->saveResult_mutexlock(unique_id, result_data);
 }
 
 
