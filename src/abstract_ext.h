@@ -107,7 +107,10 @@ class AbstractExt
 		virtual Poco::Data::Session getDBSession_mutexlock(DBConnectionInfo &database)=0;
 		virtual Poco::Data::Session getDBSession_mutexlock(DBConnectionInfo &database, Poco::Data::SessionPool::SessionDataPtr &session_data_ptr)=0;
 		
-		virtual void rconCommand(std::string str)=0;
+		virtual void rconCommand(std::string input_str)=0;
+		virtual void rconPlayers(std::string input_str, unsigned int unique_id)=0;
+		virtual void rconMissions(std::string input_str, unsigned int unique_id)=0;
+
 		virtual void steamQuery(const unsigned int &unique_id, bool queryFriends, bool queryVacBans, std::string &steamID, bool wakeup)=0;
 		virtual void steamQuery(const unsigned int &unique_id, bool queryFriends, bool queryVacBans, std::vector<std::string> &steamIDs, bool wakeup)=0;
 };

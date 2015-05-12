@@ -39,6 +39,7 @@ along with this program. If not, see <http://www.gnu.org/licenses/>.
 #endif
 
 #include <boost/algorithm/string/predicate.hpp>
+#include <boost/asio/placeholders.hpp>
 #include <boost/crc.hpp>
 
 #include <Poco/AbstractCache.h>
@@ -46,21 +47,20 @@ along with this program. If not, see <http://www.gnu.org/licenses/>.
 #include <Poco/SharedPtr.h>
 #include <Poco/StringTokenizer.h>
 
-#include <Poco/Net/DatagramSocket.h>
-#include <Poco/Net/SocketAddress.h>
-#include <Poco/Net/NetException.h>
-
 #include <Poco/Stopwatch.h>
-#include <Poco/Thread.h>
 
 #include <Poco/Exception.h>
 
 
-void Rcon::init(std::shared_ptr<spdlog::logger> ext_logger)
+Rcon::~Rcon(void)
+{
+}
+
+void Rcon::init()
 {
 	rcon_run_flag = new std::atomic<bool>(false);
 	rcon_login_flag = new std::atomic<bool>(false);
-	logger.swap(ext_logger);
+	rcon_msg_cache.reset(new Poco::ExpireCache<unsigned char, RconMultiPartMsg>(120000));
 }
 
 
@@ -72,12 +72,190 @@ void Rcon::init(std::shared_ptr<spdlog::logger> ext_logger)
 #endif
 
 
+void Rcon::connectionHandler(const boost::system::error_code& error)
+{
+	if (!error)
+	{
+		//LOGIN
+		//START
+	}
+	else
+	{
+		//ERROR
+	}
+}
+
+
+void Rcon::updateLogin(std::string &address, unsigned int port, std::string &password)
+{
+	boost::asio::ip::udp::endpoint endpoint(boost::asio::ip::address::from_string(address), port);
+	socket_.async_connect(endpoint, boost::bind(&Rcon::connectionHandler, this, boost::asio::placeholders::error));
+
+	delete rcon_password;
+	rcon_password = new char[password.size() + 1]; 
+}
+
+
+void Rcon::startReceive()
+{
+	socket_.async_receive(
+		boost::asio::buffer(recv_buffer_),
+		boost::bind(&Rcon::handleReceive, this,
+		boost::asio::placeholders::error,
+		boost::asio::placeholders::bytes_transferred));
+}
+
+
+void Rcon::loginResponse()
+{
+	if (recv_buffer_[8] == 0x01)
+	{
+		logger->warn("Rcon: Logged In");
+		*rcon_login_flag = true;
+	}
+	else
+	{
+		// Login Failed
+//		logger->warn("Rcon: ACK: {0}", sequenceNum);
+		*rcon_login_flag = false;
+		disconnect();
+	}
+}
+
+
+void Rcon::serverResponse(std::size_t &bytes_received)
+{
+	// Rcon Server Ack Message Received
+	unsigned char sequenceNum = recv_buffer_[8];
+	logger->warn("Rcon: ACK: {0}", sequenceNum);	
+
+	if (!((recv_buffer_[9] == 0x00) && (bytes_received > 9)))
+	{
+		// Server Received Command Msg
+		std::string result;
+		extractData(9, result, bytes_received);
+		//processMessage(sequenceNum, result);
+	}
+	else
+	{
+		// Rcon Multi-Part Message Recieved
+		int numPackets = recv_buffer_[10];
+		int packetNum = recv_buffer_[11];
+			
+		std::string partial_msg;
+		extractData(12, partial_msg, bytes_received);
+				
+		if (!(rcon_msg_cache->has(sequenceNum)))
+		{
+			// Doesn't have sequenceNum in Buffer
+			RconMultiPartMsg rcon_mp_msg;
+			rcon_mp_msg.first = 1;
+			rcon_msg_cache->add(sequenceNum, rcon_mp_msg);
+				
+			Poco::SharedPtr<RconMultiPartMsg> ptrElem = rcon_msg_cache->get(sequenceNum);
+			ptrElem->second[packetNum] = partial_msg;
+		}
+		else
+		{
+			// Has sequenceNum in Buffer
+			Poco::SharedPtr<RconMultiPartMsg> ptrElem = rcon_msg_cache->get(sequenceNum);
+			ptrElem->first = ptrElem->first + 1;
+			ptrElem->second[packetNum] = partial_msg;
+					
+			if (ptrElem->first == numPackets)
+			{
+				// All packets Received, re-construct message
+				std::string result;
+				for (int i = 0; i < numPackets; ++i)
+				{
+					result = result + ptrElem->second[i];
+				}
+				//processMessage(sequenceNum, result);
+				rcon_msg_cache->remove(sequenceNum);
+			}
+		}
+	}
+}
+
+
+void Rcon::chatMessage(std::size_t &bytes_received)
+{
+	// Received Chat Messages
+	std::string result;
+	extractData(9, result, bytes_received);
+	logger->info("CHAT: {0}", result);
+	
+	// Respond to Server Msgs i.e chat messages, to prevent timeout
+	RconPacket rcon_packet;
+	rcon_packet.packetCode = 0x02;
+	rcon_packet.cmd_char_workaround = recv_buffer_[8];
+	rcon_packet.sequence_number = 0;
+	sendPacket(rcon_packet);
+}
+
+
+void Rcon::handleReceive(const boost::system::error_code& error, std::size_t bytes_received)
+{
+	if (!error)
+	{
+		logger->info("Rcon: receiveBytes");
+		//rcon_timer.restart();
+		recv_buffer_[bytes_received] = '\0';
+
+		switch(recv_buffer_[7])
+		{
+			case 0x00:
+				loginResponse();
+				break;
+			case 0x01:
+				serverResponse(bytes_received);
+				break;
+			case 0x02:
+				chatMessage(bytes_received);
+				break;
+		};
+		startReceive();
+	}
+	else
+	{
+		// TODO Error
+		// Reconnect
+	}
+}
+
+
+void Rcon::handleSent(const boost::system::error_code&,	std::size_t bytes_transferred)
+{
+	// TODO
+}
+
+
+void Rcon::connect()
+{
+	*rcon_login_flag = false;
+	*rcon_run_flag = true;
+
+	// Login Packet
+	RconPacket rcon_packet;
+	rcon_packet.cmd = rcon_password;
+	rcon_packet.packetCode = 0x00;
+	rcon_packet.sequence_number = 0;
+	sendPacket(rcon_packet);
+	logger->info("Rcon: Sent Login Info");
+	
+	// Reset Timer
+//	rcon_timer.start();
+}
+
+
+
 void Rcon::createKeepAlive()
 {
+	boost::crc_32_type crc32;
 	std::ostringstream cmdStream;
 	cmdStream.put(0xFFu);
 	cmdStream.put(0x01);
-	cmdStream.put(0x00); // Seq Number
+	cmdStream.put(0x00); // Seq Number    unsigned char + 1
 	cmdStream.put('\0');
 
 	std::string cmd = cmdStream.str();
@@ -113,29 +291,35 @@ void Rcon::createKeepAlive()
 	cmdPacketStream << cmd;
 	cmdPacketStream.str();
 
-	keepAlivePacket = cmdPacketStream.str();
+	std::shared_ptr<std::string> packet;
+	packet.reset(new std::string(cmdPacketStream.str()));
+
+	socket_.async_send(boost::asio::buffer(*packet),
+							boost::bind(&Rcon::handleSent, this,
+							boost::asio::placeholders::error,
+							boost::asio::placeholders::bytes_transferred));
 }
 
 
-void Rcon::sendPacket()
+void Rcon::sendPacket(RconPacket &rcon_packet)
 {
+	boost::crc_32_type crc32;
 	std::ostringstream cmdStream;
 	cmdStream.put(0xFFu);
 	cmdStream.put(rcon_packet.packetCode);
 	
 	if (rcon_packet.packetCode == 0x01)
 	{
-		switch(rcon_packet.sequenceNum)
+		switch (rcon_packet.sequence_number)
 		{
 			case 2:
-				cmdStream.put(2); // seq number
+				cmdStream.put(0x02); // 2 seq number
 				break;
 			case 1:
-				cmdStream.put(1); // seq number
+				cmdStream.put(0x01); // 1 seq number
 				break;
 			default:
-				//cmdStream.put(0x00); // seq number
-				cmdStream.put(0); // seq number
+				cmdStream.put(0x00); // 0 seq number
 		}
 		
 		cmdStream << rcon_packet.cmd;
@@ -181,109 +365,62 @@ void Rcon::sendPacket()
 	cmdPacketStream.put(reversedCrc[3]);
 	cmdPacketStream << cmd;
 
-	std::string packet = cmdPacketStream.str();
-	dgs.sendBytes(packet.data(), packet.size());
+	std::shared_ptr<std::string> packet;
+	packet.reset( new std::string(cmdPacketStream.str()) );
+
+	socket_.async_send(boost::asio::buffer(*packet),
+							boost::bind(&Rcon::handleSent, this, 
+							boost::asio::placeholders::error,
+							boost::asio::placeholders::bytes_transferred));
 }
 
 
-void Rcon::extractData(int pos, std::string &result)
+void Rcon::extractData(int pos, std::string &result, std::size_t &bytes_received)
 {
 	std::stringstream ss;
-	for(size_t i = pos; i < buffer_size; ++i)
+	for (size_t i = pos; i < bytes_received; ++i)
 	{
-		ss << buffer[i];
+		ss << recv_buffer_[i];
 	}
 	result = ss.str();
 }
 
 
-void Rcon::updateLogin(std::string address, int port, std::string password)
-{
-	createKeepAlive();
-
-	rcon_login.address = address;
-	rcon_login.port = port;
-	delete rcon_login.password;
-	char *passwd = new char[password.size() + 1];
-	std::strcpy(passwd, password.c_str());
-	rcon_login.password = passwd;
-}
-
-
-void Rcon::connect()
-{
-	*rcon_login_flag = false;
-	*rcon_run_flag = true;
-
-	// Login Packet
-	rcon_packet.cmd = rcon_login.password;
-	rcon_packet.packetCode = 0x00;
-	rcon_packet.sequenceNum = 0;
-	sendPacket();
-	logger->info("Rcon: Sent Login Info");
-	
-	// Reset Timer
-	rcon_timer.start();
-}
-
-
-bool Rcon::status()
-{
-	return *rcon_login_flag;
-}
-
-
-void Rcon::run()
-{
-	Poco::Net::SocketAddress sa(rcon_login.address, rcon_login.port);
-	dgs.connect(sa);
-	connect();
-	mainLoop();
-}
-
-
 void Rcon::addCommand(std::string &command)
 {
-	if (*rcon_run_flag)
-	{
-		std::lock_guard<std::mutex> lock(mutex_rcon_commands);
-		rcon_commands.push_back(std::move(std::make_pair(0, command)));
-	}
+	std::lock_guard<std::mutex> lock(mutex_rcon_commands);
+	rcon_commands.push_back(std::move(std::make_pair(0, command)));
 }
 
 
 void Rcon::getMissions(std::string &command, unsigned int &unique_id)
 {
-	if (*rcon_run_flag)
-	{
-		#ifndef RCON_APP
-			{
-				std::lock_guard<std::mutex> lock(mutex_missions_requests);
-				missions_requests.push_back(unique_id);
-			}
-		#endif
+	logger->info("Rcon: getMissions called: {0}: unique_id: {1}", command, unique_id);
+	#ifndef RCON_APP
 		{
-			std::lock_guard<std::mutex> lock(mutex_rcon_commands);
-			rcon_commands.push_back(std::move(std::make_pair(1, command)));
+			std::lock_guard<std::mutex> lock(mutex_missions_requests);
+			missions_requests.push_back(unique_id);
 		}
+	#endif
+	{
+		std::lock_guard<std::mutex> lock(mutex_rcon_commands);
+		rcon_commands.push_back(std::move(std::make_pair(1, command)));
 	}
 }
 
 
 void Rcon::getPlayers(std::string &command, unsigned int &unique_id)
 {
-	if (*rcon_run_flag)
-	{
-		#ifndef RCON_APP
-			{
-				std::lock_guard<std::mutex> lock(mutex_players_requests);
-				players_requests.push_back(unique_id);
-			}
-		#endif
+	logger->info("Rcon: getPlayers called: {0}: unique_id: {1}", command, unique_id);
+	#ifndef RCON_APP
 		{
-			std::lock_guard<std::mutex> lock(mutex_rcon_commands);
-			rcon_commands.push_back(std::move(std::make_pair(2, command)));
+			std::lock_guard<std::mutex> lock(mutex_players_requests);
+			players_requests.push_back(unique_id);
 		}
+	#endif
+	{
+		std::lock_guard<std::mutex> lock(mutex_rcon_commands);
+		rcon_commands.push_back(std::move(std::make_pair(2, command)));
 	}
 }
 
@@ -294,496 +431,7 @@ void Rcon::disconnect()
 }
 
 
-void Rcon::processMessage(int &sequenceNum, std::string &message)
+bool Rcon::status()
 {
-	std::vector<std::string> info_vector;
-	switch (sequenceNum)
-	{
-		case 2: //Player Listings
-		{
-			std::string player_str;
-			std::vector<RconPlayerInfo> info_vector;
-
-			logger->info("Server Msg0: {0}", message);
-			
-			Poco::StringTokenizer tokens(message, "\n");
-			for (int i = 3; i < (tokens.count() - 1); ++i)
-			{
-				player_str = tokens[i];
-				player_str.erase(std::unique(player_str.begin(), player_str.end(), [](char a, char b) { return a == ' ' && b == ' '; } ), player_str.end() );
-				Poco::StringTokenizer player_tokens(player_str, " ");
-				for (auto token : player_tokens)
-				{
-					logger->info("Server Msg0-0: {0}", token);
-				}
-				if (player_tokens.count() >= 5)
-				{
-					RconPlayerInfo player_data;
-
-					player_data.number = player_tokens[0];
-
-					auto found = player_tokens[1].find(":");
-					player_data.ip = player_tokens[1].substr(0, found - 1);
-					player_data.port = player_tokens[1].substr(found + 1);
-
-					player_data.ping = player_tokens[2];
-
-					if (boost::algorithm::ends_with(player_tokens[3], "(OK)"))
-					{
-						player_data.verified = "true";
-						player_data.guid = player_tokens[3].substr(0, (player_tokens.count() - 4));
-					}
-					else
-					{
-						player_data.verified = "false";
-						player_data.guid = player_tokens[3].substr(0, (player_tokens.count() - 12));
-					}
-					found = tokens[i].find(")");
-					player_data.player_name = tokens[i].substr(found + 2);
-
-					info_vector.push_back(std::move(player_data));
-				}
-				else
-				{
-					logger->info("Error: Wrong RconPlayerInfo count: {0}",player_tokens.count());
-				}
-			}
-			
-			#ifndef RCON_APP
-				std::string result;
-				if (info_vector.empty())
-				{
-					result  = "[1,[]]";
-				}
-				else
-				{
-					result = "[1,[";
-					for(auto &info : info_vector)
-					{
-						result += "[\"" + info.number + "\""; //TODO Add Ability to Limit the Info returned i.e most people wont need ip/port for security reasons
-						result += "\"" + info.ip + "\",";
-						result += info.port + ",";
-						result += info.ping + ",";
-						result += "\"" + info.guid + "\",";
-						result += "\"" + info.verified + "\",";
-						result += "\"" + info.player_name + "\"],";
-					}
-					result.pop_back();
-					result += "]]";
-					logger->info("Server Mission: {0}", result);
-				}
-
-				AbstractExt::resultData result_data;
-				result_data.message = result;
-				{
-					std::lock_guard<std::mutex> lock(mutex_players_requests);
-					for (auto unique_id : players_requests)
-					{
-						extension_ptr->saveResult_mutexlock(unique_id, result_data);
-					}
-					players_requests.clear();
-				}
-			#endif
-		}
-		break;
-
-		case 1: //Mission Listings
-		{
-			logger->info("Server Msg1: {0}", message);
-			Poco::StringTokenizer tokens(message, "\n");
-			for (int i = 1; i < (tokens.count()); ++i)
-			{
-				if (boost::algorithm::ends_with(tokens[i], ".pbo"))
-				{
-					info_vector.push_back(tokens[i].substr(0, tokens[i].size() - 4));
-				}
-				else
-				{
-					info_vector.push_back(tokens[i]);
-				}
-			}
-
-			#ifndef RCON_APP
-				std::string result;
-				if (info_vector.empty())
-				{
-					result  = "[1,[]]";
-				}
-				else
-				{
-					result = "[1,[";
-					for(auto &info : info_vector)
-					{
-						result += info;
-						result += ",";
-						logger->info("Server Mission: {0}", info);
-					}
-					result.pop_back();
-					result += "]]";
-				}
-
-				AbstractExt::resultData result_data;
-				result_data.message = result;
-				{
-					std::lock_guard<std::mutex> lock(mutex_missions_requests);
-					for(auto unique_id: missions_requests)
-					{
-						extension_ptr->saveResult_mutexlock(unique_id, result_data);
-					}
-					missions_requests.clear();
-				}
-				
-			#else
-				for(auto &info : info_vector)
-				{
-					logger->info("Server Mission: {0}", info);
-				}
-			#endif
-		}
-		break;
-
-		default:
-			logger->info("Server Num: {0}", sequenceNum);
-			logger->info("Server Msg: {0}", message);
-			logger->info("");
-			break;
-	}
+	return (*rcon_run_flag && *rcon_login_flag);
 }
-
-
-void Rcon::mainLoop()
-{
-	*rcon_login_flag = false;
-
-	int elapsed_seconds;
-	int sequenceNum;
-
-	// 2 Min Cache for UDP Multi-Part Messages
-	Poco::ExpireCache<int, RconMultiPartMsg > rcon_msg_cache(120000);
-	
-	dgs.setReceiveTimeout(Poco::Timespan(5, 0));
-	while (true)
-	{
-		try 
-		{
-			buffer_size = dgs.receiveBytes(buffer, sizeof(buffer)-1);
-			buffer[buffer_size] = '\0';
-			rcon_timer.restart();
-
-			if (buffer[7] == 0x00)
-			{
-				if (buffer[8] == 0x01)
-				{
-					logger->warn("Rcon: Logged In");
-					*rcon_login_flag = true;
-				}
-				else
-				{
-					// Login Failed
-					
-					logger->warn("Rcon: ACK: {0}", sequenceNum);
-					*rcon_login_flag = false;
-					disconnect();
-					break;
-				}
-			}
-			else if ((buffer[7] == 0x01) && *rcon_login_flag)
-			{
-				// Rcon Server Ack Message Received
-				sequenceNum = buffer[8];
-				logger->warn("Rcon: ACK: {0}", sequenceNum);
-				
-				if (!((buffer[9] == 0x00) && (buffer_size > 9)))
-				{
-					// Server Received Command Msg
-					std::string result;
-					extractData(9, result);
-					processMessage(sequenceNum, result);
-				}
-				else
-				{
-					// Rcon Multi-Part Message Recieved
-					int numPackets = buffer[10];
-					int packetNum = buffer[11];
-					
-					std::string partial_msg;
-					extractData(12, partial_msg);
-					
-					if (!(rcon_msg_cache.has(sequenceNum)))
-					{
-						// Doesn't have sequenceNum in Buffer
-						RconMultiPartMsg rcon_mp_msg;
-						rcon_mp_msg.first = 1;
-						rcon_msg_cache.add(sequenceNum, rcon_mp_msg);
-						
-						Poco::SharedPtr<RconMultiPartMsg> ptrElem = rcon_msg_cache.get(sequenceNum);
-						ptrElem->second[packetNum] = partial_msg;
-					}
-					else
-					{
-						// Has sequenceNum in Buffer
-						Poco::SharedPtr<RconMultiPartMsg> ptrElem = rcon_msg_cache.get(sequenceNum);
-						ptrElem->first = ptrElem->first + 1;
-						ptrElem->second[packetNum] = partial_msg;
-						
-						if (ptrElem->first == numPackets)
-						{
-							// All packets Received, re-construct message
-							std::string result;
-							for (int i = 0; i < numPackets; ++i)
-							{
-								result = result + ptrElem->second[i];
-							}
-							processMessage(sequenceNum, result);
-							rcon_msg_cache.remove(sequenceNum);
-						}
-					}
-				}
-			}
-			else if (buffer[7] == 0x02)
-			{
-				if (!*rcon_login_flag)
-				{
-					// Already Logged In 
-					*rcon_login_flag = true;
-				}
-				else
-				{
-					// Received Chat Messages
-					std::string result;
-					extractData(9, result);
-					logger->info("CHAT: {0}", result);
-					
-					// Respond to Server Msgs i.e chat messages, to prevent timeout
-					rcon_packet.packetCode = 0x02;
-					rcon_packet.cmd_char_workaround = buffer[8];
-					rcon_packet.sequenceNum = 0;
-					sendPacket();
-				}
-			}
-
-			if (*rcon_login_flag)
-			{
-				// Checking for Commands to Send
-				std::lock_guard<std::mutex> lock(mutex_rcon_commands);
-				for (auto &rcon_command : rcon_commands)
-				{
-					char *cmd = new char[rcon_command.second.size()+1];
-					std::strcpy(cmd, rcon_command.second.c_str());
-					
-					delete []rcon_packet.cmd;
-					rcon_packet.cmd = cmd;
-					
-					rcon_packet.packetCode = 0x01;
-					rcon_packet.sequenceNum = rcon_command.first;
-					sendPacket();
-				}
-				// Clear Comands
-				rcon_commands.clear();
-
-				if (!*rcon_run_flag)
-				{
-					break;
-				}
-			}
-			else
-			{
-				if (!*rcon_run_flag)
-				{
-					std::lock_guard<std::mutex> lock(mutex_rcon_commands);
-					if (rcon_commands.empty())
-					{
-						break;
-					}
-				}
-			}
-		}
-		catch (Poco::TimeoutException&)
-		{
-			if (!*rcon_run_flag)  // Checking Run Flag
-			{
-				break;
-			}
-			else
-			{
-				elapsed_seconds = rcon_timer.elapsedSeconds();
-				if (elapsed_seconds >= 45)
-				{
-					logger->warn("Rcon: TIMED OUT...");
-					rcon_timer.restart();
-					connect();
-				}
-				else if (elapsed_seconds >= 30)
-				{
-					// Keep Alive
-					logger->info("Keep Alive Sending");
-
-					rcon_timer.restart();
-
-					dgs.sendBytes(keepAlivePacket.data(), keepAlivePacket.size());
-
-					logger->info("Keep Alive Sent");
-				}
-				else if (*rcon_login_flag)
-				{
-					// Checking for Commands to Send
-					std::lock_guard<std::mutex> lock(mutex_rcon_commands);
-
-					for (auto &rcon_command : rcon_commands)
-					{
-						char *cmd = new char[rcon_command.second.size()+1];
-						std::strcpy(cmd, rcon_command.second.c_str());
-						
-						delete []rcon_packet.cmd;
-						rcon_packet.cmd = cmd;
-						
-						rcon_packet.packetCode = 0x01;
-						rcon_packet.sequenceNum = rcon_command.first;
-						sendPacket();
-					}
-					// Clear Comands
-					rcon_commands.clear();
-				}
-			}
-		}
-		catch (Poco::Net::ConnectionRefusedException& e)
-		{
-			logger->error("Rcon: Error Connect: {0}", e.displayText());
-			disconnect();
-		}
-		catch (Poco::Exception& e)
-		{
-			logger->error("Rcon: Error Rcon: {0}", e.displayText());
-			disconnect();
-		}
-	}
-	logger->warn("Rcon: Stopping...");
-}
-
-
-
-#ifdef RCON_APP
-
-	int main(int nNumberofArgs, char* pszArgs[])
-	{
-		auto console = spdlog::stdout_logger_mt("extDB Console logger");
-
-		boost::program_options::options_description desc("Options");
-		desc.add_options()
-			("help", "Print help messages")
-			("ip", boost::program_options::value<std::string>()->required(), "IP Address for Server")
-			("port", boost::program_options::value<int>()->required(), "Port for Server")
-			("password", boost::program_options::value<std::string>()->required(), "Rcon Password for Server")
-			("file", boost::program_options::value<std::string>(), "File to run i.e rcon restart warnings");
-
-		boost::program_options::variables_map options;
-
-		try 
-		{
-			boost::program_options::store(boost::program_options::parse_command_line(nNumberofArgs, pszArgs, desc), options);
-			
-			if (options.count("help") )
-			{
-				console->info("Rcon Command Line, based off bercon by Prithu \"bladez\" Parker");
-				console->info("\t\t @ https://github.com/bladez-/bercon");
-				console->info("");
-				console->info("");
-				console->info("Rewritten for extDB + crossplatform by Torndeco");
-				console->info("\t\t @ https://github.com/Torndeco/extDB");
-				console->info("");
-				console->info("File Option is just for parsing rcon commands to be ran, i.e server restart warnings");
-				console->info("\t\t For actually restarts use a cron program to run a script");
-				console->info("");
-				return 0;
-			}
-			
-			boost::program_options::notify(options);
-		}
-		catch(boost::program_options::error& e)
-		{
-			console->error("ERROR: {0}", e.what());
-			console->error("ERROR: Desc {0}", desc);
-			return 1;
-		}
-
-		Rcon rcon;
-		rcon.init(console);
-		rcon.updateLogin(options["ip"].as<std::string>(), options["port"].as<int>(), options["password"].as<std::string>());
-		Poco::Thread thread;
-		thread.start(rcon);
-		
-		if (options.count("file"))
-		{
-			std::ifstream fin(options["file"].as<std::string>());
-			//std::ifstream fin("test");
-			if (fin.is_open() == false)
-			{
-				console->warn("ERROR: File is Open");
-				return 1;
-			}
-			else
-			{
-				console->info("File is OK");
-			}
-			
-			std::string line;
-			while (std::getline(fin, line))
-			{
-				console->info("{0}", line);
-				if (line.empty())
-				{
-					boost::this_thread::sleep( boost::posix_time::milliseconds(1000) );
-					console->info("Sleep", line);
-				}
-				else
-				{
-					rcon.addCommand(line);
-				}
-			}
-			console->info("OK");
-			rcon.disconnect();
-			thread.join();
-			return 0;
-		}
-		else
-		{
-			console->info("**********************************");
-			console->info("**********************************");
-			console->info("To talk type ");
-			console->info("SAY -1 Server Restart in 10 mins");
-			console->info();
-			console->info("To see all players type");
-			console->info("players");
-			console->info("**********************************");
-			console->info("**********************************");
-			console->info();
-
-			std::string input_str;
-			unsigned int unique_id = 1;
-			for (;;) {
-				std::getline(std::cin, input_str);
-				if (input_str == "quit")
-				{
-					console->info("Quitting Please Wait");
-					rcon.disconnect();
-					thread.join();
-					break;
-				}
-				else if (input_str == "players")
-				{
-					rcon.getPlayers(input_str, unique_id);	
-				}
-				else if (input_str == "missions")
-				{
-					rcon.getMissions(input_str, unique_id);	
-				}
-				else
-				{
-					rcon.addCommand(input_str);
-				}
-			}
-			console->info("Quitting");
-			return 0;
-		}
-	}
-#endif

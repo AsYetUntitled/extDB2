@@ -327,7 +327,8 @@ Ext::Ext(std::string dll_path, std::unordered_map<std::string, std::string> opti
 			}
 
  			// Initialize so have atomic setup correctly
-			rcon.init(logger);
+ 			rcon.reset( new Rcon(io_service, logger));
+			rcon->init();
 			remote_server.init(this);
 
 			// Initialize so have atomic setup correctly + Setup VAC Ban Logger
@@ -371,7 +372,7 @@ void Ext::stop()
 	}
 	if (extDB_connectors_info.rcon)
 	{
-		rcon.disconnect();
+		rcon->disconnect();
 		rcon_thread.join();
 	}
 }
@@ -472,8 +473,8 @@ void Ext::connectRcon(char *output, const int &output_size, const std::string &r
 	{
 		if (pConf->hasOption(rcon_conf + ".Port"))
 		{
-			rcon.updateLogin(pConf->getString((rcon_conf + ".IP"), "127.0.0.1"), pConf->getInt((rcon_conf + ".Port"), 2302), pConf->getString((rcon_conf + ".Password"), "password"));
-			rcon_thread.start(rcon);
+			rcon->updateLogin(pConf->getString((rcon_conf + ".IP"), "127.0.0.1"), pConf->getInt((rcon_conf + ".Port"), 2302), pConf->getString((rcon_conf + ".Password"), "password"));
+//			rcon_thread.start(rcon);  TODO
 			std::strcpy(output, "[1]");
 			extDB_connectors_info.rcon = true;
 		}
@@ -485,10 +486,24 @@ void Ext::connectRcon(char *output, const int &output_size, const std::string &r
 }
 
 
-void Ext::rconCommand(std::string str)
+void Ext::rconCommand(std::string input_str)
 // Adds RCon Command to be sent to Server.
 {
-	rcon.addCommand(str);
+	rcon->addCommand(input_str);
+}
+
+
+void Ext::rconMissions(std::string input_str, unsigned int unique_id)
+// Adds RCon Command to be sent to Server.
+{
+	rcon->getMissions(input_str, unique_id);
+}
+
+
+void Ext::rconPlayers(std::string input_str, unsigned int unique_id)
+// Adds RCon Command to be sent to Server.
+{
+	rcon->getPlayers(input_str, unique_id);
 }
 
 
@@ -1104,7 +1119,7 @@ void Ext::callExtension(char *output, const int &output_size, const char *functi
 							}
 							else if (tokens[1] == "RCON_STATUS")
 							{
-								if (rcon.status())
+								if (rcon->status())
 								{
 									std::strcpy(output, "[1]");
 								}
@@ -1162,7 +1177,7 @@ void Ext::callExtension(char *output, const int &output_size, const char *functi
 								}
 								else if (tokens[1] == "RCON_STATUS")
 								{
-									if (rcon.status())
+									if (rcon->status())
 									{
 										std::strcpy(output, "[1]");
 									}

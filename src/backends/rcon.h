@@ -26,11 +26,8 @@ along with this program. If not, see <http://www.gnu.org/licenses/>.
 #include <memory>
 #include <thread>
 
+#include <boost/asio/ip/udp.hpp>
 #include <boost/crc.hpp>
-
-#include <Poco/Net/DatagramSocket.h>
-#include <Poco/Net/SocketAddress.h>
-#include <Poco/Net/NetException.h>
 
 #include <Poco/ExpireCache.h>
 #include <Poco/Stopwatch.h>
@@ -38,14 +35,17 @@ along with this program. If not, see <http://www.gnu.org/licenses/>.
 #include "../abstract_ext.h"
 
 
-class Rcon: public Poco::Runnable
+class Rcon
 {
 	public:
-		void init(std::shared_ptr<spdlog::logger> console);
+		Rcon(boost::asio::io_service& io_service, std::shared_ptr<spdlog::logger> spdlog) : socket_(io_service), logger(spdlog){};
+		~Rcon();
+
+		void init();
 		#ifndef RCON_APP
-			void Rcon::extInit(AbstractExt *extension);
+			void extInit(AbstractExt *extension);
 		#endif
-		void updateLogin(std::string address, int port, std::string password);
+		void updateLogin(std::string &address, unsigned int port, std::string &password);
 		
 		void run();
 		void disconnect();
@@ -55,8 +55,12 @@ class Rcon: public Poco::Runnable
 		void getMissions(std::string &command, unsigned int &unique_id);
 		void getPlayers(std::string &command, unsigned int &unique_id);
 
-
 	private:
+		boost::asio::ip::udp::socket socket_;
+		std::shared_ptr<spdlog::logger> logger;
+
+		boost::array<char, 4096> recv_buffer_;
+		
 		typedef std::pair< int, std::unordered_map < int, std::string > > RconMultiPartMsg;
 
 		// Inputs are strings + Outputs are strings.  Info is not kept for long, so no point converting to a different datatype
@@ -76,31 +80,14 @@ class Rcon: public Poco::Runnable
 			char *cmd;
 			char cmd_char_workaround;
 			unsigned char packetCode;
-			int sequenceNum;
+			unsigned char sequence_number;
 		};
-		RconPacket rcon_packet;
 
-		struct RconLogin
-		{
-			char *password;
-			std::string address;
-			int port;
-			bool auto_reconnect;
-		};
-		RconLogin rcon_login;
+		char *rcon_password;
+		unsigned char sequence_num_counter;
 
-		Poco::Net::DatagramSocket dgs;
 
-		Poco::Stopwatch rcon_timer;
-
-		std::shared_ptr<spdlog::logger> logger;
-		
-		char buffer[4096];
-		int buffer_size;
-
-		std::string keepAlivePacket;
-
-		boost::crc_32_type crc32;
+		std::unique_ptr<Poco::ExpireCache<unsigned char, RconMultiPartMsg> > rcon_msg_cache;
 		
 		// Mutex Locks
 		std::atomic<bool> *rcon_run_flag;
@@ -109,7 +96,7 @@ class Rcon: public Poco::Runnable
 		std::vector<std::pair<int, std::string> > rcon_commands;
 		std::mutex mutex_rcon_commands;
 
-
+		//Requests
 		std::vector<unsigned int> missions_requests;
 		std::mutex mutex_missions_requests;
 
@@ -119,12 +106,21 @@ class Rcon: public Poco::Runnable
 		// Functions
 		void connect();
 		void mainLoop();
+		void startReceive();
 
 		void createKeepAlive();
-		void sendPacket();
-		void extractData(int pos, std::string &result);
+		void sendPacket(RconPacket &rcon_packet);
+		void extractData(int pos, std::string &result, std::size_t &bytes_received);
 
-		void processMessage(int &sequenceNum, std::string &message);
+		void processMessage(unsigned char &sequence_number, std::string &message);
+
+		void connectionHandler(const boost::system::error_code& error);
+		void handleReceive(const boost::system::error_code& error, std::size_t bytes_received);
+		void handleSent(const boost::system::error_code&, std::size_t bytes_transferred);
+
+		void loginResponse();
+		void serverResponse(std::size_t &bytes_received);
+		void chatMessage(std::size_t &bytes_received);
 
 		#ifndef RCON_APP
 			AbstractExt *extension_ptr;

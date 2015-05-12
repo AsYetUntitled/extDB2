@@ -46,7 +46,9 @@ class Ext: public AbstractExt
 		~Ext();
 		void stop();	
 		void callExtension(char *output, const int &output_size, const char *function);
-		void rconCommand(std::string str);
+		void rconCommand(std::string input_str);
+		void rconMissions(std::string input_str, unsigned int unique_id);
+		void rconPlayers(std::string input_str, unsigned int unique_id);
 
 	protected:
 		const unsigned int saveResult_mutexlock(const resultData &result_data);
@@ -63,7 +65,7 @@ class Ext: public AbstractExt
 
 	private:
 		// RCon
-		Rcon rcon;
+		std::unique_ptr<Rcon> rcon;
 
 		/// Remote Server
 		RemoteServer remote_server;

@@ -43,6 +43,26 @@ bool RCON::init(AbstractExt *extension,  const std::string &database_id, const s
 }
 
 
+void RCON::processCommand(std::string &command, std::string &input_str, const unsigned int unique_id, std::string &result)
+{
+	if (boost::iequals(command, std::string("players")) == 1)
+	{
+		extension_ptr->console->info("extDB2: RCON: DEBUG PLAYERS: {0}", result);
+		extension_ptr->rconPlayers(input_str, unique_id);
+	}
+	else if (boost::iequals(command, std::string("missions")) == 1)
+	{
+		extension_ptr->console->info("extDB2: RCON: DEBUG MISSIONS: {0}", result);
+		extension_ptr->rconMissions(input_str, unique_id);
+	}
+	else
+	{
+		extension_ptr->rconCommand(input_str);
+		result = "[1]"; 
+	}
+}
+
+
 bool RCON::callProtocol(std::string input_str, std::string &result, const bool async_method, const unsigned int unique_id)
 {
 	#ifdef DEBUG_TESTING
@@ -56,9 +76,8 @@ bool RCON::callProtocol(std::string input_str, std::string &result, const bool a
 
 	if (allowed_commands.size() > 0)
 	{
-		const std::string::size_type found = input_str.find(" ");
 		std::string command;
-
+		const std::string::size_type found = input_str.find(" ");
 		if (found==std::string::npos)
 		{
 			command = input_str;
@@ -67,6 +86,7 @@ bool RCON::callProtocol(std::string input_str, std::string &result, const bool a
 		{
 			command = input_str.substr(0, found-1);
 		}
+
 		if (std::find(allowed_commands.begin(), allowed_commands.end(), command) == allowed_commands.end())
 		{
 			result ="[0,\"RCon Command Not Allowed\"]";
@@ -77,15 +97,13 @@ bool RCON::callProtocol(std::string input_str, std::string &result, const bool a
 		}
 		else
 		{
-			result = "[1]"; 
-			extension_ptr->rconCommand(input_str);
+			processCommand(command, input_str, unique_id, result);
 		}
 	}
 	else
 	{
-		result = "[1]"; 
-		extension_ptr->rconCommand(input_str);
+		processCommand(input_str, input_str, unique_id, result);
 	}
 
-	return true;
+	return (!result.empty());  // If result is empty due to error, save error message
 }
