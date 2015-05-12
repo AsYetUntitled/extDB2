@@ -71,6 +71,12 @@ Rcon::Rcon(boost::asio::io_service& io_service, std::shared_ptr<spdlog::logger> 
 	rcon_socket_1.sequence_num_counter = 0;
 	rcon_socket_2.sequence_num_counter = 0;
 
+	rcon_socket_1.keepalive_timer.reset(new boost::asio::deadline_timer(io_service));
+	rcon_socket_2.keepalive_timer.reset(new boost::asio::deadline_timer(io_service));
+
+	rcon_socket_1.socket_close_timer.reset(new boost::asio::deadline_timer(io_service));
+	rcon_socket_2.socket_close_timer.reset(new boost::asio::deadline_timer(io_service));
+
 	rcon_socket_1.rcon_msg_cache.reset(new Poco::ExpireCache<unsigned char, RconMultiPartMsg>(120000));
 	rcon_socket_2.rcon_msg_cache.reset(new Poco::ExpireCache<unsigned char, RconMultiPartMsg>(120000));
 }
@@ -78,6 +84,27 @@ Rcon::Rcon(boost::asio::io_service& io_service, std::shared_ptr<spdlog::logger> 
 
 Rcon::~Rcon(void)
 {
+}
+
+
+void Rcon::timerKeepAlive(RconSocket &rcon_socket, const size_t delay)
+{
+    if (delay == 0)
+	{
+		rcon_socket.keepalive_timer->cancel();
+	}
+	else
+	{
+		rcon_socket.keepalive_timer->expires_from_now(boost::posix_time::seconds(delay));
+		rcon_socket.keepalive_timer->async_wait(boost::bind(&Rcon::createKeepAlive, this, std::ref(rcon_socket), boost::asio::placeholders::error));
+	}
+}
+
+
+void Rcon::timerSocketClose(RconSocket &rcon_socket)
+{
+	rcon_socket.socket_close_timer->expires_from_now(boost::posix_time::minutes(5)); // Overkill but safer
+	rcon_socket.socket_close_timer->async_wait(boost::bind(&Rcon::closeSocket, this, std::ref(rcon_socket), boost::asio::placeholders::error));
 }
 
 
@@ -100,8 +127,12 @@ unsigned char Rcon::getSequenceNum(RconSocket &rcon_socket)
 			++(rcon_socket.sequence_num_counter);
 		}
 
-		*(rcon_socket.rcon_run_flag) = false;
-		// TODO Delayed Post to close socket
+		if (*(rcon_socket.rcon_run_flag))
+		{
+			*(rcon_socket.rcon_run_flag) = false;
+			timerSocketClose(rcon_socket);
+		}
+		
 		if (rcon_socket.id == 1)
 		{
 			connect(rcon_socket_1);
@@ -168,9 +199,23 @@ void Rcon::connect(RconSocket &rcon_socket)
 
 void Rcon::disconnect()
 {
-	*(rcon_socket_1.rcon_run_flag) = false;
-	*(rcon_socket_2.rcon_run_flag) = false;
-	// TODO Delay Timer to close socket
+	if (*(rcon_socket_1.rcon_run_flag))
+	{
+		*(rcon_socket_1.rcon_run_flag) = false;			
+		timerSocketClose(rcon_socket_1);
+	}
+	if (*(rcon_socket_2.rcon_run_flag))
+	{
+		*(rcon_socket_2.rcon_run_flag) = false;			
+		timerSocketClose(rcon_socket_2);
+	}
+}
+
+
+void Rcon::closeSocket(RconSocket &rcon_socket, const boost::system::error_code& error)
+{
+	timerKeepAlive(rcon_socket, 0);
+	rcon_socket.socket->close();
 }
 
 
@@ -180,9 +225,9 @@ bool Rcon::status()
 }
 
 
-
 void Rcon::startReceive(RconSocket &rcon_socket)
 {
+	timerKeepAlive(rcon_socket, 30);
 	rcon_socket.socket->async_receive(
 		boost::asio::buffer(rcon_socket.recv_buffer),
 		boost::bind(&Rcon::handleReceive, this, std::ref(rcon_socket),
@@ -321,12 +366,12 @@ void Rcon::extractData(RconSocket &rcon_socket, std::size_t &bytes_received, int
 }
 
 
-void Rcon::createKeepAlive(RconSocket &rcon_socket)
+void Rcon::createKeepAlive(RconSocket &rcon_socket, const boost::system::error_code& e)
 {
 	std::ostringstream cmdStream;
 	cmdStream.put(0xFFu);
 	cmdStream.put(0x01);
-	cmdStream.put(getSequenceNum(rcon_socket)); // Seq Number    unsigned char + 1
+	cmdStream.put(getSequenceNum(rcon_socket));
 	cmdStream.put('\0');
 
 	std::string cmd = cmdStream.str();
@@ -438,6 +483,11 @@ void Rcon::handleSent(const boost::system::error_code&,	std::size_t bytes_transf
 {
 }
 
+
+void Rcon::sendCommand(std::string &command)
+{
+
+}
 
 void Rcon::getMissions(std::string &command, unsigned int &unique_id)
 {

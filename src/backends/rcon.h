@@ -49,7 +49,7 @@ class Rcon
 		void disconnect();
 		bool status();
 		
-		//void addCommand(std::string &command);
+		void sendCommand(std::string &command);
 		void getMissions(std::string &command, unsigned int &unique_id);
 		void getPlayers(std::string &command, unsigned int &unique_id);
 
@@ -91,6 +91,9 @@ class Rcon
 			unsigned char sequence_num_counter;
 			std::mutex mutex_sequence_num_counter;
 
+			std::unique_ptr<boost::asio::deadline_timer> keepalive_timer;
+			std::unique_ptr<boost::asio::deadline_timer> socket_close_timer;
+
 			std::unique_ptr<Poco::ExpireCache<unsigned char, RconMultiPartMsg> > rcon_msg_cache;
 		};
 
@@ -110,9 +113,15 @@ class Rcon
 
 		// Functions
 		void connect(RconSocket &rcon_socket);
+
+		void closeSocket(RconSocket &rcon_socket, const boost::system::error_code& error);
 		void startReceive(RconSocket &rcon_socket);
 
-		void createKeepAlive(RconSocket &rcon_socket);
+		void timerKeepAlive(RconSocket &rcon_socket, const size_t delay);
+		void createKeepAlive(RconSocket &rcon_socket, const boost::system::error_code& e);
+
+		void timerSocketClose(RconSocket &rcon_socket);
+
 		void sendPacket(RconSocket &rcon_socket, RconPacket &rcon_packet);
 		void extractData(RconSocket &rcon_socket, std::size_t &bytes_received, int pos, std::string &result);
 
