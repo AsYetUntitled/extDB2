@@ -72,6 +72,24 @@ void Rcon::init()
 #endif
 
 
+unsigned char Rcon::getSequenceNum()
+{
+	std::lock_guard<std::mutex> lock(mutex_sequence_num_counter);
+	sequence_num_counter = sequence_num_counter + 1;
+	// CHECK FOR > 200 Number  Reset RCon Connection
+	return sequence_num_counter;
+}
+
+
+unsigned char Rcon::resetSequenceNum()
+{
+	std::lock_guard<std::mutex> lock(mutex_sequence_num_counter);
+	sequence_num_counter = 0;
+	// CHECK FOR > 200 Number  Reset RCon Connection
+	return sequence_num_counter;
+}
+
+
 void Rcon::connectionHandler(const boost::system::error_code& error)
 {
 	if (!error)
@@ -189,7 +207,6 @@ void Rcon::chatMessage(std::size_t &bytes_received)
 	RconPacket rcon_packet;
 	rcon_packet.packetCode = 0x02;
 	rcon_packet.cmd_char_workaround = recv_buffer_[8];
-	rcon_packet.sequence_number = 0;
 	sendPacket(rcon_packet);
 }
 
@@ -199,7 +216,6 @@ void Rcon::handleReceive(const boost::system::error_code& error, std::size_t byt
 	if (!error)
 	{
 		logger->info("Rcon: receiveBytes");
-		//rcon_timer.restart();
 		recv_buffer_[bytes_received] = '\0';
 
 		switch(recv_buffer_[7])
@@ -239,12 +255,8 @@ void Rcon::connect()
 	RconPacket rcon_packet;
 	rcon_packet.cmd = rcon_password;
 	rcon_packet.packetCode = 0x00;
-	rcon_packet.sequence_number = 0;
 	sendPacket(rcon_packet);
 	logger->info("Rcon: Sent Login Info");
-	
-	// Reset Timer
-//	rcon_timer.start();
 }
 
 
@@ -255,7 +267,7 @@ void Rcon::createKeepAlive()
 	std::ostringstream cmdStream;
 	cmdStream.put(0xFFu);
 	cmdStream.put(0x01);
-	cmdStream.put(0x00); // Seq Number    unsigned char + 1
+	cmdStream.put(getSequenceNum()); // Seq Number    unsigned char + 1
 	cmdStream.put('\0');
 
 	std::string cmd = cmdStream.str();
@@ -308,27 +320,16 @@ void Rcon::sendPacket(RconPacket &rcon_packet)
 	cmdStream.put(0xFFu);
 	cmdStream.put(rcon_packet.packetCode);
 	
-	if (rcon_packet.packetCode == 0x01)
+	if (rcon_packet.packetCode == 0x01) //Everything else
 	{
-		switch (rcon_packet.sequence_number)
-		{
-			case 2:
-				cmdStream.put(0x02); // 2 seq number
-				break;
-			case 1:
-				cmdStream.put(0x01); // 1 seq number
-				break;
-			default:
-				cmdStream.put(0x00); // 0 seq number
-		}
-		
+		cmdStream.put(getSequenceNum());	
 		cmdStream << rcon_packet.cmd;
 	}
-	else if (rcon_packet.packetCode == 0x02)
+	else if (rcon_packet.packetCode == 0x02) //Respond to Chat Messages
 	{
 		cmdStream.put(rcon_packet.cmd_char_workaround);
 	}
-	else if (rcon_packet.packetCode == 0x00)
+	else if (rcon_packet.packetCode == 0x00) //Login
 	{
 		cmdStream << rcon_packet.cmd;
 	}

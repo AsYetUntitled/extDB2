@@ -84,6 +84,8 @@ class Rcon
 		};
 
 		char *rcon_password;
+
+		std::mutex mutex_sequence_num_counter;
 		unsigned char sequence_num_counter;
 
 
@@ -113,6 +115,9 @@ class Rcon
 		void extractData(int pos, std::string &result, std::size_t &bytes_received);
 
 		void processMessage(unsigned char &sequence_number, std::string &message);
+
+		unsigned char Rcon::getSequenceNum();
+		unsigned char Rcon::resetSequenceNum();
 
 		void connectionHandler(const boost::system::error_code& error);
 		void handleReceive(const boost::system::error_code& error, std::size_t bytes_received);
