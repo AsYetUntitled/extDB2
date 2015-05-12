@@ -38,7 +38,7 @@ along with this program. If not, see <http://www.gnu.org/licenses/>.
 class Rcon
 {
 	public:
-		Rcon(boost::asio::io_service& io_service, std::shared_ptr<spdlog::logger> spdlog);
+		Rcon(boost::asio::io_service &io_service, std::shared_ptr<spdlog::logger> spdlog);
 		~Rcon();
 
 		#ifndef RCON_APP
@@ -48,7 +48,7 @@ class Rcon
 		void start(std::string &address, unsigned int port, std::string &password);
 		void disconnect();
 		bool status();
-		
+
 		void sendCommand(std::string &command);
 		void getMissions(std::string &command, unsigned int &unique_id);
 		void getPlayers(std::string &command, unsigned int &unique_id);
@@ -135,7 +135,7 @@ class Rcon
 
 		void connectionHandler(RconSocket &rcon_socket, const boost::system::error_code& error);
 		void handleReceive(RconSocket &rcon_socket, const boost::system::error_code& error, std::size_t bytes_received);
-		void handleSent(const boost::system::error_code&, std::size_t bytes_transferred);
+		void handleSent(std::shared_ptr<std::string> packet, const boost::system::error_code &error, std::size_t bytes_transferred);
 
 		void loginResponse(RconSocket &rcon_socket);
 		void serverResponse(RconSocket &rcon_socket, std::size_t &bytes_received);
