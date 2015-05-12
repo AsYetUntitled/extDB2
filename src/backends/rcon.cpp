@@ -185,6 +185,11 @@ void Rcon::connectionHandler(RconSocket &rcon_socket, const boost::system::error
 
 void Rcon::connect(RconSocket &rcon_socket)
 {
+	{
+		std::lock_guard<std::mutex> lock(rcon_socket.mutex_requests);
+		rcon_socket.requests.clear();
+	}
+
 	*(rcon_socket.rcon_login_flag) = false;
 	*(rcon_socket.rcon_run_flag) = true;
 
@@ -486,34 +491,103 @@ void Rcon::handleSent(const boost::system::error_code&,	std::size_t bytes_transf
 
 void Rcon::sendCommand(std::string &command)
 {
+	logger->info("Rcon: sendCommand: {0}", command);
 
+	RconPacket rcon_packet;
+	char *cmd = new char[command.size() + 1];
+	std::strcpy(cmd, command.c_str());
+	rcon_packet.cmd = cmd;
+	rcon_packet.packetCode = 0x01;
+
+	if (*active_socket == 1)
+	{
+		rcon_packet.sequence_number = getSequenceNum(rcon_socket_1);
+		sendPacket(rcon_socket_1, rcon_packet);
+	}
+	else if (*active_socket == 2)
+	{
+		rcon_packet.sequence_number = getSequenceNum(rcon_socket_2);
+		sendPacket(rcon_socket_2, rcon_packet);
+	}
+	delete []rcon_packet.cmd;
 }
+
 
 void Rcon::getMissions(std::string &command, unsigned int &unique_id)
 {
-	logger->info("Rcon: getMissions called: {0}: unique_id: {1}", command, unique_id);
-	#ifndef RCON_APP
-		{
-			std::lock_guard<std::mutex> lock(mutex_missions_requests);
-			missions_requests.push_back(unique_id);
-		}
-	#endif
-	{
+	logger->info("Rcon: getMissions: {0}", command);
 
+	RconPacket rcon_packet;
+	char *cmd = new char[command.size() + 1];
+	std::strcpy(cmd, command.c_str());
+	rcon_packet.cmd = cmd;
+	rcon_packet.packetCode = 0x01;
+
+	if (*active_socket == 1)
+	{
+		rcon_packet.sequence_number = getSequenceNum(rcon_socket_1);
+		sendPacket(rcon_socket_1, rcon_packet);
+
+		RconRequest rcon_request;
+		rcon_request.request_type = 1;
+		rcon_request.unique_id = unique_id;
+		{
+			std::lock_guard<std::mutex> lock(rcon_socket_1.mutex_requests);
+			rcon_socket_1.requests[rcon_packet.sequence_number] = std::move(rcon_request);
+		}
 	}
+	else if (*active_socket == 2)
+	{
+		rcon_packet.sequence_number = getSequenceNum(rcon_socket_2);
+		sendPacket(rcon_socket_2, rcon_packet);
+
+		RconRequest rcon_request;
+		rcon_request.request_type = 1;
+		rcon_request.unique_id = unique_id;
+		{
+			std::lock_guard<std::mutex> lock(rcon_socket_2.mutex_requests);
+			rcon_socket_2.requests[rcon_packet.sequence_number] = std::move(rcon_request);
+		}
+	}
+	delete []rcon_packet.cmd;
 }
 
 
 void Rcon::getPlayers(std::string &command, unsigned int &unique_id)
 {
-	logger->info("Rcon: getPlayers called: {0}: unique_id: {1}", command, unique_id);
-	#ifndef RCON_APP
-		{
-			std::lock_guard<std::mutex> lock(mutex_players_requests);
-			players_requests.push_back(unique_id);
-		}
-	#endif
-	{
+	logger->info("Rcon: getPlayers: {0}", command);
 
+	RconPacket rcon_packet;
+	char *cmd = new char[command.size() + 1];
+	std::strcpy(cmd, command.c_str());
+	rcon_packet.cmd = cmd;
+	rcon_packet.packetCode = 0x01;
+
+	if (*active_socket == 1)
+	{
+		rcon_packet.sequence_number = getSequenceNum(rcon_socket_1);
+
+		sendPacket(rcon_socket_1, rcon_packet);
+		RconRequest rcon_request;
+		rcon_request.request_type = 2;
+		rcon_request.unique_id = unique_id;
+		{
+			std::lock_guard<std::mutex> lock(rcon_socket_1.mutex_requests);
+			rcon_socket_1.requests[rcon_packet.sequence_number] = std::move(rcon_request);
+		}
 	}
+	else if (*active_socket == 2)
+	{
+		rcon_packet.sequence_number = getSequenceNum(rcon_socket_2);
+		sendPacket(rcon_socket_2, rcon_packet);
+
+		RconRequest rcon_request;
+		rcon_request.request_type = 2;
+		rcon_request.unique_id = unique_id;
+		{
+			std::lock_guard<std::mutex> lock(rcon_socket_2.mutex_requests);
+			rcon_socket_2.requests[rcon_packet.sequence_number] = std::move(rcon_request);
+		}
+	}
+	delete []rcon_packet.cmd;
 }

@@ -77,6 +77,12 @@ class Rcon
 			unsigned char sequence_number;
 		};
 
+		struct RconRequest
+		{
+			unsigned int unique_id;
+			int request_type;
+		};
+
 		typedef std::pair< int, std::unordered_map < int, std::string > > RconMultiPartMsg;
 		struct RconSocket
 		{
@@ -95,7 +101,12 @@ class Rcon
 			std::unique_ptr<boost::asio::deadline_timer> socket_close_timer;
 
 			std::unique_ptr<Poco::ExpireCache<unsigned char, RconMultiPartMsg> > rcon_msg_cache;
+
+			//Requests
+			std::unordered_map<unsigned char, RconRequest> requests;
+			std::mutex mutex_requests;
 		};
+
 
 		RconSocket rcon_socket_1;
 		RconSocket rcon_socket_2;
@@ -104,12 +115,6 @@ class Rcon
 
 		char *rcon_password;
 		
-		//Requests
-		std::vector<unsigned int> missions_requests;
-		std::mutex mutex_missions_requests;
-
-		std::vector<unsigned int> players_requests;
-		std::mutex mutex_players_requests;
 
 		// Functions
 		void connect(RconSocket &rcon_socket);
