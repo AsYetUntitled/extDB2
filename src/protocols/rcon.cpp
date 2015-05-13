@@ -47,12 +47,12 @@ void RCON::processCommand(std::string &command, std::string &input_str, const un
 {
 	if (boost::iequals(command, std::string("players")) == 1)
 	{
-		extension_ptr->console->info("extDB2: RCON: DEBUG PLAYERS: {0}", result);
+		extension_ptr->logger->info("extDB2: RCON: DEBUG PLAYERS: {0}", result);
 		extension_ptr->rconPlayers(input_str, unique_id);
 	}
 	else if (boost::iequals(command, std::string("missions")) == 1)
 	{
-		extension_ptr->console->info("extDB2: RCON: DEBUG MISSIONS: {0}", result);
+		extension_ptr->logger->info("extDB2: RCON: DEBUG MISSIONS: {0}", result);
 		extension_ptr->rconMissions(input_str, unique_id);
 	}
 	else

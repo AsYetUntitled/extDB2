@@ -446,7 +446,6 @@ void Steam::updateSteamFriends(std::vector<std::string> &steamIDs)
 		}
 		catch (Poco::TimeoutException&)
 		{
-			extension_ptr->console->info("------ 9");
 			steam_get.abort();
 			steam_thread.join();
 			#ifdef DEBUG_TESTING
