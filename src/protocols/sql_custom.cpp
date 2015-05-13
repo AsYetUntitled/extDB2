@@ -139,7 +139,7 @@ bool SQL_CUSTOM::init(AbstractExt *extension, const std::string &database_id, co
 		std::vector<std::string> custom_calls_list;
 		template_ini->keys(custom_calls_list);
 
-		if ((template_ini->getInt("Default.Version", 1)) == EXTDB_SQL_CUSTOM_LATEST_VERSION)
+		if ((template_ini->getInt("Default.Version", 1)) <= EXTDB_SQL_CUSTOM_LATEST_VERSION)
 		{
 			extension_ptr->logger->info("extDB2: SQL_CUSTOM: SQL_VERSION_V2 is available");
 			extension_ptr->logger->info("extDB2: SQL_CUSTOM: Newer SQL_CUSTOM Version Available");
@@ -518,11 +518,14 @@ void SQL_CUSTOM::getResult(Custom_Call_UnorderedMap::const_iterator &custom_call
 					{
 						temp_str.clear();
 					}
+					else
+					{
+						temp_str = rs[col].convert<std::string>();
+					}
 					
 					// NO OUTPUT OPTIONS 
 					if (col >= sql_output_options_size)
 					{
-						temp_str = rs[col].convert<std::string>();
 						// DEFAULT BEHAVIOUR
 						if (temp_str.empty())
 						{
@@ -539,32 +542,31 @@ void SQL_CUSTOM::getResult(Custom_Call_UnorderedMap::const_iterator &custom_call
 						// BOOL
 						if (custom_calls_itr->second.sql_outputs_options[col].boolean)
 						{
-							if (rs[col].isInteger())
+							if (temp_str.isEmpty())
 							{
-								if (rs[col].convert<int>() > 0)
+								temp_str = "false";
+							}
+							else
+							{
+								if (rs[col].isInteger())
 								{
-									temp_str = "true";
+									if (rs[col].convert<int>() > 0)
+									{
+										temp_str = "true";
+									}
+									else
+									{
+										temp_str = "false";
+									}
 								}
 								else
 								{
 									temp_str = "false";
 								}
 							}
-							else
-							{
-								temp_str = "false";
-							}
 						}
 						else
 						{
-							if (temp_str.empty())
-							{
-								temp_str = "";
-							}
-							else
-							{
-								temp_str = rs[col].convert<std::string>();
-							}
 							// BEGUID
 							if (custom_calls_itr->second.sql_outputs_options[col].beguid)
 							{
