@@ -10,9 +10,9 @@ http://a3wasteland.com/
 
 
 #### Known Public Missions / Mods using extDB2
-None  
-  
-  
+http://www.exilemod.com/   (Coming Soon)
+
+
 ### Features
 
  - Commandline Arguments Support

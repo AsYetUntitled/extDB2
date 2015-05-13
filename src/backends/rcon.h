@@ -31,6 +31,7 @@ along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 #include <Poco/ExpireCache.h>
 #include <Poco/Stopwatch.h>
+#include <Poco/StringTokenizer.h>
 
 #include "../abstract_ext.h"
 
@@ -66,6 +67,7 @@ class Rcon
 			std::string guid;
 			std::string verified;
 			std::string player_name;
+			std::string lobby;
 		};
 
 		struct RconPacket
@@ -89,9 +91,6 @@ class Rcon
 
 			std::unique_ptr<boost::asio::ip::udp::socket> socket;
 			boost::array<char, 8192> recv_buffer;
-
-			unsigned char sequence_num_counter;
-			std::mutex mutex_sequence_num_counter;
 
 			std::unique_ptr<boost::asio::deadline_timer> keepalive_timer;
 			std::unique_ptr<boost::asio::deadline_timer> socket_close_timer;
@@ -120,7 +119,7 @@ class Rcon
 		void startReceive();
 
 		void timerKeepAlive(const size_t delay);
-		void createKeepAlive(const boost::system::error_code& e);
+		void createKeepAlive(const boost::system::error_code& error);
 
 		void timerSocketClose();
 
@@ -138,8 +137,8 @@ class Rcon
 		void serverResponse(std::size_t &bytes_received);
 
 		void processMessage(unsigned char &sequence_number, std::string &message);
-		bool processMessageMission(std::string &message);
-		bool processMessagePlayers(std::string &message);
+		void processMessageMission(Poco::StringTokenizer &tokens);
+		void processMessagePlayers(Poco::StringTokenizer &tokens);
 		void chatMessage(std::size_t &bytes_received);
 
 		#ifndef RCON_APP

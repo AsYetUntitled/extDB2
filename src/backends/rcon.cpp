@@ -39,6 +39,7 @@ along with this program. If not, see <http://www.gnu.org/licenses/>.
 #endif
 
 #include <boost/algorithm/string/predicate.hpp>
+#include <boost/algorithm/string/replace.hpp>
 #include <boost/asio/placeholders.hpp>
 #include <boost/crc.hpp>
 
@@ -52,12 +53,12 @@ along with this program. If not, see <http://www.gnu.org/licenses/>.
 #include <Poco/Exception.h>
 
 
+
 Rcon::Rcon(boost::asio::io_service &io_service, std::shared_ptr<spdlog::logger> spdlog)
 {
 	rcon_socket.rcon_run_flag = new std::atomic<bool>(false);
 	rcon_socket.rcon_login_flag = new std::atomic<bool>(false);
 	rcon_socket.socket.reset(new boost::asio::ip::udp::socket(io_service));
-	rcon_socket.sequence_num_counter = 0x00;
 	rcon_socket.keepalive_timer.reset(new boost::asio::deadline_timer(io_service));
 	rcon_socket.socket_close_timer.reset(new boost::asio::deadline_timer(io_service));
 	rcon_socket.rcon_msg_cache.reset(new Poco::ExpireCache<unsigned char, RconMultiPartMsg>(120000));
@@ -212,7 +213,6 @@ void Rcon::startReceive()
 		boost::bind(&Rcon::handleReceive, this,
 		boost::asio::placeholders::error,
 		boost::asio::placeholders::bytes_transferred));
-	logger->info("Rcon: Start Receive");
 }
 
 
@@ -220,7 +220,6 @@ void Rcon::handleReceive(const boost::system::error_code& error, std::size_t byt
 {
 	if (!error)
 	{
-		logger->info("Rcon: receiveBytes");
 		rcon_socket.recv_buffer[bytes_received] = '\0';
 
 		switch(rcon_socket.recv_buffer[7])
@@ -239,7 +238,7 @@ void Rcon::handleReceive(const boost::system::error_code& error, std::size_t byt
 	}
 	else
 	{
-		logger->info("Rcon: UDP handleReceive Error: {0}", error);
+		logger->info("Rcon: UDP handleReceive Error: {0}", error.message());
 		startReceive();
 	}
 }
@@ -325,161 +324,163 @@ void Rcon::processMessage(unsigned char &sequence_number, std::string &message)
 		logger->info("RCon: {0}", message);
 	#endif
 
-	bool status = false;
-	if (rcon_socket.player_requests.size() > 0)
-	{
-		status = processMessagePlayers(message);
-	}
-	if (!status)
-	{
-		if (rcon_socket.player_requests.size() > 0)
-		{
-			processMessageMission(message);
-		}		
-	}
-}
-
-
-bool Rcon::processMessageMission(std::string &message)
-{
-	bool found = false;
-	std::vector<std::string> info_vector;
 	Poco::StringTokenizer tokens(message, "\n");
 	if (tokens.count() > 0)
 	{
 		if (tokens[0] == "Missions on server:")
 		{
-			found = true;
-			for (int i = 1; i < (tokens.count()); ++i)
-			{
-				if (boost::algorithm::ends_with(tokens[i], ".pbo"))
-				{
-					info_vector.push_back(tokens[i].substr(0, tokens[i].size() - 4));
-				}
-				else
-				{
-					info_vector.push_back(tokens[i]);
-				}
-			}
-
-			AbstractExt::resultData result_data;
-			if (info_vector.empty())
-			{
-				result_data.message  = "[1,[]]";
-			}
-			else
-			{
-				result_data.message = "[1,[";
-				for(auto &info : info_vector)
-				{
-					result_data.message += info;
-					result_data.message += ",";
-					logger->info("Server Mission: {0}", info);
-				}
-				result_data.message.pop_back();
-				result_data.message += "]]";
-			}
-
-			#ifndef RCON_APP
-				{
-					std::lock_guard<std::mutex> lock(rcon_socket.mutex_mission_requests);
-					for (auto unique_id : rcon_socket.mission_requests)
-					{
-						extension_ptr->saveResult_mutexlock(unique_id, result_data);
-					}
-					rcon_socket.mission_requests.clear();
-				}
-			#endif
+			processMessageMission(tokens);
+		}
+		else if (tokens[0] == "Players on server:")
+		{
+			processMessagePlayers(tokens);	
+		}
+		else
+		{
+			// TODO Unknown Command
 		}
 	}
-	return found;
 }
 
 
-bool Rcon::processMessagePlayers(std::string &message)
+void Rcon::processMessageMission(Poco::StringTokenizer &tokens)
 {
-	bool found = false;
+	std::vector<std::string> info_vector;
+
+	for (int i = 1; i < (tokens.count()); ++i)
+	{
+		if (boost::algorithm::ends_with(tokens[i], ".pbo"))
+		{
+			info_vector.push_back(tokens[i].substr(0, tokens[i].size() - 4));
+		}
+		else
+		{
+			info_vector.push_back(tokens[i]);
+		}
+	}
+
+	AbstractExt::resultData result_data;
+	if (info_vector.empty())
+	{
+		result_data.message  = "[1,[]]";
+	}
+	else
+	{
+		result_data.message = "[1,[";
+		for(auto &info : info_vector)
+		{
+			result_data.message += info;
+			result_data.message += ",";
+			logger->info("Server Mission: {0}", info);
+		}
+		result_data.message.pop_back();
+		result_data.message += "]]";
+	}
+
+	{
+		std::lock_guard<std::mutex> lock(rcon_socket.mutex_mission_requests);
+		#ifdef RCON_APP
+			logger->info("RCON: Mission: {0}", result_data.message);
+		#else
+			for (auto unique_id : rcon_socket.mission_requests)
+			{
+				extension_ptr->saveResult_mutexlock(unique_id, result_data);
+			}
+			rcon_socket.mission_requests.clear();
+		#endif
+	}
+}
+
+
+void Rcon::processMessagePlayers(Poco::StringTokenizer &tokens)
+{
 	std::vector<RconPlayerInfo> info_vector;
 
 	std::string player_str;
-	Poco::StringTokenizer tokens(message, "\n");
-	if (tokens.count() > 0)
+	for (int i = 3; i < (tokens.count() - 1); ++i)
 	{
-		if (tokens[0] == "Players on server:")
+		player_str = tokens[i];
+		player_str.erase(std::unique(player_str.begin(), player_str.end(), [](char a, char b) { return a == ' ' && b == ' '; } ), player_str.end() );
+
+		Poco::StringTokenizer player_tokens(player_str, " ");
+		if (player_tokens.count() >= 5)
 		{
-			found = true;
-			for (int i = 3; i < (tokens.count() - 1); ++i)
+			RconPlayerInfo player_data;
+
+			player_data.number = player_tokens[0];
+			auto found = player_tokens[1].find(":");
+			player_data.ip = player_tokens[1].substr(0, found - 1);
+			player_data.port = player_tokens[1].substr(found + 1);
+			player_data.ping = player_tokens[2];
+
+			if (boost::algorithm::ends_with(player_tokens[3], "(OK)"))
 			{
-				player_str = tokens[i];
-				player_str.erase(std::unique(player_str.begin(), player_str.end(), [](char a, char b) { return a == ' ' && b == ' '; } ), player_str.end() );
-
-				Poco::StringTokenizer player_tokens(player_str, " ");
-				if (player_tokens.count() >= 5)
-				{
-					RconPlayerInfo player_data;
-
-					player_data.number = player_tokens[0];
-					auto found = player_tokens[1].find(":");
-					player_data.ip = player_tokens[1].substr(0, found - 1);
-					player_data.port = player_tokens[1].substr(found + 1);
-					player_data.ping = player_tokens[2];
-
-					if (boost::algorithm::ends_with(player_tokens[3], "(OK)"))
-					{
-						player_data.verified = "true";
-						player_data.guid = player_tokens[3].substr(0, (player_tokens.count() - 4));
-					}
-					else
-					{
-						player_data.verified = "false";
-						player_data.guid = player_tokens[3].substr(0, (player_tokens.count() - 12));
-					}
-					found = tokens[i].find(")");
-					player_data.player_name = tokens[i].substr(found + 2);
-
-					info_vector.push_back(std::move(player_data));
-				}
-				else
-				{
-					logger->info("Error: Wrong RconPlayerInfo count: {0}",player_tokens.count());
-				}
-			}
-
-			AbstractExt::resultData result_data;
-			if (info_vector.empty())
-			{
-				result_data.message  = "[1,[]]";
+				player_data.verified = "true";
+				player_data.guid = player_tokens[3].substr(0, (player_tokens[3].size() - 4));
 			}
 			else
 			{
-				result_data.message = "[1,[";
-				for(auto &info : info_vector)
-				{
-					result_data.message += "[\"" + info.number + "\""; //TODO Add Ability to Limit the Info returned i.e most people wont need ip/port for security reasons
-					result_data.message += "\"" + info.ip + "\",";
-					result_data.message += info.port + ",";
-					result_data.message += info.ping + ",";
-					result_data.message += "\"" + info.guid + "\",";
-					result_data.message += "\"" + info.verified + "\",";
-					result_data.message += "\"" + info.player_name + "\"],";
-				}
-				result_data.message.pop_back();
-				result_data.message += "]]";
+				player_data.verified = "false";
+				player_data.guid = player_tokens[3].substr(0, (player_tokens[3].size() - 12));
+			}
+			found = tokens[i].find(")");
+			player_data.player_name = tokens[i].substr(found + 2);
+			boost::replace_all(player_data.player_name, "\"", "\"\"");
+			boost::replace_all(player_data.player_name, "'", "''");
+
+			if (boost::algorithm::ends_with(player_data.player_name, " (Lobby)"))
+			{
+				player_data.player_name = player_data.player_name.substr(0, player_data.player_name.size() - 8);
+				player_data.lobby = "true";
+			}
+			else
+			{
+				player_data.lobby = "false";
 			}
 
-			#ifndef RCON_APP
-				{
-					std::lock_guard<std::mutex> lock(rcon_socket.mutex_players_requests);
-					for (auto unique_id : rcon_socket.player_requests)
-					{
-						extension_ptr->saveResult_mutexlock(unique_id, result_data);
-					}
-					rcon_socket.player_requests.clear();
-				}
-			#endif
+			info_vector.push_back(std::move(player_data));
+		}
+		else
+		{
+			logger->info("Rcon: Error: Wrong RconPlayerInfo count: {0}",player_tokens.count());
 		}
 	}
-	return found;
+
+	AbstractExt::resultData result_data;
+	if (info_vector.empty())
+	{
+		result_data.message  = "[1,[]]";
+	}
+	else
+	{
+		result_data.message = "[1,[";
+		for(auto &info : info_vector)
+		{
+			result_data.message += "[\"" + info.number + "\","; //TODO Add Ability to Limit the Info returned i.e most people wont need ip/port for security reasons
+			result_data.message += "\"" + info.ip + "\",";
+			result_data.message += info.port + ",";
+			result_data.message += info.ping + ",";
+			result_data.message += "\"" + info.guid + "\",";
+			result_data.message += info.verified + ",";
+			result_data.message += "\"" + info.player_name + "\",";
+			result_data.message += info.lobby + "],";
+		}
+		result_data.message.pop_back();
+		result_data.message += "]]";
+	}
+
+	{
+		std::lock_guard<std::mutex> lock(rcon_socket.mutex_players_requests);
+		#ifdef RCON_APP
+			logger->info("RCON: Players: {0}", result_data.message);
+		#else
+			for (auto unique_id : rcon_socket.player_requests)
+			{
+				extension_ptr->saveResult_mutexlock(unique_id, result_data);
+			}
+			rcon_socket.player_requests.clear();
+		#endif
+	}
 }
 
 
@@ -509,8 +510,13 @@ void Rcon::extractData(std::size_t &bytes_received, int pos, std::string &result
 }
 
 
-void Rcon::createKeepAlive(const boost::system::error_code& e)
+void Rcon::createKeepAlive(const boost::system::error_code& error)
 {
+	if (error)
+	{
+		logger->warn("RCon: Keepalive Error: {0}", error.message());
+	}
+
 	std::ostringstream cmdStream;
 	cmdStream.put(0xFFu);
 	cmdStream.put(0x01);
@@ -554,7 +560,6 @@ void Rcon::createKeepAlive(const boost::system::error_code& e)
 	std::shared_ptr<std::string> packet;
 	packet.reset(new std::string(cmdPacketStream.str()));
 
-	logger->info("Adding Keepalive Packet to Send");
 	rcon_socket.socket->async_send(boost::asio::buffer(*packet),
 							boost::bind(&Rcon::handleSent, this, packet,
 							boost::asio::placeholders::error,
@@ -581,7 +586,7 @@ void Rcon::sendPacket(RconPacket &rcon_packet)
 	}
 	else if (rcon_packet.packetCode == 0x00) //Login
 	{
-		logger->info("sending Login Packet");
+		logger->info("Rcon: Sending Login Packet");
 		cmdStream << rcon_packet.cmd;
 	}
 
@@ -629,7 +634,10 @@ void Rcon::sendPacket(RconPacket &rcon_packet)
 
 void Rcon::handleSent(std::shared_ptr<std::string> packet, const boost::system::error_code& error, std::size_t bytes_transferred)
 {
-	logger->info("Sent Packet: {0}: {1}", error, bytes_transferred);
+	if (error)
+	{
+		logger->warn("Rcon: Error handleSent: {0}", error.message());
+	}
 }
 
 
