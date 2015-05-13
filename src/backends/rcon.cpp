@@ -144,8 +144,9 @@ unsigned char Rcon::resetSequenceNum(RconSocket &rcon_socket)
 */
 
 
-void Rcon::start(std::string &address, unsigned int port, std::string &password)
+void Rcon::start(std::string address, unsigned int port, std::string password, std::string player_info_returned)
 {
+	player_info_returned_mode = player_info_returned;
 	boost::asio::ip::udp::endpoint endpoint(boost::asio::ip::address::from_string(address), port);
 	rcon_socket.socket->async_connect(endpoint, boost::bind(&Rcon::connectionHandler, this, boost::asio::placeholders::error));
 
@@ -185,11 +186,15 @@ void Rcon::connect()
 
 void Rcon::disconnect()
 {
+	/*
 	if (*(rcon_socket.rcon_run_flag))
 	{
 		*(rcon_socket.rcon_run_flag) = false;			
 		timerSocketClose();
 	}
+	*/
+	timerKeepAlive(0);
+	rcon_socket.socket->close();
 }
 
 
@@ -239,7 +244,6 @@ void Rcon::handleReceive(const boost::system::error_code& error, std::size_t byt
 	else
 	{
 		logger->info("Rcon: UDP handleReceive Error: {0}", error.message());
-		startReceive();
 	}
 }
 
@@ -377,17 +381,22 @@ void Rcon::processMessageMission(Poco::StringTokenizer &tokens)
 		result_data.message += "]]";
 	}
 
+	std::vector<unsigned int> unique_id_saves;
 	{
 		std::lock_guard<std::mutex> lock(rcon_socket.mutex_mission_requests);
 		#ifdef RCON_APP
 			logger->info("RCON: Mission: {0}", result_data.message);
 		#else
-			for (auto unique_id : rcon_socket.mission_requests)
+			for (unsigned int unique_id : rcon_socket.mission_requests)
 			{
-				extension_ptr->saveResult_mutexlock(unique_id, result_data);
+				unique_id_saves.push_back(unique_id);
 			}
 			rcon_socket.mission_requests.clear();
 		#endif
+	}
+	for (unsigned int unique_id: unique_id_saves)
+	{
+		extension_ptr->saveResult_mutexlock(unique_id, result_data);
 	}
 }
 
@@ -454,32 +463,52 @@ void Rcon::processMessagePlayers(Poco::StringTokenizer &tokens)
 	else
 	{
 		result_data.message = "[1,[";
-		for(auto &info : info_vector)
+		if (player_info_returned_mode == "FULL")
 		{
-			result_data.message += "[\"" + info.number + "\","; //TODO Add Ability to Limit the Info returned i.e most people wont need ip/port for security reasons
-			result_data.message += "\"" + info.ip + "\",";
-			result_data.message += info.port + ",";
-			result_data.message += info.ping + ",";
-			result_data.message += "\"" + info.guid + "\",";
-			result_data.message += info.verified + ",";
-			result_data.message += "\"" + info.player_name + "\",";
-			result_data.message += info.lobby + "],";
+			for(auto &info : info_vector)
+			{
+				result_data.message += "[\"" + info.number + "\",";
+				result_data.message += "\"" + info.ip + "\",";
+				result_data.message += info.port + ",";
+				result_data.message += info.ping + ",";
+				result_data.message += "\"" + info.guid + "\",";
+				result_data.message += info.verified + ",";
+				result_data.message += "\"" + info.player_name + "\",";
+				result_data.message += info.lobby + "],";
+			}
 		}
+		else
+		{
+			for(auto &info : info_vector)
+			{
+				result_data.message += "[\"" + info.number + "\",";
+				result_data.message += "\"" + info.guid + "\",";
+				result_data.message += info.verified + ",";
+				result_data.message += "\"" + info.player_name + "\",";
+				result_data.message += info.lobby + "],";
+			}
+		}
+
 		result_data.message.pop_back();
 		result_data.message += "]]";
 	}
 
+	std::vector<unsigned int> unique_id_saves;
 	{
 		std::lock_guard<std::mutex> lock(rcon_socket.mutex_players_requests);
 		#ifdef RCON_APP
-			logger->info("RCON: Players: {0}", result_data.message);
+			logger->info("RCON: Mission: {0}", result_data.message);
 		#else
-			for (auto unique_id : rcon_socket.player_requests)
+			for (unsigned int unique_id : rcon_socket.player_requests)
 			{
-				extension_ptr->saveResult_mutexlock(unique_id, result_data);
+				unique_id_saves.push_back(unique_id);
 			}
 			rcon_socket.player_requests.clear();
 		#endif
+	}
+	for (unsigned int unique_id: unique_id_saves)
+	{
+		extension_ptr->saveResult_mutexlock(unique_id, result_data);
 	}
 }
 
@@ -512,59 +541,61 @@ void Rcon::extractData(std::size_t &bytes_received, int pos, std::string &result
 
 void Rcon::createKeepAlive(const boost::system::error_code& error)
 {
-	if (error)
+	if (!error)
+	{
+		std::ostringstream cmdStream;
+		cmdStream.put(0xFFu);
+		cmdStream.put(0x01);
+		//cmdStream.put(getSequenceNum(rcon_socket));
+		cmdStream.put(0x00);
+		cmdStream.put('\0');
+
+		std::string cmd = cmdStream.str();
+		rcon_socket.keep_alive_crc32.reset();
+		rcon_socket.keep_alive_crc32.process_bytes(cmd.data(), cmd.length());
+		long int crcVal = rcon_socket.keep_alive_crc32.checksum();
+
+		std::stringstream hexStream;
+		hexStream << std::setfill('0') << std::setw(sizeof(int)*2);
+		hexStream << std::hex << crcVal;
+		std::string crcAsHex = hexStream.str();
+
+		unsigned char reversedCrc[4];
+		unsigned int x;
+
+		std::stringstream converterStream;
+		for (int i = 0; i < 4; i++)
+		{
+			converterStream << std::hex << crcAsHex.substr(6-(2*i),2).c_str();
+			converterStream >> x;
+			converterStream.clear();
+			reversedCrc[i] = x;
+		}
+
+		// Create Packet
+		std::stringstream cmdPacketStream;
+		cmdPacketStream.put(0x42); // B
+		cmdPacketStream.put(0x45); // E
+		cmdPacketStream.put(reversedCrc[0]); // 4-byte Checksum
+		cmdPacketStream.put(reversedCrc[1]);
+		cmdPacketStream.put(reversedCrc[2]);
+		cmdPacketStream.put(reversedCrc[3]);
+		cmdPacketStream << cmd;
+		cmdPacketStream.str();
+
+		std::shared_ptr<std::string> packet;
+		packet.reset(new std::string(cmdPacketStream.str()));
+
+		rcon_socket.socket->async_send(boost::asio::buffer(*packet),
+								boost::bind(&Rcon::handleSent, this, packet,
+								boost::asio::placeholders::error,
+								boost::asio::placeholders::bytes_transferred));
+		timerKeepAlive(30);
+	}
+	else
 	{
 		logger->warn("RCon: Keepalive Error: {0}", error.message());
 	}
-
-	std::ostringstream cmdStream;
-	cmdStream.put(0xFFu);
-	cmdStream.put(0x01);
-	//cmdStream.put(getSequenceNum(rcon_socket));
-	cmdStream.put(0x00);
-	cmdStream.put('\0');
-
-	std::string cmd = cmdStream.str();
-	rcon_socket.keep_alive_crc32.reset();
-	rcon_socket.keep_alive_crc32.process_bytes(cmd.data(), cmd.length());
-	long int crcVal = rcon_socket.keep_alive_crc32.checksum();
-
-	std::stringstream hexStream;
-	hexStream << std::setfill('0') << std::setw(sizeof(int)*2);
-	hexStream << std::hex << crcVal;
-	std::string crcAsHex = hexStream.str();
-
-	unsigned char reversedCrc[4];
-	unsigned int x;
-
-	std::stringstream converterStream;
-	for (int i = 0; i < 4; i++)
-	{
-		converterStream << std::hex << crcAsHex.substr(6-(2*i),2).c_str();
-		converterStream >> x;
-		converterStream.clear();
-		reversedCrc[i] = x;
-	}
-
-	// Create Packet
-	std::stringstream cmdPacketStream;
-	cmdPacketStream.put(0x42); // B
-	cmdPacketStream.put(0x45); // E
-	cmdPacketStream.put(reversedCrc[0]); // 4-byte Checksum
-	cmdPacketStream.put(reversedCrc[1]);
-	cmdPacketStream.put(reversedCrc[2]);
-	cmdPacketStream.put(reversedCrc[3]);
-	cmdPacketStream << cmd;
-	cmdPacketStream.str();
-
-	std::shared_ptr<std::string> packet;
-	packet.reset(new std::string(cmdPacketStream.str()));
-
-	rcon_socket.socket->async_send(boost::asio::buffer(*packet),
-							boost::bind(&Rcon::handleSent, this, packet,
-							boost::asio::placeholders::error,
-							boost::asio::placeholders::bytes_transferred));
-	timerKeepAlive(30);
 }
 
 
@@ -751,7 +782,7 @@ void Rcon::getPlayers(std::string &command, unsigned int &unique_id)
 		int port = options["port"].as<int>();
 		std::string password = options["password"].as<std::string>();
 
-		rcon.start(address, port, password);
+		rcon.start(address, port, password, "FULL");
 		
 		if (options.count("file"))
 		{

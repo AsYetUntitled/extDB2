@@ -46,7 +46,7 @@ class Rcon
 			void extInit(AbstractExt *extension);
 		#endif
 
-		void start(std::string &address, unsigned int port, std::string &password);
+		void start(std::string address, unsigned int port, std::string password, std::string player_info_returned);
 		void disconnect();
 		bool status();
 
@@ -55,6 +55,7 @@ class Rcon
 		void getPlayers(std::string &command, unsigned int &unique_id);
 
 	private:
+		std::string player_info_returned_mode;
 		std::shared_ptr<spdlog::logger> logger;
 
 		// Inputs are strings + Outputs are strings.  Info is not kept for long, so no point converting to a different datatype just to convert back to string for armaserver
