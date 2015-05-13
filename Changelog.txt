@@ -1,4 +1,9 @@
 -------------------------------------------------------------------------------
+54 :
+	FIXED: SQL_CUSTOM + SQL_CUSTOM Required Version Checks
+	FIXED: SQL_CUSTOM + SQL_CUSTOM_V2 Handling of Null Values in Database
+
+-------------------------------------------------------------------------------
 53 :
 	ADDED: Support for retreiving RCon players + missions
 	ADDED: Ability for filtering player ip/port/ping from Rcon players

@@ -557,7 +557,14 @@ void SQL_CUSTOM::getResult(Custom_Call_UnorderedMap::const_iterator &custom_call
 						}
 						else
 						{
-							temp_str = rs[col].convert<std::string>();
+							if (temp_str.empty())
+							{
+								temp_str = "";
+							}
+							else
+							{
+								temp_str = rs[col].convert<std::string>();
+							}
 							// BEGUID
 							if (custom_calls_itr->second.sql_outputs_options[col].beguid)
 							{
