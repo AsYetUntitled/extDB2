@@ -74,7 +74,7 @@ class Rcon
 			char *cmd;
 			char cmd_char_workaround;
 			unsigned char packetCode;
-			unsigned char sequence_number;
+			//unsigned char sequence_number;
 		};
 
 		struct RconRequest
@@ -86,8 +86,6 @@ class Rcon
 		typedef std::pair< int, std::unordered_map < int, std::string > > RconMultiPartMsg;
 		struct RconSocket
 		{
-			int id;
-			
 			std::atomic<bool> *rcon_run_flag;
 			std::atomic<bool> *rcon_login_flag;
 
@@ -102,16 +100,17 @@ class Rcon
 
 			std::unique_ptr<Poco::ExpireCache<unsigned char, RconMultiPartMsg> > rcon_msg_cache;
 
-			//Requests
-			std::unordered_map<unsigned char, RconRequest> requests;
-			std::mutex mutex_requests;
+			//Mission Requests
+			std::vector<unsigned int> mission_requests;
+			std::mutex mutex_mission_requests;
+
+			//Player Requests
+			std::vector<unsigned int> player_requests;
+			std::mutex mutex_players_requests;
 		};
 
 
 		RconSocket rcon_socket_1;
-		RconSocket rcon_socket_2;
-
-		std::atomic<int> *active_socket;
 
 		char *rcon_password;
 		
@@ -130,8 +129,8 @@ class Rcon
 		void sendPacket(RconSocket &rcon_socket, RconPacket &rcon_packet);
 		void extractData(RconSocket &rcon_socket, std::size_t &bytes_received, int pos, std::string &result);
 
-		unsigned char getSequenceNum(RconSocket &rcon_socket);
-		unsigned char resetSequenceNum(RconSocket &rcon_socket);
+		//unsigned char getSequenceNum(RconSocket &rcon_socket);
+		//unsigned char resetSequenceNum(RconSocket &rcon_socket);
 
 		void connectionHandler(RconSocket &rcon_socket, const boost::system::error_code& error);
 		void handleReceive(RconSocket &rcon_socket, const boost::system::error_code& error, std::size_t bytes_received);
@@ -141,8 +140,8 @@ class Rcon
 		void serverResponse(RconSocket &rcon_socket, std::size_t &bytes_received);
 
 		void processMessage(RconSocket &rcon_socket, unsigned char &sequence_number, std::string &message);
-		void processMessageMission(std::string &message, unsigned int &unique_id);
-		void processMessagePlayers(std::string &message, unsigned int &unique_id);
+		bool processMessageMission(RconSocket &rcon_socket, std::string &message);
+		bool processMessagePlayers(RconSocket &rcon_socket, std::string &message);
 		void chatMessage(RconSocket &rcon_socket, std::size_t &bytes_received);
 
 		#ifndef RCON_APP

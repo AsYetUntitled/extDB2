@@ -54,31 +54,13 @@ along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 Rcon::Rcon(boost::asio::io_service &io_service, std::shared_ptr<spdlog::logger> spdlog)
 {
-	active_socket = new std::atomic<int>(1);
-
-	rcon_socket_1.id = 1;
-	rcon_socket_2.id = 2;
-
 	rcon_socket_1.rcon_run_flag = new std::atomic<bool>(false);
-	rcon_socket_2.rcon_run_flag = new std::atomic<bool>(false);
-
 	rcon_socket_1.rcon_login_flag = new std::atomic<bool>(false);
-	rcon_socket_2.rcon_login_flag = new std::atomic<bool>(false);
-
 	rcon_socket_1.socket.reset(new boost::asio::ip::udp::socket(io_service));
-	rcon_socket_2.socket.reset(new boost::asio::ip::udp::socket(io_service));
-
-	rcon_socket_1.sequence_num_counter = 0;
-	rcon_socket_2.sequence_num_counter = 0;
-
+	rcon_socket_1.sequence_num_counter = 0x00;
 	rcon_socket_1.keepalive_timer.reset(new boost::asio::deadline_timer(io_service));
-	rcon_socket_2.keepalive_timer.reset(new boost::asio::deadline_timer(io_service));
-
 	rcon_socket_1.socket_close_timer.reset(new boost::asio::deadline_timer(io_service));
-	rcon_socket_2.socket_close_timer.reset(new boost::asio::deadline_timer(io_service));
-
 	rcon_socket_1.rcon_msg_cache.reset(new Poco::ExpireCache<unsigned char, RconMultiPartMsg>(120000));
-	rcon_socket_2.rcon_msg_cache.reset(new Poco::ExpireCache<unsigned char, RconMultiPartMsg>(120000));
 
 	logger = spdlog;
 }
@@ -118,15 +100,15 @@ void Rcon::timerSocketClose(RconSocket &rcon_socket)
 #endif
 
 
+/*
 unsigned char Rcon::getSequenceNum(RconSocket &rcon_socket)
 {
-	/*
 	std::lock_guard<std::mutex> lock(rcon_socket.mutex_sequence_num_counter);
 	if (rcon_socket.sequence_num_counter > 200)
 	{
 		if (rcon_socket.sequence_num_counter < 255)
 		{
-			++(rcon_socket.sequence_num_counter);
+			return (rcon_socket.sequence_num_counter)++;
 		}
 
 		if (*(rcon_socket.rcon_run_flag))
@@ -146,11 +128,9 @@ unsigned char Rcon::getSequenceNum(RconSocket &rcon_socket)
 	}
 	else
 	{
-		++(rcon_socket.sequence_num_counter);
+		return (rcon_socket.sequence_num_counter)++;
 	}
 	return rcon_socket.sequence_num_counter;
-	*/
-	return 0x00;
 }
 
 
@@ -160,6 +140,7 @@ unsigned char Rcon::resetSequenceNum(RconSocket &rcon_socket)
 	rcon_socket.sequence_num_counter = 0;
 	return rcon_socket.sequence_num_counter;
 }
+*/
 
 
 void Rcon::start(std::string &address, unsigned int port, std::string &password)
@@ -189,11 +170,6 @@ void Rcon::connectionHandler(RconSocket &rcon_socket, const boost::system::error
 
 void Rcon::connect(RconSocket &rcon_socket)
 {
-	{
-		std::lock_guard<std::mutex> lock(rcon_socket.mutex_requests);
-		rcon_socket.requests.clear();
-	}
-
 	*(rcon_socket.rcon_login_flag) = false;
 	*(rcon_socket.rcon_run_flag) = true;
 
@@ -213,11 +189,6 @@ void Rcon::disconnect()
 		*(rcon_socket_1.rcon_run_flag) = false;			
 		timerSocketClose(rcon_socket_1);
 	}
-	if (*(rcon_socket_2.rcon_run_flag))
-	{
-		*(rcon_socket_2.rcon_run_flag) = false;			
-		timerSocketClose(rcon_socket_2);
-	}
 }
 
 
@@ -230,7 +201,7 @@ void Rcon::closeSocket(RconSocket &rcon_socket, const boost::system::error_code&
 
 bool Rcon::status()
 {
-	return (*(rcon_socket_1.rcon_run_flag) && (rcon_socket_1.rcon_login_flag)) || (*(rcon_socket_2.rcon_run_flag) && (rcon_socket_2.rcon_login_flag));
+	return (*(rcon_socket_1.rcon_run_flag) && (rcon_socket_1.rcon_login_flag));
 }
 
 
@@ -280,10 +251,9 @@ void Rcon::loginResponse(RconSocket &rcon_socket)
 	if (rcon_socket.recv_buffer[8] == 0x01)
 	{
 		*(rcon_socket.rcon_login_flag) = true;
-		resetSequenceNum(rcon_socket);
+		//resetSequenceNum(rcon_socket);
 
 		logger->info("Rcon: Login Success");
-		*active_socket = rcon_socket.id;
 	}
 	else
 	{
@@ -352,144 +322,165 @@ void Rcon::serverResponse(RconSocket &rcon_socket, std::size_t &bytes_received)
 
 void Rcon::processMessage(RconSocket &rcon_socket, unsigned char &sequence_number, std::string &message)
 {
-	unsigned int unique_id;
-	int request_type = 0;
-	{
-		std::lock_guard<std::mutex> lock(rcon_socket.mutex_requests);
-		if (rcon_socket.requests.count(sequence_number) > 0) // Just to be safe
-		{
-			unique_id = rcon_socket.requests[sequence_number].unique_id;
-			request_type = rcon_socket.requests[sequence_number].request_type;
-			rcon_socket.requests.erase(sequence_number);
-		}
-	}
-
 	#if defined(RCON_APP) || (DEBUG_TESTING)
 		logger->info("RCon: {0}", message);
 	#endif
 
-	switch(request_type)
+	bool status = false;
+	if (rcon_socket.player_requests.size() > 0)
 	{
-		case 1:
-			{
-				processMessageMission(message, unique_id);
-			}
-			break;
-		case 2:
-			{
-				processMessagePlayers(message, unique_id);
-			}
-			break;
-	}	
+		status = processMessagePlayers(rcon_socket, message);
+	}
+	if (!status)
+	{
+		if (rcon_socket.player_requests.size() > 0)
+		{
+			processMessageMission(rcon_socket, message);
+		}		
+	}
 }
 
 
-void Rcon::processMessageMission(std::string &message, unsigned int &unique_id)
+bool Rcon::processMessageMission(RconSocket &rcon_socket, std::string &message)
 {
+	bool found = false;
 	std::vector<std::string> info_vector;
 	Poco::StringTokenizer tokens(message, "\n");
-	for (int i = 1; i < (tokens.count()); ++i)
+	if (tokens.count() > 0)
 	{
-		if (boost::algorithm::ends_with(tokens[i], ".pbo"))
+		if (tokens[0] == "Missions on server:")
 		{
-			info_vector.push_back(tokens[i].substr(0, tokens[i].size() - 4));
-		}
-		else
-		{
-			info_vector.push_back(tokens[i]);
-		}
-	}
+			found = true;
+			for (int i = 1; i < (tokens.count()); ++i)
+			{
+				if (boost::algorithm::ends_with(tokens[i], ".pbo"))
+				{
+					info_vector.push_back(tokens[i].substr(0, tokens[i].size() - 4));
+				}
+				else
+				{
+					info_vector.push_back(tokens[i]);
+				}
+			}
 
-	AbstractExt::resultData result_data;
-	if (info_vector.empty())
-	{
-		result_data.message  = "[1,[]]";
-	}
-	else
-	{
-		result_data.message = "[1,[";
-		for(auto &info : info_vector)
-		{
-			result_data.message += info;
-			result_data.message += ",";
-			logger->info("Server Mission: {0}", info);
+			AbstractExt::resultData result_data;
+			if (info_vector.empty())
+			{
+				result_data.message  = "[1,[]]";
+			}
+			else
+			{
+				result_data.message = "[1,[";
+				for(auto &info : info_vector)
+				{
+					result_data.message += info;
+					result_data.message += ",";
+					logger->info("Server Mission: {0}", info);
+				}
+				result_data.message.pop_back();
+				result_data.message += "]]";
+			}
+
+			#ifndef RCON_APP
+				{
+					std::lock_guard<std::mutex> lock(rcon_socket.mutex_mission_requests);
+					for (auto unique_id : rcon_socket.mission_requests)
+					{
+						extension_ptr->saveResult_mutexlock(unique_id, result_data);
+					}
+					rcon_socket.mission_requests.clear();
+				}
+			#endif
 		}
-		result_data.message.pop_back();
-		result_data.message += "]]";
 	}
-	#ifndef RCON_APP
-		extension_ptr->saveResult_mutexlock(unique_id, result_data);
-	#endif
+	return found;
 }
 
 
-void Rcon::processMessagePlayers(std::string &message, unsigned int &unique_id)
+bool Rcon::processMessagePlayers(RconSocket &rcon_socket, std::string &message)
 {
+	bool found = false;
 	std::vector<RconPlayerInfo> info_vector;
 
 	std::string player_str;
 	Poco::StringTokenizer tokens(message, "\n");
-	for (int i = 3; i < (tokens.count() - 1); ++i)
+	if (tokens.count() > 0)
 	{
-		player_str = tokens[i];
-		player_str.erase(std::unique(player_str.begin(), player_str.end(), [](char a, char b) { return a == ' ' && b == ' '; } ), player_str.end() );
-
-		Poco::StringTokenizer player_tokens(player_str, " ");
-		if (player_tokens.count() >= 5)
+		if (tokens[0] == "Players on server:")
 		{
-			RconPlayerInfo player_data;
-
-			player_data.number = player_tokens[0];
-			auto found = player_tokens[1].find(":");
-			player_data.ip = player_tokens[1].substr(0, found - 1);
-			player_data.port = player_tokens[1].substr(found + 1);
-			player_data.ping = player_tokens[2];
-
-			if (boost::algorithm::ends_with(player_tokens[3], "(OK)"))
+			found = true;
+			for (int i = 3; i < (tokens.count() - 1); ++i)
 			{
-				player_data.verified = "true";
-				player_data.guid = player_tokens[3].substr(0, (player_tokens.count() - 4));
+				player_str = tokens[i];
+				player_str.erase(std::unique(player_str.begin(), player_str.end(), [](char a, char b) { return a == ' ' && b == ' '; } ), player_str.end() );
+
+				Poco::StringTokenizer player_tokens(player_str, " ");
+				if (player_tokens.count() >= 5)
+				{
+					RconPlayerInfo player_data;
+
+					player_data.number = player_tokens[0];
+					auto found = player_tokens[1].find(":");
+					player_data.ip = player_tokens[1].substr(0, found - 1);
+					player_data.port = player_tokens[1].substr(found + 1);
+					player_data.ping = player_tokens[2];
+
+					if (boost::algorithm::ends_with(player_tokens[3], "(OK)"))
+					{
+						player_data.verified = "true";
+						player_data.guid = player_tokens[3].substr(0, (player_tokens.count() - 4));
+					}
+					else
+					{
+						player_data.verified = "false";
+						player_data.guid = player_tokens[3].substr(0, (player_tokens.count() - 12));
+					}
+					found = tokens[i].find(")");
+					player_data.player_name = tokens[i].substr(found + 2);
+
+					info_vector.push_back(std::move(player_data));
+				}
+				else
+				{
+					logger->info("Error: Wrong RconPlayerInfo count: {0}",player_tokens.count());
+				}
+			}
+
+			AbstractExt::resultData result_data;
+			if (info_vector.empty())
+			{
+				result_data.message  = "[1,[]]";
 			}
 			else
 			{
-				player_data.verified = "false";
-				player_data.guid = player_tokens[3].substr(0, (player_tokens.count() - 12));
+				result_data.message = "[1,[";
+				for(auto &info : info_vector)
+				{
+					result_data.message += "[\"" + info.number + "\""; //TODO Add Ability to Limit the Info returned i.e most people wont need ip/port for security reasons
+					result_data.message += "\"" + info.ip + "\",";
+					result_data.message += info.port + ",";
+					result_data.message += info.ping + ",";
+					result_data.message += "\"" + info.guid + "\",";
+					result_data.message += "\"" + info.verified + "\",";
+					result_data.message += "\"" + info.player_name + "\"],";
+				}
+				result_data.message.pop_back();
+				result_data.message += "]]";
 			}
-			found = tokens[i].find(")");
-			player_data.player_name = tokens[i].substr(found + 2);
 
-			info_vector.push_back(std::move(player_data));
-		}
-		else
-		{
-			logger->info("Error: Wrong RconPlayerInfo count: {0}",player_tokens.count());
+			#ifndef RCON_APP
+				{
+					std::lock_guard<std::mutex> lock(rcon_socket.mutex_players_requests);
+					for (auto unique_id : rcon_socket.player_requests)
+					{
+						extension_ptr->saveResult_mutexlock(unique_id, result_data);
+					}
+					rcon_socket.player_requests.clear();
+				}
+			#endif
 		}
 	}
-
-	AbstractExt::resultData result_data;
-	if (info_vector.empty())
-	{
-		result_data.message  = "[1,[]]";
-	}
-	else
-	{
-		result_data.message = "[1,[";
-		for(auto &info : info_vector)
-		{
-			result_data.message += "[\"" + info.number + "\""; //TODO Add Ability to Limit the Info returned i.e most people wont need ip/port for security reasons
-			result_data.message += "\"" + info.ip + "\",";
-			result_data.message += info.port + ",";
-			result_data.message += info.ping + ",";
-			result_data.message += "\"" + info.guid + "\",";
-			result_data.message += "\"" + info.verified + "\",";
-			result_data.message += "\"" + info.player_name + "\"],";
-		}
-		result_data.message.pop_back();
-		result_data.message += "]]";
-	}
-	#ifndef RCON_APP
-		extension_ptr->saveResult_mutexlock(unique_id, result_data);
-	#endif
+	return found;
 }
 
 
@@ -524,8 +515,8 @@ void Rcon::createKeepAlive(RconSocket &rcon_socket, const boost::system::error_c
 	std::ostringstream cmdStream;
 	cmdStream.put(0xFFu);
 	cmdStream.put(0x01);
-	cmdStream.put(getSequenceNum(rcon_socket));
-	//cmdStream.put(0x00);
+	//cmdStream.put(getSequenceNum(rcon_socket));
+	cmdStream.put(0x00);
 	cmdStream.put('\0');
 
 	std::string cmd = cmdStream.str();
@@ -581,8 +572,8 @@ void Rcon::sendPacket(RconSocket &rcon_socket, RconPacket &rcon_packet)
 	
 	if (rcon_packet.packetCode == 0x01) //Everything else
 	{
-		cmdStream.put(getSequenceNum(rcon_socket));
-		//cmdStream.put(0x00);
+		//cmdStream.put(getSequenceNum(rcon_socket));
+		cmdStream.put(0x00);
 		cmdStream << rcon_packet.cmd;
 	}
 	else if (rcon_packet.packetCode == 0x02) //Respond to Chat Messages
@@ -653,16 +644,7 @@ void Rcon::sendCommand(std::string &command)
 	rcon_packet.cmd = cmd;
 	rcon_packet.packetCode = 0x01;
 
-	if (*active_socket == 1)
-	{
-		rcon_packet.sequence_number = getSequenceNum(rcon_socket_1);
-		sendPacket(rcon_socket_1, rcon_packet);
-	}
-	else if (*active_socket == 2)
-	{
-		rcon_packet.sequence_number = getSequenceNum(rcon_socket_2);
-		sendPacket(rcon_socket_2, rcon_packet);
-	}
+	sendPacket(rcon_socket_1, rcon_packet);
 	delete []rcon_packet.cmd;
 }
 
@@ -677,31 +659,10 @@ void Rcon::getMissions(std::string &command, unsigned int &unique_id)
 	rcon_packet.cmd = cmd;
 	rcon_packet.packetCode = 0x01;
 
-	if (*active_socket == 1)
+	sendPacket(rcon_socket_1, rcon_packet);
 	{
-		rcon_packet.sequence_number = getSequenceNum(rcon_socket_1);
-		sendPacket(rcon_socket_1, rcon_packet);
-
-		RconRequest rcon_request;
-		rcon_request.request_type = 1;
-		rcon_request.unique_id = unique_id;
-		{
-			std::lock_guard<std::mutex> lock(rcon_socket_1.mutex_requests);
-			rcon_socket_1.requests[rcon_packet.sequence_number] = std::move(rcon_request);
-		}
-	}
-	else if (*active_socket == 2)
-	{
-		rcon_packet.sequence_number = getSequenceNum(rcon_socket_2);
-		sendPacket(rcon_socket_2, rcon_packet);
-
-		RconRequest rcon_request;
-		rcon_request.request_type = 1;
-		rcon_request.unique_id = unique_id;
-		{
-			std::lock_guard<std::mutex> lock(rcon_socket_2.mutex_requests);
-			rcon_socket_2.requests[rcon_packet.sequence_number] = std::move(rcon_request);
-		}
+		std::lock_guard<std::mutex> lock(rcon_socket_1.mutex_mission_requests);
+		rcon_socket_1.mission_requests.push_back(unique_id);
 	}
 	delete []rcon_packet.cmd;
 }
@@ -717,31 +678,10 @@ void Rcon::getPlayers(std::string &command, unsigned int &unique_id)
 	rcon_packet.cmd = cmd;
 	rcon_packet.packetCode = 0x01;
 
-	if (*active_socket == 1)
+	sendPacket(rcon_socket_1, rcon_packet);
 	{
-		rcon_packet.sequence_number = getSequenceNum(rcon_socket_1);
-
-		sendPacket(rcon_socket_1, rcon_packet);
-		RconRequest rcon_request;
-		rcon_request.request_type = 2;
-		rcon_request.unique_id = unique_id;
-		{
-			std::lock_guard<std::mutex> lock(rcon_socket_1.mutex_requests);
-			rcon_socket_1.requests[rcon_packet.sequence_number] = std::move(rcon_request);
-		}
-	}
-	else if (*active_socket == 2)
-	{
-		rcon_packet.sequence_number = getSequenceNum(rcon_socket_2);
-		sendPacket(rcon_socket_2, rcon_packet);
-
-		RconRequest rcon_request;
-		rcon_request.request_type = 2;
-		rcon_request.unique_id = unique_id;
-		{
-			std::lock_guard<std::mutex> lock(rcon_socket_2.mutex_requests);
-			rcon_socket_2.requests[rcon_packet.sequence_number] = std::move(rcon_request);
-		}
+		std::lock_guard<std::mutex> lock(rcon_socket_1.mutex_players_requests);
+		rcon_socket_1.player_requests.push_back(unique_id);
 	}
 	delete []rcon_packet.cmd;
 }
