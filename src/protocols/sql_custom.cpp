@@ -139,6 +139,12 @@ bool SQL_CUSTOM::init(AbstractExt *extension, const std::string &database_id, co
 		std::vector<std::string> custom_calls_list;
 		template_ini->keys(custom_calls_list);
 
+		if ((template_ini->getInt("Default.Version", 1)) == EXTDB_SQL_CUSTOM_LATEST_VERSION)
+		{
+			extension_ptr->logger->info("extDB2: SQL_CUSTOM: SQL_VERSION_V2 is available");
+			extension_ptr->logger->info("extDB2: SQL_CUSTOM: Newer SQL_CUSTOM Version Available");
+		}
+
 		if ((template_ini->getInt("Default.Version", 1)) == EXTDB_SQL_CUSTOM_REQUIRED_VERSION)
 		{
 			int default_number_of_inputs = template_ini->getInt("Default.Number of Inputs", 0);
