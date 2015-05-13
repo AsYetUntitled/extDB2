@@ -56,14 +56,13 @@ along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 Rcon::Rcon(boost::asio::io_service &io_service, std::shared_ptr<spdlog::logger> spdlog)
 {
+	io_service_ptr = &io_service;
+	logger = spdlog;
+
 	rcon_socket.rcon_run_flag = new std::atomic<bool>(false);
 	rcon_socket.rcon_login_flag = new std::atomic<bool>(false);
 	rcon_socket.socket.reset(new boost::asio::ip::udp::socket(io_service));
-	rcon_socket.keepalive_timer.reset(new boost::asio::deadline_timer(io_service));
-	rcon_socket.socket_close_timer.reset(new boost::asio::deadline_timer(io_service));
 	rcon_socket.rcon_msg_cache.reset(new Poco::ExpireCache<unsigned char, RconMultiPartMsg>(120000));
-
-	logger = spdlog;
 }
 
 
@@ -83,13 +82,6 @@ void Rcon::timerKeepAlive(const size_t delay)
 		rcon_socket.keepalive_timer->expires_from_now(boost::posix_time::seconds(delay));
 		rcon_socket.keepalive_timer->async_wait(boost::bind(&Rcon::createKeepAlive, this, boost::asio::placeholders::error));
 	}
-}
-
-
-void Rcon::timerSocketClose()
-{
-	rcon_socket.socket_close_timer->expires_from_now(boost::posix_time::minutes(5)); // Overkill but safer
-	rcon_socket.socket_close_timer->async_wait(boost::bind(&Rcon::closeSocket, this, boost::asio::placeholders::error));
 }
 
 
@@ -172,6 +164,8 @@ void Rcon::connectionHandler(const boost::system::error_code& error)
 
 void Rcon::connect()
 {
+	rcon_socket.keepalive_timer.reset(new boost::asio::deadline_timer(*io_service_ptr));
+
 	*(rcon_socket.rcon_login_flag) = false;
 	*(rcon_socket.rcon_run_flag) = true;
 
