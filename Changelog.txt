@@ -1,13 +1,17 @@
 -------------------------------------------------------------------------------
 53 :
+	ADDED: Support for retreiving RCon players + missions
+	ADDED: Ability for filtering player ip/port/ping from Rcon players
+
 	FIXED: Another small fix for loading extdb-conf.ini
 	FIXED: More Fixes for Steam Protocol
 
 	FIXED: Commandline arguments (removed " from arguments)
 	FIXED: -extDB_VAR fixed parsing for Windows
 
-	MINOR: Some Code Improvements
+	UPDATED: Rcon Code, commands will execute straight away now
 
+	MINOR: Some Code Improvements
 
 -------------------------------------------------------------------------------
 52 :
