@@ -394,10 +394,12 @@ void Rcon::processMessageMission(Poco::StringTokenizer &tokens)
 			rcon_socket.mission_requests.clear();
 		#endif
 	}
-	for (unsigned int unique_id: unique_id_saves)
-	{
-		extension_ptr->saveResult_mutexlock(unique_id, result_data);
-	}
+	#ifndef RCON_APP
+		for (unsigned int unique_id: unique_id_saves)
+		{
+			extension_ptr->saveResult_mutexlock(unique_id, result_data);
+		}
+	#endif
 }
 
 
@@ -506,10 +508,12 @@ void Rcon::processMessagePlayers(Poco::StringTokenizer &tokens)
 			rcon_socket.player_requests.clear();
 		#endif
 	}
-	for (unsigned int unique_id: unique_id_saves)
-	{
-		extension_ptr->saveResult_mutexlock(unique_id, result_data);
-	}
+	#ifndef RCON_APP
+		for (unsigned int unique_id: unique_id_saves)
+		{
+			extension_ptr->saveResult_mutexlock(unique_id, result_data);
+		}
+	#endif
 }
 
 
