@@ -216,7 +216,7 @@ Ext::Ext(std::string dll_path, std::unordered_map<std::string, std::string> opti
 		#endif
 
 		#ifdef _MSC_VER
-			#ifndef DEBUG_TESTING
+			#ifndef DEBUG_LOGGING
 				logger->info("extDB2: Windows Version");
 			#else
 				logger->info("extDB2: Windows Debug Version");

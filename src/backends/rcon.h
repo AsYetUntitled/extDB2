@@ -55,6 +55,7 @@ class Rcon
 		void getPlayers(std::string &command, unsigned int &unique_id);
 
 	private:
+		boost::asio::io_service *io_service_ptr;
 		std::string player_info_returned_mode;
 		std::shared_ptr<spdlog::logger> logger;
 
@@ -94,7 +95,6 @@ class Rcon
 			boost::array<char, 8192> recv_buffer;
 
 			std::unique_ptr<boost::asio::deadline_timer> keepalive_timer;
-			std::unique_ptr<boost::asio::deadline_timer> socket_close_timer;
 
 			std::unique_ptr<Poco::ExpireCache<unsigned char, RconMultiPartMsg> > rcon_msg_cache;
 
@@ -121,8 +121,6 @@ class Rcon
 
 		void timerKeepAlive(const size_t delay);
 		void createKeepAlive(const boost::system::error_code& error);
-
-		void timerSocketClose();
 
 		void sendPacket(RconPacket &rcon_packet);
 		void extractData(std::size_t &bytes_received, int pos, std::string &result);
