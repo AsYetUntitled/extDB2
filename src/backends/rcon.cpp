@@ -54,13 +54,13 @@ along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 Rcon::Rcon(boost::asio::io_service &io_service, std::shared_ptr<spdlog::logger> spdlog)
 {
-	rcon_socket_1.rcon_run_flag = new std::atomic<bool>(false);
-	rcon_socket_1.rcon_login_flag = new std::atomic<bool>(false);
-	rcon_socket_1.socket.reset(new boost::asio::ip::udp::socket(io_service));
-	rcon_socket_1.sequence_num_counter = 0x00;
-	rcon_socket_1.keepalive_timer.reset(new boost::asio::deadline_timer(io_service));
-	rcon_socket_1.socket_close_timer.reset(new boost::asio::deadline_timer(io_service));
-	rcon_socket_1.rcon_msg_cache.reset(new Poco::ExpireCache<unsigned char, RconMultiPartMsg>(120000));
+	rcon_socket.rcon_run_flag = new std::atomic<bool>(false);
+	rcon_socket.rcon_login_flag = new std::atomic<bool>(false);
+	rcon_socket.socket.reset(new boost::asio::ip::udp::socket(io_service));
+	rcon_socket.sequence_num_counter = 0x00;
+	rcon_socket.keepalive_timer.reset(new boost::asio::deadline_timer(io_service));
+	rcon_socket.socket_close_timer.reset(new boost::asio::deadline_timer(io_service));
+	rcon_socket.rcon_msg_cache.reset(new Poco::ExpireCache<unsigned char, RconMultiPartMsg>(120000));
 
 	logger = spdlog;
 }
@@ -71,7 +71,7 @@ Rcon::~Rcon(void)
 }
 
 
-void Rcon::timerKeepAlive(RconSocket &rcon_socket, const size_t delay)
+void Rcon::timerKeepAlive(const size_t delay)
 {
     if (delay == 0)
 	{
@@ -80,15 +80,15 @@ void Rcon::timerKeepAlive(RconSocket &rcon_socket, const size_t delay)
 	else
 	{
 		rcon_socket.keepalive_timer->expires_from_now(boost::posix_time::seconds(delay));
-		rcon_socket.keepalive_timer->async_wait(boost::bind(&Rcon::createKeepAlive, this, std::ref(rcon_socket), boost::asio::placeholders::error));
+		rcon_socket.keepalive_timer->async_wait(boost::bind(&Rcon::createKeepAlive, this, boost::asio::placeholders::error));
 	}
 }
 
 
-void Rcon::timerSocketClose(RconSocket &rcon_socket)
+void Rcon::timerSocketClose()
 {
 	rcon_socket.socket_close_timer->expires_from_now(boost::posix_time::minutes(5)); // Overkill but safer
-	rcon_socket.socket_close_timer->async_wait(boost::bind(&Rcon::closeSocket, this, std::ref(rcon_socket), boost::asio::placeholders::error));
+	rcon_socket.socket_close_timer->async_wait(boost::bind(&Rcon::closeSocket, this, boost::asio::placeholders::error));
 }
 
 
@@ -146,19 +146,19 @@ unsigned char Rcon::resetSequenceNum(RconSocket &rcon_socket)
 void Rcon::start(std::string &address, unsigned int port, std::string &password)
 {
 	boost::asio::ip::udp::endpoint endpoint(boost::asio::ip::address::from_string(address), port);
-	rcon_socket_1.socket->async_connect(endpoint, boost::bind(&Rcon::connectionHandler, this, std::ref(rcon_socket_1), boost::asio::placeholders::error));
+	rcon_socket.socket->async_connect(endpoint, boost::bind(&Rcon::connectionHandler, this, boost::asio::placeholders::error));
 
 	rcon_password = new char[password.size() + 1];
 	std::strcpy(rcon_password, password.c_str());
 }
 
 
-void Rcon::connectionHandler(RconSocket &rcon_socket, const boost::system::error_code& error)
+void Rcon::connectionHandler(const boost::system::error_code& error)
 {
 	if (!error)
 	{
-		startReceive(rcon_socket);
-		connect(rcon_socket);
+		startReceive();
+		connect();
 	}
 	else
 	{
@@ -168,7 +168,7 @@ void Rcon::connectionHandler(RconSocket &rcon_socket, const boost::system::error
 }
 
 
-void Rcon::connect(RconSocket &rcon_socket)
+void Rcon::connect()
 {
 	*(rcon_socket.rcon_login_flag) = false;
 	*(rcon_socket.rcon_run_flag) = true;
@@ -177,47 +177,46 @@ void Rcon::connect(RconSocket &rcon_socket)
 	RconPacket rcon_packet;
 	rcon_packet.cmd = rcon_password;
 	rcon_packet.packetCode = 0x00;
-	sendPacket(rcon_socket, rcon_packet);
+	sendPacket(rcon_packet);
 	logger->info("Rcon: Sent Login Info: {0}", std::string(rcon_packet.cmd));
 }
 
 
 void Rcon::disconnect()
 {
-	if (*(rcon_socket_1.rcon_run_flag))
+	if (*(rcon_socket.rcon_run_flag))
 	{
-		*(rcon_socket_1.rcon_run_flag) = false;			
-		timerSocketClose(rcon_socket_1);
+		*(rcon_socket.rcon_run_flag) = false;			
+		timerSocketClose();
 	}
 }
 
 
-void Rcon::closeSocket(RconSocket &rcon_socket, const boost::system::error_code& error)
+void Rcon::closeSocket(const boost::system::error_code& error)
 {
-	timerKeepAlive(rcon_socket, 0);
+	timerKeepAlive(0);
 	rcon_socket.socket->close();
 }
 
 
 bool Rcon::status()
 {
-	return (*(rcon_socket_1.rcon_run_flag) && (rcon_socket_1.rcon_login_flag));
+	return (*(rcon_socket.rcon_run_flag) && (rcon_socket.rcon_login_flag));
 }
 
 
-void Rcon::startReceive(RconSocket &rcon_socket)
+void Rcon::startReceive()
 {
 	rcon_socket.socket->async_receive(
 		boost::asio::buffer(rcon_socket.recv_buffer),
-		boost::bind(&Rcon::handleReceive, this, std::ref(rcon_socket),
+		boost::bind(&Rcon::handleReceive, this,
 		boost::asio::placeholders::error,
 		boost::asio::placeholders::bytes_transferred));
 	logger->info("Rcon: Start Receive");
-	//timerKeepAlive(rcon_socket, 30);
 }
 
 
-void Rcon::handleReceive(RconSocket &rcon_socket, const boost::system::error_code& error, std::size_t bytes_received)
+void Rcon::handleReceive(const boost::system::error_code& error, std::size_t bytes_received)
 {
 	if (!error)
 	{
@@ -227,26 +226,26 @@ void Rcon::handleReceive(RconSocket &rcon_socket, const boost::system::error_cod
 		switch(rcon_socket.recv_buffer[7])
 		{
 			case 0x00:
-				loginResponse(rcon_socket);
+				loginResponse();
 				break;
 			case 0x01:
-				serverResponse(rcon_socket, bytes_received);
+				serverResponse(bytes_received);
 				break;
 			case 0x02:
-				chatMessage(rcon_socket, bytes_received);
+				chatMessage(bytes_received);
 				break;
 		};
-		startReceive(rcon_socket);
+		startReceive();
 	}
 	else
 	{
 		logger->info("Rcon: UDP handleReceive Error: {0}", error);
-		startReceive(rcon_socket);
+		startReceive();
 	}
 }
 
 
-void Rcon::loginResponse(RconSocket &rcon_socket)
+void Rcon::loginResponse()
 {
 	if (rcon_socket.recv_buffer[8] == 0x01)
 	{
@@ -254,18 +253,18 @@ void Rcon::loginResponse(RconSocket &rcon_socket)
 		//resetSequenceNum(rcon_socket);
 
 		logger->info("Rcon: Login Success");
+		timerKeepAlive(30);
 	}
 	else
 	{
 		*(rcon_socket.rcon_login_flag) = false;
-		disconnect();
-
 		logger->info("Rcon: Login Failed");
+		disconnect();
 	}
 }
 
 
-void Rcon::serverResponse(RconSocket &rcon_socket, std::size_t &bytes_received)
+void Rcon::serverResponse(std::size_t &bytes_received)
 {
 	// Rcon Server Ack Message Received
 	unsigned char sequenceNum = rcon_socket.recv_buffer[8];
@@ -275,8 +274,8 @@ void Rcon::serverResponse(RconSocket &rcon_socket, std::size_t &bytes_received)
 	{
 		// Server Received Command Msg
 		std::string result;
-		extractData(rcon_socket, bytes_received, 9, result);
-		processMessage(rcon_socket, sequenceNum, result);
+		extractData(bytes_received, 9, result);
+		processMessage(sequenceNum, result);
 	}
 	else
 	{
@@ -285,7 +284,7 @@ void Rcon::serverResponse(RconSocket &rcon_socket, std::size_t &bytes_received)
 		int packetNum = rcon_socket.recv_buffer[11];
 			
 		std::string partial_msg;
-		extractData(rcon_socket, bytes_received, 12, partial_msg);
+		extractData(bytes_received, 12, partial_msg);
 				
 		if (!(rcon_socket.rcon_msg_cache->has(sequenceNum)))
 		{
@@ -312,7 +311,7 @@ void Rcon::serverResponse(RconSocket &rcon_socket, std::size_t &bytes_received)
 				{
 					result = result + ptrElem->second[i];
 				}
-				processMessage(rcon_socket, sequenceNum, result);
+				processMessage(sequenceNum, result);
 				rcon_socket.rcon_msg_cache->remove(sequenceNum);
 			}
 		}
@@ -320,7 +319,7 @@ void Rcon::serverResponse(RconSocket &rcon_socket, std::size_t &bytes_received)
 }
 
 
-void Rcon::processMessage(RconSocket &rcon_socket, unsigned char &sequence_number, std::string &message)
+void Rcon::processMessage(unsigned char &sequence_number, std::string &message)
 {
 	#if defined(RCON_APP) || (DEBUG_TESTING)
 		logger->info("RCon: {0}", message);
@@ -329,19 +328,19 @@ void Rcon::processMessage(RconSocket &rcon_socket, unsigned char &sequence_numbe
 	bool status = false;
 	if (rcon_socket.player_requests.size() > 0)
 	{
-		status = processMessagePlayers(rcon_socket, message);
+		status = processMessagePlayers(message);
 	}
 	if (!status)
 	{
 		if (rcon_socket.player_requests.size() > 0)
 		{
-			processMessageMission(rcon_socket, message);
+			processMessageMission(message);
 		}		
 	}
 }
 
 
-bool Rcon::processMessageMission(RconSocket &rcon_socket, std::string &message)
+bool Rcon::processMessageMission(std::string &message)
 {
 	bool found = false;
 	std::vector<std::string> info_vector;
@@ -397,7 +396,7 @@ bool Rcon::processMessageMission(RconSocket &rcon_socket, std::string &message)
 }
 
 
-bool Rcon::processMessagePlayers(RconSocket &rcon_socket, std::string &message)
+bool Rcon::processMessagePlayers(std::string &message)
 {
 	bool found = false;
 	std::vector<RconPlayerInfo> info_vector;
@@ -484,22 +483,22 @@ bool Rcon::processMessagePlayers(RconSocket &rcon_socket, std::string &message)
 }
 
 
-void Rcon::chatMessage(RconSocket &rcon_socket, std::size_t &bytes_received)
+void Rcon::chatMessage(std::size_t &bytes_received)
 {
 	// Received Chat Messages
 	std::string result;
-	extractData(rcon_socket, bytes_received, 9, result);
+	extractData(bytes_received, 9, result);
 	logger->info("CHAT: {0}", result);
 	
 	// Respond to Server Msgs i.e chat messages, to prevent timeout
 	RconPacket rcon_packet;
 	rcon_packet.packetCode = 0x02;
 	rcon_packet.cmd_char_workaround = rcon_socket.recv_buffer[8];
-	sendPacket(rcon_socket, rcon_packet);
+	sendPacket(rcon_packet);
 }
 
 
-void Rcon::extractData(RconSocket &rcon_socket, std::size_t &bytes_received, int pos, std::string &result)
+void Rcon::extractData(std::size_t &bytes_received, int pos, std::string &result)
 {
 	std::stringstream ss;
 	for (size_t i = pos; i < bytes_received; ++i)
@@ -510,7 +509,7 @@ void Rcon::extractData(RconSocket &rcon_socket, std::size_t &bytes_received, int
 }
 
 
-void Rcon::createKeepAlive(RconSocket &rcon_socket, const boost::system::error_code& e)
+void Rcon::createKeepAlive(const boost::system::error_code& e)
 {
 	std::ostringstream cmdStream;
 	cmdStream.put(0xFFu);
@@ -520,9 +519,9 @@ void Rcon::createKeepAlive(RconSocket &rcon_socket, const boost::system::error_c
 	cmdStream.put('\0');
 
 	std::string cmd = cmdStream.str();
-	boost::crc_32_type crc32;
-	crc32.process_bytes(cmd.data(), cmd.length());
-	long int crcVal = crc32.checksum();
+	rcon_socket.keep_alive_crc32.reset();
+	rcon_socket.keep_alive_crc32.process_bytes(cmd.data(), cmd.length());
+	long int crcVal = rcon_socket.keep_alive_crc32.checksum();
 
 	std::stringstream hexStream;
 	hexStream << std::setfill('0') << std::setw(sizeof(int)*2);
@@ -560,11 +559,11 @@ void Rcon::createKeepAlive(RconSocket &rcon_socket, const boost::system::error_c
 							boost::bind(&Rcon::handleSent, this, packet,
 							boost::asio::placeholders::error,
 							boost::asio::placeholders::bytes_transferred));
-	timerKeepAlive(rcon_socket, 30);
+	timerKeepAlive(30);
 }
 
 
-void Rcon::sendPacket(RconSocket &rcon_socket, RconPacket &rcon_packet)
+void Rcon::sendPacket(RconPacket &rcon_packet)
 {
 	std::ostringstream cmdStream;
 	cmdStream.put(0xFFu);
@@ -644,7 +643,7 @@ void Rcon::sendCommand(std::string &command)
 	rcon_packet.cmd = cmd;
 	rcon_packet.packetCode = 0x01;
 
-	sendPacket(rcon_socket_1, rcon_packet);
+	sendPacket(rcon_packet);
 	delete []rcon_packet.cmd;
 }
 
@@ -659,10 +658,10 @@ void Rcon::getMissions(std::string &command, unsigned int &unique_id)
 	rcon_packet.cmd = cmd;
 	rcon_packet.packetCode = 0x01;
 
-	sendPacket(rcon_socket_1, rcon_packet);
+	sendPacket(rcon_packet);
 	{
-		std::lock_guard<std::mutex> lock(rcon_socket_1.mutex_mission_requests);
-		rcon_socket_1.mission_requests.push_back(unique_id);
+		std::lock_guard<std::mutex> lock(rcon_socket.mutex_mission_requests);
+		rcon_socket.mission_requests.push_back(unique_id);
 	}
 	delete []rcon_packet.cmd;
 }
@@ -678,10 +677,10 @@ void Rcon::getPlayers(std::string &command, unsigned int &unique_id)
 	rcon_packet.cmd = cmd;
 	rcon_packet.packetCode = 0x01;
 
-	sendPacket(rcon_socket_1, rcon_packet);
+	sendPacket(rcon_packet);
 	{
-		std::lock_guard<std::mutex> lock(rcon_socket_1.mutex_players_requests);
-		rcon_socket_1.player_requests.push_back(unique_id);
+		std::lock_guard<std::mutex> lock(rcon_socket.mutex_players_requests);
+		rcon_socket.player_requests.push_back(unique_id);
 	}
 	delete []rcon_packet.cmd;
 }

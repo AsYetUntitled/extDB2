@@ -54,7 +54,6 @@ class Rcon
 		void getPlayers(std::string &command, unsigned int &unique_id);
 
 	private:
-		//boost::asio::deadline_timer     timer;
 		std::shared_ptr<spdlog::logger> logger;
 
 		// Inputs are strings + Outputs are strings.  Info is not kept for long, so no point converting to a different datatype just to convert back to string for armaserver
@@ -74,7 +73,6 @@ class Rcon
 			char *cmd;
 			char cmd_char_workaround;
 			unsigned char packetCode;
-			//unsigned char sequence_number;
 		};
 
 		struct RconRequest
@@ -107,42 +105,42 @@ class Rcon
 			//Player Requests
 			std::vector<unsigned int> player_requests;
 			std::mutex mutex_players_requests;
+
+			boost::crc_32_type keep_alive_crc32;
 		};
-
-
-		RconSocket rcon_socket_1;
+		RconSocket rcon_socket;
 
 		char *rcon_password;
 		
 
 		// Functions
-		void connect(RconSocket &rcon_socket);
+		void connect();
 
-		void closeSocket(RconSocket &rcon_socket, const boost::system::error_code& error);
-		void startReceive(RconSocket &rcon_socket);
+		void closeSocket(const boost::system::error_code& error);
+		void startReceive();
 
-		void timerKeepAlive(RconSocket &rcon_socket, const size_t delay);
-		void createKeepAlive(RconSocket &rcon_socket, const boost::system::error_code& e);
+		void timerKeepAlive(const size_t delay);
+		void createKeepAlive(const boost::system::error_code& e);
 
-		void timerSocketClose(RconSocket &rcon_socket);
+		void timerSocketClose();
 
-		void sendPacket(RconSocket &rcon_socket, RconPacket &rcon_packet);
-		void extractData(RconSocket &rcon_socket, std::size_t &bytes_received, int pos, std::string &result);
+		void sendPacket(RconPacket &rcon_packet);
+		void extractData(std::size_t &bytes_received, int pos, std::string &result);
 
 		//unsigned char getSequenceNum(RconSocket &rcon_socket);
 		//unsigned char resetSequenceNum(RconSocket &rcon_socket);
 
-		void connectionHandler(RconSocket &rcon_socket, const boost::system::error_code& error);
-		void handleReceive(RconSocket &rcon_socket, const boost::system::error_code& error, std::size_t bytes_received);
+		void connectionHandler(const boost::system::error_code& error);
+		void handleReceive(const boost::system::error_code& error, std::size_t bytes_received);
 		void handleSent(std::shared_ptr<std::string> packet, const boost::system::error_code &error, std::size_t bytes_transferred);
 
-		void loginResponse(RconSocket &rcon_socket);
-		void serverResponse(RconSocket &rcon_socket, std::size_t &bytes_received);
+		void loginResponse();
+		void serverResponse(std::size_t &bytes_received);
 
-		void processMessage(RconSocket &rcon_socket, unsigned char &sequence_number, std::string &message);
-		bool processMessageMission(RconSocket &rcon_socket, std::string &message);
-		bool processMessagePlayers(RconSocket &rcon_socket, std::string &message);
-		void chatMessage(RconSocket &rcon_socket, std::size_t &bytes_received);
+		void processMessage(unsigned char &sequence_number, std::string &message);
+		bool processMessageMission(std::string &message);
+		bool processMessagePlayers(std::string &message);
+		void chatMessage(std::size_t &bytes_received);
 
 		#ifndef RCON_APP
 			AbstractExt *extension_ptr;
