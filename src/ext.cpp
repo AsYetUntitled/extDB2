@@ -328,6 +328,7 @@ Ext::Ext(std::string dll_path, std::unordered_map<std::string, std::string> opti
 
  			// Initialize so have atomic setup correctly
  			rcon.reset(new Rcon(io_service, logger));
+ 			rcon->extInit(this);
 			remote_server.init(this);
 
 			// Initialize so have atomic setup correctly + Setup VAC Ban Logger
@@ -359,8 +360,16 @@ void Ext::stop()
 	#endif
 	logger->info("extDB2: Stopping ...");
 	io_work_ptr.reset();
-	//io_service.stop();
+	logger->info("extDB2: IO Worker Killed");
+	if (extDB_connectors_info.rcon)
+	{
+		rcon->disconnect();
+		logger->info("extDB2: Rcon Stopped");
+	}
 	threads.join_all();
+	logger->info("extDB2: Threads Stopped");
+	io_service.stop();
+	logger->info("extDB2: IO Service Stopped");
 	if (extDB_connectors_info.mysql)
 	{
 		//Poco::Data::MySQL::Connector::unregisterConnector();
@@ -368,10 +377,6 @@ void Ext::stop()
 	if (extDB_connectors_info.sqlite)
 	{
 		//Poco::Data::SQLite::Connector::unregisterConnector();
-	}
-	if (extDB_connectors_info.rcon)
-	{
-		rcon->disconnect();
 	}
 }
 
@@ -460,9 +465,17 @@ void Ext::connectRemote(char *output, const int &output_size, const std::string 
 }
 
 
-void Ext::connectRcon(char *output, const int &output_size, const std::string &rcon_conf)
+void Ext::connectRcon(char *output, const int &output_size, const std::string &rcon_conf, std::string player_info_returned)
 // Start RCon
 {
+	if (boost::iequals(player_info_returned, "FULL") == 1)
+	{
+		player_info_returned = "FULL";
+	}
+	else
+	{
+		player_info_returned = "PARTIAL";
+	}
 	if (extDB_connectors_info.rcon)
 	{
 		std::strcpy(output, ("[0,\"Rcon is Already Running\"]"));
@@ -471,7 +484,7 @@ void Ext::connectRcon(char *output, const int &output_size, const std::string &r
 	{
 		if (pConf->hasOption(rcon_conf + ".Port"))
 		{
-			rcon->start(pConf->getString((rcon_conf + ".IP"), "127.0.0.1"), pConf->getInt((rcon_conf + ".Port"), 2302), pConf->getString((rcon_conf + ".Password"), "password"));
+			rcon->start(pConf->getString((rcon_conf + ".IP"), "127.0.0.1"), pConf->getInt((rcon_conf + ".Port"), 2302), pConf->getString((rcon_conf + ".Password"), "password"), player_info_returned);
 			std::strcpy(output, "[1]");
 			extDB_connectors_info.rcon = true;
 		}
@@ -1204,7 +1217,7 @@ void Ext::callExtension(char *output, const int &output_size, const char *functi
 								// RCON
 								if (tokens[1] == "START_RCON")
 								{
-									connectRcon(output, output_size, tokens[2]);
+									connectRcon(output, output_size, tokens[2], std::string("PARTIAL"));
 								}
 								else if (tokens[1] == "START_REMOTE")
 								{
@@ -1230,6 +1243,10 @@ void Ext::callExtension(char *output, const int &output_size, const char *functi
 								else if (tokens[1] == "ADD_PROTOCOL")
 								{
 									addProtocol(output, output_size, "", tokens[2], tokens[3], ""); // ADD No Options
+								}
+								else if (tokens[1] == "START_RCON")
+								{
+									connectRcon(output, output_size, tokens[2], tokens[3]);
 								}
 								else
 								{

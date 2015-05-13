@@ -94,7 +94,7 @@ class Ext: public AbstractExt
 		#endif
 
 		// RCon
-		void connectRcon(char *output, const int &output_size, const std::string &rcon_conf);
+		void connectRcon(char *output, const int &output_size, const std::string &rcon_conf, std::string player_info_returned);
 
 		// Remote
 		void connectRemote(char *output, const int &output_size, const std::string &remote_conf);
