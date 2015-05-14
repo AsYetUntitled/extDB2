@@ -33,6 +33,8 @@ along with this program. If not, see <http://www.gnu.org/licenses/>.
 #include <Poco/Data/SQLite/Connector.h>
 #include <Poco/Data/SQLite/SQLiteException.h>
 
+#include <Poco/DateTimeFormat.h>
+#include <Poco/DateTimeParser.h>
 #include <Poco/StringTokenizer.h>
 #include <Poco/Util/AbstractConfiguration.h>
 #include <Poco/Util/IniFileConfiguration.h>
@@ -304,6 +306,10 @@ bool SQL_CUSTOM_V2::init(AbstractExt *extension, const std::string &database_id,
 									else if (boost::iequals(options_tokens[x], std::string("Vac_SteamID")) == 1)
 									{
 										outputs_options.vac_steamID = true;
+									}
+									else if (boost::iequals(options_tokens[x], std::string("DateTime_ISO8601")) == 1)
+									{
+										outputs_options.datetime_iso8601 = true;
 									}
 									else
 									{
@@ -591,6 +597,25 @@ void SQL_CUSTOM_V2::getResult(std::string &input_str, Custom_Call_UnorderedMap::
 									boost::replace_all(temp_str, "\"", "\"\"");
 									boost::replace_all(temp_str, "'", "''");
 									temp_str = "\"" + temp_str + "\"";
+								}
+							}
+							// DateTime_ISO8601
+							else if (custom_calls_itr->second.sql_outputs_options[col].datetime_iso8601)
+							{
+								if (temp_str.empty())
+								{
+									temp_str = "[]";
+								}
+								else
+								{
+									int tzd = 0;
+									Poco::DateTime dt = Poco::DateTimeParser::parse(Poco::DateTimeFormat::ISO8601_FRAC_FORMAT, temp_str, tzd);
+									temp_str = "[" + Poco::NumberFormatter::format(dt.year()) + ","
+										+ Poco::NumberFormatter::format(dt.month()) + ","
+										+ Poco::NumberFormatter::format(dt.day()) + ","
+										+ Poco::NumberFormatter::format(dt.hour()) + ","
+										+ Poco::NumberFormatter::format(dt.minute()) + ","
+										+ Poco::NumberFormatter::format(dt.second()) + "]";
 								}
 							}
 

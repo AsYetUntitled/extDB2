@@ -59,6 +59,8 @@ class SQL_CUSTOM_V2: public AbstractProtocol
 			bool string = false;
 			bool string_escape_quotes = false;
 
+			bool datetime_iso8601 = false;
+
 			bool strip = false;
 		};
 		

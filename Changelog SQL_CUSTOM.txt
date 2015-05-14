@@ -19,6 +19,10 @@ Versions
 		This will escape the quotations (just like String_Escape_Quotes) before running a sanitize check.
 		Useful for when storing strings in raw form and are retrieving via String_Escape_Quotes later on. e.g playernames
 
+	Added: DateTime_ISO8601 (Output Only Option)
+		Used to convert ISO8601 Format i.e "2015-05-13T20:16:24Z" to arma array [Year,Month,Day,Hour,Minute,Second] or [] for Null Entry
+
+
 	Removed Vac_BeGUID  Why the hell did i think you could query Steam Servers with BEGuid
 
 
