@@ -482,8 +482,6 @@ void Ext::connectRcon(char *output, const int &output_size, const std::string &r
 	{
 		if (pConf->hasOption(rcon_conf + ".Port"))
 		{
-			bool enable_check_playername = false;
-
 			std::vector<std::string> bad_playername_strings; 
 			bad_playername_strings.push_back(":");
 
@@ -491,7 +489,8 @@ void Ext::connectRcon(char *output, const int &output_size, const std::string &r
 
 			std::vector<std::string> regrex_rules;
 
-			if (pConf->getBool((rcon_conf + ".BadPlayerNameChecks"), false))
+			bool enable_check_playername = pConf->getBool((rcon_conf + ".BadPlayerNameChecks"), false);
+			if (enable_check_playername)
 			{
 				bad_playername_kick_message = pConf->getString(((rcon_conf) + ".BadPlayerNameKickMessage"), "");
 

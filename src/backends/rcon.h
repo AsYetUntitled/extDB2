@@ -55,7 +55,7 @@ class Rcon
 		void disconnect();
 		bool status();
 
-		void sendCommand(std::string &command);
+		void sendCommand(std::string command);
 		void getMissions(std::string &command, unsigned int &unique_id);
 		void getPlayers(std::string &command, unsigned int &unique_id);
 

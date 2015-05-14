@@ -213,6 +213,9 @@ void Rcon::loginResponse()
 
 		logger->info("Rcon: Login Success");
 		timerKeepAlive(30);
+		unsigned int unique_id = 1;
+		std::string command = "getplayers";
+		getPlayers(command, unique_id);
 		// TODO Send Command Players so it checks for bad playernames
 	}
 	else
@@ -405,14 +408,15 @@ void Rcon::processMessagePlayers(Poco::StringTokenizer &tokens)
 			{
 				player_data.lobby = "false";
 			}
-			info_vector.push_back(std::move(player_data));
 
+			logger->info("Rcon: check_playername: {0}", bad_playernames.check_playername);
 			if (bad_playernames.check_playername)
 			{
 				bool kicked = false;
 				for (auto &bad_string : bad_playernames.bad_strings)
 				{
-					if (boost::algorithm::ifind_first(player_data.player_name, bad_string).empty())
+					logger->info("Rcon: checking string: {0}", bad_string);
+					if (!(boost::algorithm::ifind_first(player_data.player_name, bad_string).empty()))
 					{
 						kicked = true;
 						sendCommand("kick " + player_data.number + " " + bad_playernames.kick_message);
@@ -424,6 +428,7 @@ void Rcon::processMessagePlayers(Poco::StringTokenizer &tokens)
 				{
 					for (auto &bad_regex : bad_playernames.bad_regexs)
 					{
+						logger->info("Rcon: checking string: {0}", bad_regex);
 						std::regex expression(bad_regex);
 						if (std::regex_search(player_data.player_name, expression))
 						{
@@ -434,6 +439,7 @@ void Rcon::processMessagePlayers(Poco::StringTokenizer &tokens)
 					}
 				}
 			}
+			info_vector.push_back(std::move(player_data));
 		}
 		else
 		{
@@ -531,7 +537,7 @@ void Rcon::chatMessage(std::size_t &bytes_received)
 				bool kicked = false;
 				for (auto &bad_string : bad_playernames.bad_strings)
 				{
-					if (boost::algorithm::ifind_first(player_name, bad_string).empty())
+					if (!(boost::algorithm::ifind_first(player_name, bad_string).empty()))
 					{
 						kicked = true;
 						sendCommand("kick " + player_number + " " + bad_playernames.kick_message);
@@ -702,7 +708,7 @@ void Rcon::handleSent(std::shared_ptr<std::string> packet, const boost::system::
 }
 
 
-void Rcon::sendCommand(std::string &command)
+void Rcon::sendCommand(std::string command)
 {
 	logger->info("Rcon: sendCommand: {0}", command);
 
