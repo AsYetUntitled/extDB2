@@ -18,13 +18,10 @@ http://www.exilemod.com/   (Coming Soon)
  - ASync + Sync Support
  - Unique ID for fetching Results
  - Multi-Part Messages
-
  - Arma2 Legacy randomize configfile support  
  - Commandline Arguments Support
- 
  - Rcon Support + Fetching missions / players from Rcon
  - Steam VAC + Friends Queries  
-
  - RemoteTCP Support to send/receive text from extDB2  
 
 
@@ -32,22 +29,17 @@ http://www.exilemod.com/   (Coming Soon)
 
  - MySQL
  - SQLite
-
  - HTTP
  
 
 #### Protocols
 
  - HTTP_RAW (Support for Auth, GET, POST)
-
  - SQL_CUSTOM    (Ability to define sql prepared statements in a .ini file)
  - SQL_CUSTOM_V2 (Ability to define sql prepared statements in a .ini file)
-
  - SQL_RAW
-
  - LOG (Custom Logfiles)
  - MISC (has beguid, crc32, md4/5, time + time offset)
-
  - RCON (Ability to whitelist allowed commands)
  - STEAM    (Ability to Query Steam for VAC Bans / Friend Info)
  - STEAM_V2 (Ability to Query Steam for VAC Bans / Friend Info)
