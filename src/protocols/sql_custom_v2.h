@@ -88,8 +88,8 @@ class SQL_CUSTOM_V2: public AbstractProtocol
 
 		Custom_Call_UnorderedMap custom_calls;
 
-		void callPreparedStatement(std::string &input_str, std::string &call_name, std::unordered_map<std::string, customCall>::const_iterator &custom_protocol_itr, std::vector< std::vector< std::string > > &all_processed_inputs, bool &status, std::string &result);
-		void callPreparedStatement(std::string &input_str, std::string &call_name, std::unordered_map<std::string, customCall>::const_iterator &custom_protocol_itr, std::vector< std::vector< std::string > > &all_processed_inputs, std::vector<std::string> &custom_inputs, bool &status, std::string &result);
+		void callPreparedStatement(std::string &input_str, std::string call_name, std::unordered_map<std::string, customCall>::const_iterator custom_protocol_itr, std::vector< std::vector< std::string > > &all_processed_inputs, bool &status, std::string &result);
+		void callPreparedStatement(std::string &input_str, std::string call_name, std::unordered_map<std::string, customCall>::const_iterator custom_protocol_itr, std::vector< std::vector< std::string > > &all_processed_inputs, std::vector<std::string> &custom_inputs, bool &status, std::string &result);
 		void executeSQL(Poco::Data::Statement &sql_statement, std::string &result, bool &status);
 
 		void getBEGUID(std::string &input_str, std::string &result);

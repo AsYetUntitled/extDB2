@@ -793,7 +793,7 @@ void SQL_CUSTOM::executeSQL(Poco::Data::Statement &sql_statement, std::string &r
 }
 
 
-void SQL_CUSTOM::callPreparedStatement(std::string &input_str, std::string &call_name, Custom_Call_UnorderedMap::const_iterator &custom_calls_itr, std::vector< std::vector< std::string > > &all_processed_inputs, bool &status, std::string &result)
+void SQL_CUSTOM::callPreparedStatement(std::string &input_str, std::string &call_name, Custom_Call_UnorderedMap::const_iterator custom_calls_itr, std::vector< std::vector< std::string > > &all_processed_inputs, bool &status, std::string &result)
 {
 	Poco::Data::SessionPool::SessionDataPtr session_data_ptr;
 	try
@@ -900,7 +900,7 @@ void SQL_CUSTOM::callPreparedStatement(std::string &input_str, std::string &call
 }
 
 
-void SQL_CUSTOM::callPreparedStatement(std::string &input_str, std::string &call_name, Custom_Call_UnorderedMap::const_iterator &custom_calls_itr, std::vector< std::vector<std::string> > &all_processed_inputs, std::vector<std::string> &custom_inputs, bool &status, std::string &result)
+void SQL_CUSTOM::callPreparedStatement(std::string &input_str, std::string &call_name, Custom_Call_UnorderedMap::const_iterator custom_calls_itr, std::vector< std::vector<std::string> > &all_processed_inputs, std::vector<std::string> &custom_inputs, bool &status, std::string &result)
 {
 	Poco::Data::SessionPool::SessionDataPtr session_data_ptr;
 	try
@@ -908,7 +908,6 @@ void SQL_CUSTOM::callPreparedStatement(std::string &input_str, std::string &call
 		Poco::Data::Session session = extension_ptr->getDBSession_mutexlock(*database_ptr, session_data_ptr);
 
 		std::string sql_str;
-
 		int i = -1;
 		for (std::vector< std::string >::const_iterator it_sql_prepared_statements_vector = custom_calls_itr->second.sql_prepared_statements.begin(); it_sql_prepared_statements_vector != custom_calls_itr->second.sql_prepared_statements.end(); ++it_sql_prepared_statements_vector)
 		{
