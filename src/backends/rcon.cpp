@@ -824,7 +824,7 @@ void Rcon::getPlayers(unsigned int &unique_id)
 		int port = options["port"].as<int>();
 		std::string password = options["password"].as<std::string>();
 
-		rcon.start(address, port, password, "FULL", std::vector<std::string>(), std::string(), false);
+		rcon.start(address, port, password, "FULL", std::vector<std::string>(), std::vector<std::string>(), std::string(), false);
 		
 		if (options.count("file"))
 		{
