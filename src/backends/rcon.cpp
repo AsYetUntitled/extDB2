@@ -215,7 +215,7 @@ void Rcon::loginResponse()
 		timerKeepAlive(30);
 		unsigned int unique_id = 1;
 		getPlayers(unique_id);
-		sendCommand("reloadBans");
+		sendCommand("writeBans");
 		// TODO Send Command Players so it checks for bad playernames
 	}
 	else
@@ -231,7 +231,6 @@ void Rcon::serverResponse(std::size_t &bytes_received)
 {
 	// Rcon Server Ack Message Received
 	unsigned char sequenceNum = rcon_socket.recv_buffer[8];
-	logger->warn("Rcon: ACK: {0}", sequenceNum);	
 
 	if (!((rcon_socket.recv_buffer[9] == 0x00) && (bytes_received > 9)))
 	{
