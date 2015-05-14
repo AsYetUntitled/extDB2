@@ -545,14 +545,14 @@ void Ext::rconCommand(std::string input_str)
 void Ext::rconMissions(std::string input_str, unsigned int unique_id)
 // Adds RCon Command to be sent to Server.
 {
-	rcon->getMissions(input_str, unique_id);
+	rcon->getMissions(unique_id);
 }
 
 
 void Ext::rconPlayers(std::string input_str, unsigned int unique_id)
 // Adds RCon Command to be sent to Server.
 {
-	rcon->getPlayers(input_str, unique_id);
+	rcon->getPlayers(unique_id);
 }
 
 

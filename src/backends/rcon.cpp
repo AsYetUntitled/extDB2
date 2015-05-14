@@ -214,8 +214,8 @@ void Rcon::loginResponse()
 		logger->info("Rcon: Login Success");
 		timerKeepAlive(30);
 		unsigned int unique_id = 1;
-		std::string command = "getplayers";
-		getPlayers(command, unique_id);
+		getPlayers(unique_id);
+		sendCommand("reloadBans");
 		// TODO Send Command Players so it checks for bad playernames
 	}
 	else
@@ -357,7 +357,10 @@ void Rcon::processMessageMission(Poco::StringTokenizer &tokens)
 	#ifndef RCON_APP
 		for (unsigned int unique_id: unique_id_saves)
 		{
-			extension_ptr->saveResult_mutexlock(unique_id, result_data);
+			if (unique_id != 1)
+			{
+				extension_ptr->saveResult_mutexlock(unique_id, result_data);
+			}
 		}
 	#endif
 }
@@ -501,7 +504,10 @@ void Rcon::processMessagePlayers(Poco::StringTokenizer &tokens)
 	#ifndef RCON_APP
 		for (unsigned int unique_id: unique_id_saves)
 		{
-			extension_ptr->saveResult_mutexlock(unique_id, result_data);
+			if (unique_id != 1)
+			{
+				extension_ptr->saveResult_mutexlock(unique_id, result_data);
+			}
 		}
 	#endif
 }
@@ -528,9 +534,9 @@ void Rcon::chatMessage(std::size_t &bytes_received)
 			const std::string::size_type found = result.find(" ");
 			std::string player_number = result.substr(0, (found - 2));
 			logger->info("DEBUG Player Number: {0}", player_number);
-			const std::string::size_type found2 = result.find("(Lobby)");
+			const std::string::size_type found2 = result.find("(");
 			std::string player_name = result.substr(found, found2);
-			logger->info("DEBUG Player Name: {0}", player_name);
+			logger->info("DEBUG Player Name: {0}.", player_name);
 
 			if (bad_playernames.check_playername)
 			{
@@ -723,9 +729,10 @@ void Rcon::sendCommand(std::string command)
 }
 
 
-void Rcon::getMissions(std::string &command, unsigned int &unique_id)
+void Rcon::getMissions(unsigned int &unique_id)
 {
-	logger->info("Rcon: getMissions: {0}", command);
+	std::string command = "missions";
+	logger->info("Rcon: getMissions");
 
 	RconPacket rcon_packet;
 	char *cmd = new char[command.size() + 1];
@@ -742,9 +749,10 @@ void Rcon::getMissions(std::string &command, unsigned int &unique_id)
 }
 
 
-void Rcon::getPlayers(std::string &command, unsigned int &unique_id)
+void Rcon::getPlayers(unsigned int &unique_id)
 {
-	logger->info("Rcon: getPlayers: {0}", command);
+	std::string command = "players";
+	logger->info("Rcon: getPlayers");
 
 	RconPacket rcon_packet;
 	char *cmd = new char[command.size() + 1];
@@ -876,11 +884,11 @@ void Rcon::getPlayers(std::string &command, unsigned int &unique_id)
 				}
 				else if (input_str == "players")
 				{
-					rcon.getPlayers(input_str, unique_id);	
+					rcon.getPlayers(unique_id);	
 				}
 				else if (input_str == "missions")
 				{
-					rcon.getMissions(input_str, unique_id);	
+					rcon.getMissions(unique_id);	
 				}
 				else
 				{

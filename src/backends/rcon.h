@@ -56,8 +56,8 @@ class Rcon
 		bool status();
 
 		void sendCommand(std::string command);
-		void getMissions(std::string &command, unsigned int &unique_id);
-		void getPlayers(std::string &command, unsigned int &unique_id);
+		void getMissions(unsigned int &unique_id);
+		void getPlayers(unsigned int &unique_id);
 
 	private:
 
