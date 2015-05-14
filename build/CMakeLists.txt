@@ -36,12 +36,10 @@ SET(SOURCES
 	../src/sanitize.cpp
 	../src/backends/http.cpp
 	../src/backends/rcon.cpp
-	../src/backends/redis.cpp
 	../src/backends/remoteserver.cpp
 	../src/backends/steam.cpp
 	../src/protocols/abstract_protocol.cpp
 	../src/protocols/http_raw.cpp
-	../src/protocols/redis_raw.cpp
 	../src/protocols/sql_custom.cpp
 	../src/protocols/sql_custom_v2.cpp
 	../src/protocols/sql_raw.cpp
