@@ -26,6 +26,7 @@ along with this program. If not, see <http://www.gnu.org/licenses/>.
 #include <cstring>
 #include <iomanip>
 #include <iostream>
+#include <regex>
 #include <sstream>
 #include <thread>
 #include <unordered_map>
@@ -40,7 +41,8 @@ along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 #include <boost/algorithm/string/predicate.hpp>
 #include <boost/algorithm/string/replace.hpp>
-#include <boost/asio/placeholders.hpp>
+#include <boost/asio.hpp>
+#include <boost/bind.hpp>
 #include <boost/crc.hpp>
 
 #include <Poco/AbstractCache.h>
@@ -93,51 +95,18 @@ void Rcon::timerKeepAlive(const size_t delay)
 #endif
 
 
-/*
-unsigned char Rcon::getSequenceNum(RconSocket &rcon_socket)
+void Rcon::start(std::string address, unsigned int port, std::string password, std::string player_info_returned, 
+				std::vector<std::string> bad_playername_strings, std::vector<std::string> bad_playername_regexs, 
+				std::string bad_playername_kick_message, bool enable_check_playername)
 {
-	std::lock_guard<std::mutex> lock(rcon_socket.mutex_sequence_num_counter);
-	if (rcon_socket.sequence_num_counter > 200)
-	{
-		if (rcon_socket.sequence_num_counter < 255)
-		{
-			return (rcon_socket.sequence_num_counter)++;
-		}
+	bad_playernames.bad_strings = bad_playername_strings;
+	bad_playernames.bad_regexs = bad_playername_regexs;
 
-		if (*(rcon_socket.rcon_run_flag))
-		{
-			*(rcon_socket.rcon_run_flag) = false;
-			timerSocketClose(rcon_socket);
-		}
-		
-		if (rcon_socket.id == 1)
-		{
-			connect(rcon_socket_1);
-		}
-		else
-		{
-			connect(rcon_socket_2);
-		}
-	}
-	else
-	{
-		return (rcon_socket.sequence_num_counter)++;
-	}
-	return rcon_socket.sequence_num_counter;
-}
+	bad_playernames.kick_message = bad_playername_kick_message;
+
+	bad_playernames.check_playername = enable_check_playername;
 
 
-unsigned char Rcon::resetSequenceNum(RconSocket &rcon_socket)
-{
-	std::lock_guard<std::mutex> lock(rcon_socket.mutex_sequence_num_counter);
-	rcon_socket.sequence_num_counter = 0;
-	return rcon_socket.sequence_num_counter;
-}
-*/
-
-
-void Rcon::start(std::string address, unsigned int port, std::string password, std::string player_info_returned)
-{
 	player_info_returned_mode = player_info_returned;
 	boost::asio::ip::udp::endpoint endpoint(boost::asio::ip::address::from_string(address), port);
 	rcon_socket.socket->async_connect(endpoint, boost::bind(&Rcon::connectionHandler, this, boost::asio::placeholders::error));
@@ -180,13 +149,6 @@ void Rcon::connect()
 
 void Rcon::disconnect()
 {
-	/*
-	if (*(rcon_socket.rcon_run_flag))
-	{
-		*(rcon_socket.rcon_run_flag) = false;			
-		timerSocketClose();
-	}
-	*/
 	timerKeepAlive(0);
 	rcon_socket.socket->close();
 }
@@ -251,6 +213,7 @@ void Rcon::loginResponse()
 
 		logger->info("Rcon: Login Success");
 		timerKeepAlive(30);
+		// TODO Send Command Players so it checks for bad playernames
 	}
 	else
 	{
@@ -442,8 +405,35 @@ void Rcon::processMessagePlayers(Poco::StringTokenizer &tokens)
 			{
 				player_data.lobby = "false";
 			}
-
 			info_vector.push_back(std::move(player_data));
+
+			if (bad_playernames.check_playername)
+			{
+				bool kicked = false;
+				for (auto &bad_string : bad_playernames.bad_strings)
+				{
+					if (boost::algorithm::ifind_first(player_data.player_name, bad_string).empty())
+					{
+						kicked = true;
+						sendCommand("kick " + player_data.number + " " + bad_playernames.kick_message);
+						logger->info("RCon: Kicked Playername: {0} String: {1}", player_data.player_name, bad_string);
+						break;
+					}
+				}
+				if (!kicked)
+				{
+					for (auto &bad_regex : bad_playernames.bad_regexs)
+					{
+						std::regex expression(bad_regex);
+						if (std::regex_search(player_data.player_name, expression))
+						{
+							sendCommand("kick " + player_data.number + " " + bad_playernames.kick_message);
+							logger->info("RCon: Kicked Playername: {0} Regrex: {1}", player_data.player_name, bad_regex);
+							break;
+						}
+					}
+				}
+			}
 		}
 		else
 		{
@@ -523,6 +513,48 @@ void Rcon::chatMessage(std::size_t &bytes_received)
 	rcon_packet.packetCode = 0x02;
 	rcon_packet.cmd_char_workaround = rcon_socket.recv_buffer[8];
 	sendPacket(rcon_packet);
+
+	if (boost::algorithm::starts_with(result, "Player #"))
+	{
+		if (boost::algorithm::ends_with(result, "connected"))
+		{
+			result = result.substr(8);
+			const std::string::size_type found = result.find(" ");
+			std::string player_number = result.substr(0, (found - 2));
+			logger->info("DEBUG Player Number: {0}", player_number);
+			const std::string::size_type found2 = result.find("(Lobby)");
+			std::string player_name = result.substr(found, found2);
+			logger->info("DEBUG Player Name: {0}", player_name);
+
+			if (bad_playernames.check_playername)
+			{
+				bool kicked = false;
+				for (auto &bad_string : bad_playernames.bad_strings)
+				{
+					if (boost::algorithm::ifind_first(player_name, bad_string).empty())
+					{
+						kicked = true;
+						sendCommand("kick " + player_number + " " + bad_playernames.kick_message);
+						logger->info("RCon: Kicked Playername: {0} String: {1}", player_name, bad_string);
+						break;
+					}
+				}
+				if (!kicked)
+				{
+					for (auto &bad_regex : bad_playernames.bad_regexs)
+					{
+						std::regex expression(bad_regex);
+						if(std::regex_search(player_name, expression))
+						{
+							sendCommand("kick " + player_number + " " + bad_playernames.kick_message);
+							logger->info("RCon: Kicked Playername: {0} Regrex: {1}", player_name, bad_regex);
+							break;
+						}
+					}
+				}
+			}
+		}
+	}
 }
 
 
@@ -736,7 +768,6 @@ void Rcon::getPlayers(std::string &command, unsigned int &unique_id)
 			("port", boost::program_options::value<int>()->required(), "Port for Server")
 			("password", boost::program_options::value<std::string>()->required(), "Rcon Password for Server")
 			("file", boost::program_options::value<std::string>(), "File to run i.e rcon restart warnings");
-
 		boost::program_options::variables_map options;
 
 		try 
@@ -780,7 +811,7 @@ void Rcon::getPlayers(std::string &command, unsigned int &unique_id)
 		int port = options["port"].as<int>();
 		std::string password = options["password"].as<std::string>();
 
-		rcon.start(address, port, password, "FULL");
+		rcon.start(address, port, password, "FULL", std::vector<std::string>(), std::string(), false);
 		
 		if (options.count("file"))
 		{

@@ -26,7 +26,8 @@ along with this program. If not, see <http://www.gnu.org/licenses/>.
 #include <memory>
 #include <thread>
 
-#include <boost/asio/ip/udp.hpp>
+#include <boost/array.hpp>
+#include <boost/asio.hpp>
 #include <boost/crc.hpp>
 
 #include <Poco/ExpireCache.h>
@@ -46,7 +47,11 @@ class Rcon
 			void extInit(AbstractExt *extension);
 		#endif
 
-		void start(std::string address, unsigned int port, std::string password, std::string player_info_returned);
+		void start(std::string address, unsigned int port, std::string password, std::string player_info_returned, 
+					std::vector<std::string> bad_playername_strings, std::vector<std::string> bad_playername_regexs,
+					std::string bad_playername_kick_message, 
+					bool enable_check_playername);
+
 		void disconnect();
 		bool status();
 
@@ -55,6 +60,7 @@ class Rcon
 		void getPlayers(std::string &command, unsigned int &unique_id);
 
 	private:
+
 		boost::asio::io_service *io_service_ptr;
 		std::string player_info_returned_mode;
 		std::shared_ptr<spdlog::logger> logger;
@@ -84,6 +90,15 @@ class Rcon
 			unsigned int unique_id;
 			int request_type;
 		};
+
+		struct BadPlayerName
+		{
+			std::vector<std::string> bad_strings;
+			std::vector<std::string> bad_regexs;
+			std::string kick_message;
+			bool check_playername = false;
+		};
+		BadPlayerName bad_playernames;
 
 		typedef std::pair< int, std::unordered_map < int, std::string > > RconMultiPartMsg;
 		struct RconSocket
@@ -124,9 +139,6 @@ class Rcon
 
 		void sendPacket(RconPacket &rcon_packet);
 		void extractData(std::size_t &bytes_received, int pos, std::string &result);
-
-		//unsigned char getSequenceNum(RconSocket &rcon_socket);
-		//unsigned char resetSequenceNum(RconSocket &rcon_socket);
 
 		void connectionHandler(const boost::system::error_code& error);
 		void handleReceive(const boost::system::error_code& error, std::size_t bytes_received);

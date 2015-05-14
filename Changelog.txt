@@ -1,4 +1,17 @@
 -------------------------------------------------------------------------------
+55 :
+	ADDED: Rcon Player kicks for bad characters/strings (regex rules)
+
+	ADDED: SQL_CUSTOM + SQL_CUSTOM_V2 New String + Sanitize Options
+	FIXED: Multiple Fixes for SQL_CUSTOM + SQL_CUSTOM_V2, including Steam Checks
+
+	REMOVED: SQL_CUSTOM Options Vac_BeGUID
+
+	CHANGED: 9:VAR Option now always returns value as a string
+
+	IMPORTANT: Removed Redis Support
+
+-------------------------------------------------------------------------------
 54 :
 	FIXED: SQL_CUSTOM + SQL_CUSTOM Required Version Checks
 	FIXED: SQL_CUSTOM + SQL_CUSTOM_V2 Handling of Null Values in Database

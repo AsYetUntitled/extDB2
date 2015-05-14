@@ -3,7 +3,26 @@ This just lists info on changes when SQL_CUSTOM version is bumped.
 Looking for more info on SQL_CUSTOM check out https://github.com/Torndeco/extDB2/wiki/Calls:-Protocol--SQL_CUSTOM
 
 Versions
+---------------------------------------------------------------------------------------------------
+9->10
+	Added: String_Escape_Quotes
+		Escapes " -> ""  ,   ' -> ''
+		Added " to either end of string
+		Example  aaa'bbb"dsadsd"  -> "aaa''bbb""dsadsd"""   so it will call compile correctly
+		Useful for when storing + retreiving playernames from Database
 
+	Added: Check_Add_Quotes (Input Only Option)
+		This just adds "<value>" before running a sanitize check.
+		Useful for when storing a string in database + you like to a check it, but you don't wont to store quotes wrapping the string.
+
+	Added: Check_Add_Escape_Quotes (Input Only Option)
+		This will escape the quotations (just like String_Escape_Quotes) before running a sanitize check.
+		Useful for when storing strings in raw form and are retrieving via String_Escape_Quotes later on. e.g playernames
+
+	Removed Vac_BeGUID  Why the hell did i think you could query Steam Servers with BEGuid
+
+
+---------------------------------------------------------------------------------------------------
 8->9 
 	Change "Strip Custom Input Chars" -> "Strip Custom Chars"   
 		Not a Typo, only afew people will have "Strip Custom Input Chars", most should already be using "Strip Custom Chars".

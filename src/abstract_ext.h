@@ -25,16 +25,13 @@ along with this program. If not, see <http://www.gnu.org/licenses/>.
 #include <Poco/Data/SessionPool.h>
 #include <Poco/Util/IniFileConfiguration.h>
 
-#include "backends/redis.h"
-#include "redisclient/redisasyncclient.h"
-
 #include "spdlog/spdlog.h"
 
 
-#define EXTDB_VERSION "54"
-#define EXTDB_CONF_VERSION 3
+#define EXTDB_VERSION "55"
+#define EXTDB_CONF_VERSION 4
 
-class Redis;
+
 
 class AbstractExt
 {
@@ -50,10 +47,6 @@ class AbstractExt
 		{
 			std::string type;
 
-			// Redis
-			std::unique_ptr<RedisAsyncClient> redis_async_client;
-			std::unique_ptr<Redis> redis;
-
 			// SQL Database Session Pool
 			std::unique_ptr<Poco::Data::SessionPool> sql_pool;
 			std::mutex mutex_sql_pool;
@@ -66,7 +59,6 @@ class AbstractExt
 
 			bool mysql=false;
 			bool sqlite=false;
-			bool redis=false;
 
 			bool steam=false;
 			bool rcon=false;

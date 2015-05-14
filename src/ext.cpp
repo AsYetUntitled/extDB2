@@ -57,13 +57,11 @@ along with this program. If not, see <http://www.gnu.org/licenses/>.
 #include "abstract_ext.h"
 #include "backends/http.h"
 #include "backends/rcon.h"
-#include "backends/redis.h"
 #include "backends/remoteserver.h"
 #include "backends/steam.h"
 
 #include "protocols/abstract_protocol.h"
 #include "protocols/http_raw.h"
-#include "protocols/redis_raw.h"
 #include "protocols/sql_custom.h"
 #include "protocols/sql_custom_v2.h"
 #include "protocols/sql_raw.h"
@@ -317,7 +315,7 @@ Ext::Ext(std::string dll_path, std::unordered_map<std::string, std::string> opti
 			}
 
 			// Save -extDB_VAR value for retreiving later
-			extDB_info.var = options["VAR"];
+			extDB_info.var = "\"" + options["VAR"] + "\"";
 
 			// Setup ASIO Worker Pool
 			io_work_ptr.reset(new boost::asio::io_service::work(io_service));
@@ -484,7 +482,49 @@ void Ext::connectRcon(char *output, const int &output_size, const std::string &r
 	{
 		if (pConf->hasOption(rcon_conf + ".Port"))
 		{
-			rcon->start(pConf->getString((rcon_conf + ".IP"), "127.0.0.1"), pConf->getInt((rcon_conf + ".Port"), 2302), pConf->getString((rcon_conf + ".Password"), "password"), player_info_returned);
+			bool enable_check_playername = false;
+
+			std::vector<std::string> bad_playername_strings; 
+			bad_playername_strings.push_back(":");
+
+			std::string bad_playername_kick_message;
+
+			std::vector<std::string> regrex_rules;
+
+			if (pConf->getBool((rcon_conf + ".BadPlayerNameChecks"), false))
+			{
+				bad_playername_kick_message = pConf->getString(((rcon_conf) + ".BadPlayerNameKickMessage"), "");
+
+				std::string temp_str;
+				temp_str = pConf->getString(((rcon_conf) + ".BadPlayerStrings"), "");
+				Poco::StringTokenizer tokens(temp_str, ":", Poco::StringTokenizer::TOK_TRIM);
+				for (auto &token : tokens)
+				{
+					bad_playername_strings.push_back(token);
+				}
+
+				std::string regex_rule_num_str;
+				int regrex_rule_num = 0;
+				while (true)
+				{
+					++regrex_rule_num;
+					regex_rule_num_str = Poco::NumberFormatter::format(regrex_rule_num);
+					if (!(pConf->has(rcon_conf + ".BadPlayerStringsRegrex_" + regex_rule_num_str)))
+					{
+						break;
+					}
+					else
+					{
+						regrex_rules.push_back(pConf->getString(rcon_conf + ".BadPlayerStringsRegrex_" + regex_rule_num_str));
+					}
+				}
+			}
+
+			rcon->start(pConf->getString((rcon_conf + ".IP"), "127.0.0.1"), pConf->getInt((rcon_conf + ".Port"), 2302), 
+						pConf->getString((rcon_conf + ".Password"), "password"), 
+						player_info_returned,
+						bad_playername_strings, regrex_rules, bad_playername_kick_message, enable_check_playername);
+
 			std::strcpy(output, "[1]");
 			extDB_connectors_info.rcon = true;
 		}
@@ -542,35 +582,7 @@ void Ext::connectDatabase(char *output, const int &output_size, const std::strin
 		logger->info("extDB2: Database Type: {0}", database->type);
 
 
-		if (boost::iequals(database->type, "Redis") == 1)
-		{
-			std::condition_variable cnd;
-			std::mutex cnd_mutex;
-			std::unique_lock<std::mutex> cnd_lock(cnd_mutex);
-			bool cnd_bool = false;
-
-			database->redis_async_client.reset(new RedisAsyncClient(io_service));
-			database->redis.reset(new Redis(io_service, *(database->redis_async_client), this));
-			boost::asio::ip::tcp::endpoint endpoint(boost::asio::ip::address::from_string(pConf->getString(database_conf + ".IP")),
-													pConf->getInt(database_conf + ".Port", 6379));
-			database->redis_async_client->connect(endpoint, boost::bind(&Redis::onConnect, *(database->redis), _1, _2, boost::ref(cnd), boost::ref(cnd_mutex), boost::ref(cnd_bool)));
-
-			while (!cnd_bool)
-			{
-				cnd.wait(cnd_lock);
-			}
-
-			if (database->redis_async_client->stateValid())
-			{
-				std::strcpy(output, "[1]");
-			}
-			else
-			{
-				std::strcpy(output, "[0,\"Redis Connection Error\"]");
-				connected = false;
-			}
-		}
-		else if ((boost::iequals(database->type, std::string("MySQL")) == 1) || (boost::iequals(database->type, "SQLite") == 1))
+		if ((boost::iequals(database->type, std::string("MySQL")) == 1) || (boost::iequals(database->type, "SQLite") == 1))
 		{
 			try
 			{
@@ -748,10 +760,6 @@ void Ext::addProtocol(char *output, const int &output_size, const std::string &d
 			if (boost::iequals(protocol, std::string("HTTP_RAW")) == 1)
 			{
 				unordered_map_protocol[protocol_name] = std::unique_ptr<AbstractProtocol> (new HTTP_RAW());
-			}
-			else if (boost::iequals(protocol, std::string("REDIS_RAW")) == 1)
-			{
-				unordered_map_protocol[protocol_name] = std::unique_ptr<AbstractProtocol> (new REDIS_RAW());
 			}
 			else if (boost::iequals(protocol, std::string("SQL_CUSTOM")) == 1)
 			{

@@ -15,41 +15,42 @@ http://www.exilemod.com/   (Coming Soon)
 
 ### Features
 
- - Commandline Arguments Support
- - ASync Support
- - Unique ID for Messages
- - Multi-Part Messages  
- - Rcon Support  
- - Steam VAC + Friends Queries  
- - RemoteTCP Support to send/receive text from extDB2  
+ - ASync + Sync Support
+ - Unique ID for fetching Results
+ - Multi-Part Messages
+
  - Arma2 Legacy randomize configfile support  
+ - Commandline Arguments Support
+ 
+ - Rcon Support + Fetching missions / players from Rcon
+ - Steam VAC + Friends Queries  
+
+ - RemoteTCP Support to send/receive text from extDB2  
 
 
 ### Supported Backends
 
- - HTTP
  - MySQL
  - SQLite
- - Redis
 
+ - HTTP
+ 
 
 #### Protocols
 
  - HTTP_RAW (Support for Auth, GET, POST)
- - REDIS_RAW (Ability to whitelist allowed commands)
+
  - SQL_CUSTOM    (Ability to define sql prepared statements in a .ini file)
  - SQL_CUSTOM_V2 (Ability to define sql prepared statements in a .ini file)
+
  - SQL_RAW
+
  - LOG (Custom Logfiles)
  - MISC (has beguid, crc32, md4/5, time + time offset)
+
  - RCON (Ability to whitelist allowed commands)
  - STEAM    (Ability to Query Steam for VAC Bans / Friend Info)
  - STEAM_V2 (Ability to Query Steam for VAC Bans / Friend Info)
-
-#### WIP
-
- - Improve RCon Code
- - Improve Redis Support i.e exceptional handling + AUTH
 
   
 #### Known Issues

@@ -273,7 +273,11 @@ bool SQL_CUSTOM_V2::init(AbstractExt *extension, const std::string &database_id,
 									{
 										outputs_options.string = true;
 									}
-									else if (boost::iequals(options_tokens[x], std::string("BOOL")) == 1)
+									else if (boost::iequals(options_tokens[x], std::string("String_Escape_Quotes")) == 1)
+									{
+										outputs_options.string_escape_quotes = true;
+									}
+									else if (boost::iequals(options_tokens[x], std::string("Bool")) == 1)
 									{
 										outputs_options.boolean = true;
 									}
@@ -296,10 +300,6 @@ bool SQL_CUSTOM_V2::init(AbstractExt *extension, const std::string &database_id,
 									else if (boost::iequals(options_tokens[x], std::string("NoStrip")) == 1)
 									{
 										outputs_options.strip = false;
-									}
-									else if (boost::iequals(options_tokens[x], std::string("Vac_BeGUID")) == 1)
-									{
-										outputs_options.vac_beguid = true;
 									}
 									else if (boost::iequals(options_tokens[x], std::string("Vac_SteamID")) == 1)
 									{
@@ -363,17 +363,29 @@ bool SQL_CUSTOM_V2::init(AbstractExt *extension, const std::string &database_id,
 								{
 									inputs_options.string = true;
 								}
+								else if (boost::iequals(sub_token_input, std::string("String_Escape_Quotes")) == 1)
+								{
+									inputs_options.string_escape_quotes = true;
+								}
 								else if (boost::iequals(sub_token_input, std::string("BeGUID")) == 1)
 								{
 									inputs_options.beguid = true;
 								}
-								else if (boost::iequals(sub_token_input, std::string("BOOL")) == 1)
+								else if (boost::iequals(sub_token_input, std::string("Bool")) == 1)
 								{
 									inputs_options.boolean = true;
 								}
 								else if (boost::iequals(sub_token_input, std::string("Check")) == 1)
 								{
 									inputs_options.check = true;
+								}
+								else if (boost::iequals(sub_token_input, std::string("Check_Add_Quotes")) == 1)
+								{
+									inputs_options.check_add_quotes = true;
+								}
+								else if (boost::iequals(sub_token_input, std::string("Check_Add_Escape_Quotes")) == 1)
+								{
+									inputs_options.check_add_escape_quotes = true;
 								}
 								else if (boost::iequals(sub_token_input, std::string("NoCheck")) == 1)
 								{
@@ -386,10 +398,6 @@ bool SQL_CUSTOM_V2::init(AbstractExt *extension, const std::string &database_id,
 								else if (boost::iequals(sub_token_input, std::string("NoStrip")) == 1)
 								{
 									inputs_options.strip = false;
-								}
-								else if (boost::iequals(sub_token_input, std::string("Vac_BeGUID")) == 1)
-								{
-									inputs_options.vac_beguid = true;
 								}
 								else if (boost::iequals(sub_token_input, std::string("Vac_SteamID")) == 1)
 								{
@@ -463,7 +471,7 @@ void SQL_CUSTOM_V2::getBEGUID(std::string &input_str, std::string &result)
 }
 
 
-void SQL_CUSTOM_V2::getResult(Custom_Call_UnorderedMap::const_iterator &custom_calls_itr, Poco::Data::Session &session, Poco::Data::Statement &sql_statement, std::string &result, bool &status)
+void SQL_CUSTOM_V2::getResult(std::string &input_str, Custom_Call_UnorderedMap::const_iterator &custom_calls_itr, Poco::Data::Session &session, Poco::Data::Statement &sql_statement, std::string &result, bool &status)
 {
 	try
 	{
@@ -546,9 +554,48 @@ void SQL_CUSTOM_V2::getResult(Custom_Call_UnorderedMap::const_iterator &custom_c
 						}
 						else
 						{
-						// OUTPUT OPTIONS
+							// STEAM ID + QUERYS
+							if (custom_calls_itr->second.sql_outputs_options[col].vac_steamID)
+							{
+								// QUERY STEAM
+								extension_ptr->steamQuery(-1, false, true, temp_str, true);
+							}
+							if (custom_calls_itr->second.sql_outputs_options[col].beguid)
+							{
+								// GENERATE BEGUID
+								getBEGUID(temp_str, temp_str);
+							}
+
+							// STRING
+							if (custom_calls_itr->second.sql_outputs_options[col].string)
+							{
+								if (temp_str.empty())
+								{
+									temp_str = "\"\"";
+								}
+								else
+								{
+									boost::erase_all(temp_str, "\"");
+									boost::erase_all(temp_str, "'");
+									temp_str = "\"" + temp_str + "\"";
+								}
+							}
+							else if (custom_calls_itr->second.sql_outputs_options[col].string_escape_quotes)
+							{
+								if (temp_str.empty())
+								{
+									temp_str = "\"\"";
+								}
+								else
+								{
+									boost::replace_all(temp_str, "\"", "\"\"");
+									boost::replace_all(temp_str, "'", "''");
+									temp_str = "\"" + temp_str + "\"";
+								}
+							}
+
 							// BOOL
-							if (custom_calls_itr->second.sql_outputs_options[col].boolean)
+							else if (custom_calls_itr->second.sql_outputs_options[col].boolean)
 							{
 								if (temp_str.empty())
 								{
@@ -573,50 +620,18 @@ void SQL_CUSTOM_V2::getResult(Custom_Call_UnorderedMap::const_iterator &custom_c
 									}
 								}
 							}
-							else
+							else if (temp_str.empty())
 							{
-								// BEGUID
-								if (custom_calls_itr->second.sql_outputs_options[col].beguid)
-								{
-									getBEGUID(temp_str, temp_str);
-								}
-								if (custom_calls_itr->second.sql_outputs_options[col].vac_steamID)
-								{
-									std::string steamID;
-									getBEGUID(temp_str, steamID);
-									extension_ptr->steamQuery(-1, false, true, steamID, true);
-								}
-								else if (custom_calls_itr->second.sql_outputs_options[col].vac_beguid)
-								{
-									extension_ptr->steamQuery(-1, false, true, temp_str, true);
-								}
+								temp_str = "\"\"";
 							}
 
-							// STRING
-							if (custom_calls_itr->second.sql_outputs_options[col].string)
-							{
-								if (temp_str.empty())
-								{
-									temp_str = "\"\"";
-								}
-								else
-								{
-									boost::erase_all(temp_str, "\"");
-									temp_str = "\"" + temp_str + "\"";
-								}
-							}
-							else
-							{
-								if (temp_str.empty())
-								{
-									temp_str = "\"\"";
-								}
-							}						
 							// SANITIZE CHECK
 							if (custom_calls_itr->second.sql_outputs_options[col].check)
 							{
-								if (!Sqf::check(temp_str))
+								if (!(Sqf::check(temp_str)))
 								{
+									extension_ptr->logger->warn("extDB2: SQL_CUSTOM: Sanitize Check Error: Input: {0}", input_str);
+									extension_ptr->logger->warn("extDB2: SQL_CUSTOM: Sanitize Check Error: Value: {0}", temp_str);
 									sanitize_value_check = false;
 									break;
 								}
@@ -764,7 +779,7 @@ void SQL_CUSTOM_V2::executeSQL(Poco::Data::Statement &sql_statement, std::string
 }
 
 
-void SQL_CUSTOM_V2::callPreparedStatement(std::string call_name, Custom_Call_UnorderedMap::const_iterator custom_calls_itr, std::vector< std::vector< std::string > > &all_processed_inputs, bool &status, std::string &result)
+void SQL_CUSTOM_V2::callPreparedStatement(std::string &input_str, std::string &call_name, Custom_Call_UnorderedMap::const_iterator &custom_calls_itr, std::vector< std::vector< std::string > > &all_processed_inputs, bool &status, std::string &result)
 {
 	Poco::Data::SessionPool::SessionDataPtr session_data_ptr;
 	try
@@ -793,7 +808,7 @@ void SQL_CUSTOM_V2::callPreparedStatement(std::string call_name, Custom_Call_Uno
 				{
 					if (i == (statement_cache_itr->second.size() - 1))
 					{
-						getResult(custom_calls_itr, session, statement_cache_itr->second[i], result, status);
+						getResult(input_str, custom_calls_itr, session, statement_cache_itr->second[i], result, status);
 					}
 				}
 			}
@@ -823,7 +838,7 @@ void SQL_CUSTOM_V2::callPreparedStatement(std::string call_name, Custom_Call_Uno
 				{
 					if ( it_sql_prepared_statements_vector+1 == custom_calls_itr->second.sql_prepared_statements.end() )
 					{
-						getResult(custom_calls_itr, session, sql_statement, result, status);
+						getResult(input_str, custom_calls_itr, session, sql_statement, result, status);
 					}
 					if (custom_calls_itr->second.preparedStatement_cache)
 					{
@@ -871,7 +886,7 @@ void SQL_CUSTOM_V2::callPreparedStatement(std::string call_name, Custom_Call_Uno
 }
 
 
-void SQL_CUSTOM_V2::callPreparedStatement(std::string call_name, Custom_Call_UnorderedMap::const_iterator custom_calls_itr, std::vector< std::vector<std::string> > &all_processed_inputs, std::vector<std::string> custom_inputs, bool &status, std::string &result)
+void SQL_CUSTOM_V2::callPreparedStatement(std::string &input_str, std::string &call_name, Custom_Call_UnorderedMap::const_iterator &custom_calls_itr, std::vector< std::vector<std::string> > &all_processed_inputs, std::vector<std::string> &custom_inputs, bool &status, std::string &result)
 {
 	Poco::Data::SessionPool::SessionDataPtr session_data_ptr;
 	try
@@ -902,7 +917,7 @@ void SQL_CUSTOM_V2::callPreparedStatement(std::string call_name, Custom_Call_Uno
 			executeSQL(sql_statement, result, status);
 			if (status && (it_sql_prepared_statements_vector + 1 == custom_calls_itr->second.sql_prepared_statements.end()))
 			{
-				getResult(custom_calls_itr, session, sql_statement, result, status);
+				getResult(input_str, custom_calls_itr, session, sql_statement, result, status);
 			}
 		}
 		if (!status)
@@ -1014,6 +1029,8 @@ bool SQL_CUSTOM_V2::callProtocol(std::string input_str, std::string &result, con
 			std::vector<std::vector<std::string> > all_processed_inputs;
 			all_processed_inputs.reserve(custom_calls_const_itr->second.sql_inputs_options.size());
 
+			std::string sanitize_str;
+
 			for(auto &sql_inputs_options : custom_calls_const_itr->second.sql_inputs_options)
 			{
 				std::vector< std::string > processed_inputs;
@@ -1046,35 +1063,16 @@ bool SQL_CUSTOM_V2::callProtocol(std::string input_str, std::string &result, con
 						}
 					}
 
-					// BOOL
-					if (sql_input_option.boolean)
+					// STEAM ID + QUERYS
+					if (sql_input_option.vac_steamID)
 					{
-						if (boost::iequals(temp_str, std::string("True")) == 1)
-						{
-							temp_str = "1";
-						}
-						else
-						{
-							temp_str = "0";
-						}
+						// QUERY STEAM
+						extension_ptr->steamQuery(-1, false, true, temp_str, true);
 					}
-					else
+					if (sql_input_option.beguid)				
 					{
-						// BEGUID					
-						if (sql_input_option.beguid)
-						{
-							getBEGUID(temp_str, temp_str);
-						}
-						if (sql_input_option.vac_steamID)
-						{
-							std::string steamID;
-							getBEGUID(temp_str, steamID);
-							extension_ptr->steamQuery(-1, false, true, steamID, true);
-						}
-						else if (sql_input_option.vac_beguid)
-						{
-							extension_ptr->steamQuery(-1, false, true, temp_str, true);
-						}
+						// GENERATE BEGUID
+						getBEGUID(temp_str, temp_str);
 					}
 
 					// STRING
@@ -1087,17 +1085,60 @@ bool SQL_CUSTOM_V2::callProtocol(std::string input_str, std::string &result, con
 						else
 						{
 							boost::erase_all(temp_str, "\"");
+							boost::erase_all(temp_str, "'");
 							temp_str = "\"" + temp_str + "\"";
+						}
+					}
+
+					else if (sql_input_option.string_escape_quotes)
+					{
+						if (temp_str.empty())
+						{
+							temp_str = "\"\"";
+						}
+						else
+						{
+							boost::replace_all(temp_str, "\"", "\"\"");
+							boost::replace_all(temp_str, "'", "''");
+							temp_str = "\"" + temp_str + "\"";
+						}
+					}
+
+					// BOOL
+					else if (sql_input_option.boolean)
+					{
+						if (boost::iequals(temp_str, std::string("True")) == 1)
+						{
+							temp_str = "1";
+						}
+						else
+						{
+							temp_str = "0";
 						}
 					}
 
 					// SANITIZE CHECK
 					if (sql_input_option.check)
 					{
-						status = Sqf::check(temp_str);
-						extension_ptr->logger->warn("extDB2: SQL_CUSTOM_V2: Sanitize Check Error: Input: {0}", input_str);
-						extension_ptr->logger->warn("extDB2: SQL_CUSTOM_V2: Sanitize Check Error: Value: {0}", temp_str);
-						result = "[0,\"Error Values Input is not sanitized\"]";
+						sanitize_str = temp_str;
+						if (sql_input_option.check_add_quotes)
+						{
+							sanitize_str = "\"" + sanitize_str + "\"";
+						}
+						else if (sql_input_option.check_add_escape_quotes)
+						{
+							boost::replace_all(temp_str, "\"", "\"\"");
+							boost::replace_all(temp_str, "'", "''");
+							sanitize_str = "\"" + temp_str + "\"";
+						}
+
+						if (!(Sqf::check(sanitize_str)))
+						{
+							status = false;
+							extension_ptr->logger->warn("extDB2: SQL_CUSTOM: Sanitize Check Error: Input: {0}", input_str);
+							extension_ptr->logger->warn("extDB2: SQL_CUSTOM: Sanitize Check Error: Value: {0}", sanitize_str);
+							result = "[0,\"Error Input Value is not sanitized\"]";
+						}
 					}
 					processed_inputs.push_back(std::move(temp_str));
 				}
@@ -1109,11 +1150,11 @@ bool SQL_CUSTOM_V2::callProtocol(std::string input_str, std::string &result, con
 			{
 				if (custom_calls_const_itr->second.number_of_custom_inputs == 0)
 				{
-					callPreparedStatement(tokens[0], custom_calls_const_itr, all_processed_inputs, status, result);
+					callPreparedStatement(input_str, tokens[0], custom_calls_const_itr, all_processed_inputs, status, result);
 				}
 				else
 				{
-					callPreparedStatement(tokens[0], custom_calls_const_itr, all_processed_inputs, custom_inputs, status, result);
+					callPreparedStatement(input_str, tokens[0], custom_calls_const_itr, all_processed_inputs, custom_inputs, status, result);
 				}
 				if (status)
 				{
