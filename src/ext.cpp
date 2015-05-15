@@ -1006,7 +1006,7 @@ void Ext::onewayCallProtocol(const int &output_size, std::string &input_str)
 }
 
 
-void Ext::asyncCallProtocol(const int &output_size, const std::string &protocol, const std::string &data, const unsigned int &unique_id)
+void Ext::asyncCallProtocol(const int &output_size, const std::string &protocol, const std::string &data, const unsigned int unique_id)
 // ASync + Save callProtocol
 // We check if Protocol exists here, since its a thread (less time spent blocking arma) and it shouldnt happen anyways
 {
@@ -1042,7 +1042,7 @@ void Ext::callExtension(char *output, const int &output_size, const char *functi
 			{
 				case '1': //ASYNC
 				{
-					io_service.post(boost::bind(&Ext::onewayCallProtocol, this, output_size, input_str));
+					io_service.post(boost::bind(&Ext::onewayCallProtocol, this, output_size, std::move(input_str)));
 					std::strcpy(output, "[1]");
 					break;
 				}
@@ -1058,33 +1058,24 @@ void Ext::callExtension(char *output, const int &output_size, const char *functi
 					}
 					else
 					{
+						// Check for Protocol Name Exists...
+						// Do this so if someone manages to get server, the error message wont get stored in the result unordered map
 						const std::string protocol = input_str.substr(2,(found-2));
-						if (found == (input_str_length - 1))
+						if (unordered_map_protocol.find(protocol) != unordered_map_protocol.end())
 						{
-							std::strcpy(output, "[0,\"Error Invalid Format\"]");
-							logger->error("extDB2: Invalid Format: {0}", input_str);
+							unsigned int unique_id;
+							{
+								std::lock_guard<std::mutex> lock(mutex_results);
+								unique_id = unique_id_counter++;
+								stored_results[unique_id].wait = true;
+							}
+							io_service.post(boost::bind(&Ext::asyncCallProtocol, this, output_size, std::move(protocol), input_str.substr(found+1), std::move(unique_id)));
+							std::strcpy(output, ("[2,\"" + Poco::NumberFormatter::format(unique_id) + "\"]").c_str());
 						}
 						else
 						{
-							// Check for Protocol Name Exists...
-							// Do this so if someone manages to get server, the error message wont get stored in the result unordered map
-							if (unordered_map_protocol.find(protocol) != unordered_map_protocol.end())
-							{
-								unsigned int unique_id;
-								{
-									std::lock_guard<std::mutex> lock(mutex_results);
-									unique_id = unique_id_counter++;
-									stored_results[unique_id].wait = true;
-								}
-
-								io_service.post(boost::bind(&Ext::asyncCallProtocol, this, output_size, protocol, input_str.substr(found+1), unique_id));
-								std::strcpy(output, ("[2,\"" + Poco::NumberFormatter::format(unique_id) + "\"]").c_str());
-							}
-							else
-							{
-								std::strcpy(output, "[0,\"Error Unknown Protocol\"]");
-								logger->error("extDB2: Unknown Protocol: {0}", protocol);
-							}
+							std::strcpy(output, "[0,\"Error Unknown Protocol\"]");
+							logger->error("extDB2: Unknown Protocol: {0}", protocol);
 						}
 					}
 					break;
@@ -1111,7 +1102,7 @@ void Ext::callExtension(char *output, const int &output_size, const char *functi
 				}
 				case '7': // SEND -- TCPRemoteCode
 				{
-					io_service.post(boost::bind(&Ext::sendTCPRemote_mutexlock, this, input_str));
+					io_service.post(boost::bind(&Ext::sendTCPRemote_mutexlock, this, std::move(input_str)));
 					break;
 				}
 				case '0': //SYNC
