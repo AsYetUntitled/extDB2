@@ -270,7 +270,7 @@ void RemoteConnection::mainLoop()
 						else if (boost::iequals(recv_str, std::string("#HELP")) == 1)
 						{
 							send_str = "\n\r";
-							send_str = "Example of Usage\n\r";
+							send_str += "Example of Usage\n\r";
 							send_str += "#START\n\r";
 							send_str += ".... INSERT CODE HERE....\n\r";
 							send_str += ".... INSERT CODE HERE....\n\r";
