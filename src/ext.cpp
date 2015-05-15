@@ -496,7 +496,7 @@ void Ext::connectRcon(char *output, const int &output_size, const std::string &r
 
 				std::string temp_str;
 				temp_str = pConf->getString(((rcon_conf) + ".BadPlayerStrings"), "");
-				Poco::StringTokenizer tokens(temp_str, ":", Poco::StringTokenizer::TOK_TRIM);
+				Poco::StringTokenizer tokens(temp_str, ":");
 				for (auto &token : tokens)
 				{
 					bad_playername_strings.push_back(token);
@@ -566,157 +566,158 @@ void Ext::rconPlayers(unsigned int unique_id)
 void Ext::connectDatabase(char *output, const int &output_size, const std::string &database_conf, const std::string &database_id)
 // Connection to Database, database_id used when connecting to multiple different database.
 {
-	DBConnectionInfo *database = &extDB_connectors_info.databases[database_id];
-
-	bool connected = true;
-
-	// Check if already connectted to Database.
-	if (!database->type.empty())
+	if (!database_conf.empty())
 	{
-		#ifdef DEBUG_TESTING
-			console->warn("extDB2: Already Connected to Database");
-		#endif
-		logger->warn("extDB2: Already Connected to a Database");
-		std::strcpy(output, "[0,\"Already Connected to Database\"]");
-	}
-	else if (pConf->hasOption(database_conf + ".Type"))
-	{
-		database->type = pConf->getString(database_conf + ".Type");
-		#ifdef DEBUG_TESTING
-			console->info("extDB2: Database Type: {0}", database->type);
-		#endif
-		logger->info("extDB2: Database Type: {0}", database->type);
+		DBConnectionInfo *database = &extDB_connectors_info.databases[database_id];
 
+		bool connected = true;
 
-		if ((boost::algorithm::iequals(database->type, std::string("MySQL")) == 1) || (boost::algorithm::iequals(database->type, "SQLite") == 1))
+		// Check if already connectted to Database.
+		if (!database->type.empty())
 		{
-			try
+			#ifdef DEBUG_TESTING
+				console->warn("extDB2: Already Connected to Database");
+			#endif
+			logger->warn("extDB2: Already Connected to a Database");
+			std::strcpy(output, "[0,\"Already Connected to Database\"]");
+		}
+		else if (pConf->hasOption(database_conf + ".Type"))
+		{
+			database->type = pConf->getString(database_conf + ".Type");
+			#ifdef DEBUG_TESTING
+				console->info("extDB2: Database Type: {0}", database->type);
+			#endif
+			logger->info("extDB2: Database Type: {0}", database->type);
+
+
+			if ((boost::algorithm::iequals(database->type, std::string("MySQL")) == 1) || (boost::algorithm::iequals(database->type, "SQLite") == 1))
 			{
-				// Database
-				std::string connection_str;
-				if (boost::algorithm::iequals(database->type, std::string("MySQL")) == 1)
+				try
 				{
-					database->type = "MySQL";
-					if (!(extDB_connectors_info.mysql))
+					// Database
+					std::string connection_str;
+					if (boost::algorithm::iequals(database->type, std::string("MySQL")) == 1)
 					{
-						Poco::Data::MySQL::Connector::registerConnector();
-						extDB_connectors_info.mysql = true;
-					}
-					connection_str += "host=" + pConf->getString(database_conf + ".IP") + ";";
-					connection_str += "port=" + pConf->getString(database_conf + ".Port") + ";";
-					connection_str += "user=" + pConf->getString(database_conf + ".Username") + ";";
-					connection_str += "password=" + pConf->getString(database_conf + ".Password") + ";";
-					connection_str += "db=" + pConf->getString(database_conf + ".Name") + ";";
-					connection_str += "auto-reconnect=true";
+						database->type = "MySQL";
+						if (!(extDB_connectors_info.mysql))
+						{
+							Poco::Data::MySQL::Connector::registerConnector();
+							extDB_connectors_info.mysql = true;
+						}
+						connection_str += "host=" + pConf->getString(database_conf + ".IP") + ";";
+						connection_str += "port=" + pConf->getString(database_conf + ".Port") + ";";
+						connection_str += "user=" + pConf->getString(database_conf + ".Username") + ";";
+						connection_str += "password=" + pConf->getString(database_conf + ".Password") + ";";
+						connection_str += "db=" + pConf->getString(database_conf + ".Name") + ";";
+						connection_str += "auto-reconnect=true";
 
-					if (pConf->getBool(database_conf + ".Compress", false))
-					{
-						connection_str += ";compress=true";
+						if (pConf->getBool(database_conf + ".Compress", false))
+						{
+							connection_str += ";compress=true";
+						}
+						if (pConf->getBool(database_conf + ".Secure Auth", false))
+						{
+							connection_str += ";secure-auth=true";
+						}
 					}
-					if (pConf->getBool(database_conf + ".Secure Auth", false))
+					else if (boost::algorithm::iequals(database->type, "SQLite") == 1)
 					{
-						connection_str += ";secure-auth=true";
+						database->type = "SQLite";
+						if (!(extDB_connectors_info.sqlite))
+						{
+							Poco::Data::SQLite::Connector::registerConnector();
+							extDB_connectors_info.sqlite = true;
+						}
+
+						boost::filesystem::path sqlite_path(extDB_info.path);
+						sqlite_path /= "extDB";
+						sqlite_path /= "sqlite";
+						sqlite_path /= pConf->getString(database_conf + ".Name");
+						connection_str = sqlite_path.make_preferred().string();
+					}
+					database->sql_pool.reset(new Poco::Data::SessionPool(database->type,
+																	 	connection_str,
+																	 	pConf->getInt(database_conf + ".minSessions", 1),
+																	 	pConf->getInt(database_conf + ".maxSessions", extDB_info.max_threads),
+																	 	pConf->getInt(database_conf + ".idleTime", 600)));
+					if (database->sql_pool->get().isConnected())
+					{
+						#ifdef DEBUG_TESTING
+							console->info("extDB2: Database Session Pool Started");
+						#endif
+						logger->info("extDB2: Database Session Pool Started");
+						std::strcpy(output, "[1]");
+					}
+					else
+					{
+						#ifdef DEBUG_TESTING
+							console->warn("extDB2: Database Session Pool Failed");
+						#endif
+						logger->warn("extDB2: Database Session Pool Failed");
+						std::strcpy(output, "[0,\"Database Session Pool Failed\"]");
+						connected = false;
 					}
 				}
-				else if (boost::algorithm::iequals(database->type, "SQLite") == 1)
-				{
-					database->type = "SQLite";
-					if (!(extDB_connectors_info.sqlite))
-					{
-						Poco::Data::SQLite::Connector::registerConnector();
-						extDB_connectors_info.sqlite = true;
-					}
-
-					boost::filesystem::path sqlite_path(extDB_info.path);
-					sqlite_path /= "extDB";
-					sqlite_path /= "sqlite";
-					sqlite_path /= pConf->getString(database_conf + ".Name");
-					connection_str = sqlite_path.make_preferred().string();
-				}
-				database->sql_pool.reset(new Poco::Data::SessionPool(database->type,
-																 	connection_str,
-																 	pConf->getInt(database_conf + ".minSessions", 1),
-																 	pConf->getInt(database_conf + ".maxSessions", extDB_info.max_threads),
-																 	pConf->getInt(database_conf + ".idleTime", 600)));
-				if (database->sql_pool->get().isConnected())
+				catch (Poco::Data::NotConnectedException& e)
 				{
 					#ifdef DEBUG_TESTING
-						console->info("extDB2: Database Session Pool Started");
+						console->error("extDB2: Database NotConnectedException Error: {0}", e.displayText());
 					#endif
-					logger->info("extDB2: Database Session Pool Started");
-					std::strcpy(output, "[1]");
+					logger->error("extDB2: Database NotConnectedException Error: {0}", e.displayText());
+					std::strcpy(output, "[0,\"Database NotConnectedException Error\"]");
+					connected = false;
 				}
-				else
+				catch (Poco::Data::MySQL::ConnectionException& e)
 				{
 					#ifdef DEBUG_TESTING
-						console->warn("extDB2: Database Session Pool Failed");
+						console->error("extDB2: Database ConnectionException Error: {0}", e.displayText());
 					#endif
-					logger->warn("extDB2: Database Session Pool Failed");
-					std::strcpy(output, "[0,\"Database Session Pool Failed\"]");
+					logger->error("extDB2: Database ConnectionException Error: {0}", e.displayText());
+					std::strcpy(output, "[0,\"Database ConnectionException Error\"]");
+					connected = false;
+				}
+				catch (Poco::Exception& e)
+				{
+					#ifdef DEBUG_TESTING
+						console->error("extDB2: Database Exception Error: {0}", e.displayText());
+					#endif
+					logger->error("extDB2: Database Exception Error: {0}", e.displayText());
+					std::strcpy(output, "[0,\"Database Exception Error\"]");
 					connected = false;
 				}
 			}
-			catch (Poco::Data::NotConnectedException& e)
+			else
 			{
 				#ifdef DEBUG_TESTING
-					console->error("extDB2: Database NotConnectedException Error: {0}", e.displayText());
+					console->warn("extDB2: No Database Engine Found for {0}", database->type);
 				#endif
-				logger->error("extDB2: Database NotConnectedException Error: {0}", e.displayText());
-				std::strcpy(output, "[0,\"Database NotConnectedException Error\"]");
-				connected = false;
-			}
-			catch (Poco::Data::MySQL::ConnectionException& e)
-			{
-				#ifdef DEBUG_TESTING
-					console->error("extDB2: Database ConnectionException Error: {0}", e.displayText());
-				#endif
-				logger->error("extDB2: Database ConnectionException Error: {0}", e.displayText());
-				std::strcpy(output, "[0,\"Database ConnectionException Error\"]");
-				connected = false;
-			}
-			catch (Poco::Exception& e)
-			{
-				#ifdef DEBUG_TESTING
-					console->error("extDB2: Database Exception Error: {0}", e.displayText());
-				#endif
-				logger->error("extDB2: Database Exception Error: {0}", e.displayText());
-				std::strcpy(output, "[0,\"Database Exception Error\"]");
+				logger->warn("extDB2: No Database Engine Found for {0}", database->type);
+				std::strcpy(output, "[0,\"Unknown Database Type\"]");
 				connected = false;
 			}
 		}
 		else
 		{
 			#ifdef DEBUG_TESTING
-			console->warn("extDB2: No Database Engine Found for {0}", database->type);
+				console->warn("extDB2: No Config Option Found: {0}", database_conf);
 			#endif
-			logger->warn("extDB2: No Database Engine Found for {0}", database->type);
-			std::strcpy(output, "[0,\"Unknown Database Type\"]");
+			logger->warn("extDB2: No Config Option Found: {0}", database_conf);
+			std::strcpy(output, "[0,\"No Config Option Found\"]");
 			connected = false;
+		}
+
+		if (!connected)
+		{
+			extDB_connectors_info.databases.erase(database_id);
 		}
 	}
 	else
 	{
 		#ifdef DEBUG_TESTING
-		console->warn("extDB2: No Config Option Found: {0}", database_conf);
+			console->warn("extDB2: No Config Option Found: {0}", database_conf);
 		#endif
 		logger->warn("extDB2: No Config Option Found: {0}", database_conf);
 		std::strcpy(output, "[0,\"No Config Option Found\"]");
-		connected = false;
-	}
-
-	if (!connected)
-	{
-		if (database_id.empty())
-		{
-			// Default Database
-			database->type.clear();
-			database->sql_pool.reset();
-		}
-		else
-		{
-			// Extra Database
-			extDB_connectors_info.databases.erase(database_id);
-		}
 	}
 }
 
