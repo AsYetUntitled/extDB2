@@ -44,20 +44,20 @@ bool RCON::init(AbstractExt *extension,  const std::string &database_id, const s
 
 void RCON::processCommand(std::string &command, std::string &input_str, const unsigned int unique_id, std::string &result)
 {
-	if (boost::iequals(command, std::string("players")) == 1)
+	if (boost::algorithm::iequals(command, std::string("players")) == 1)
 	{
 		extension_ptr->rconPlayers(unique_id);
 	}
-	else if (boost::iequals(command, std::string("missions")) == 1)
+	else if (boost::algorithm::iequals(command, std::string("missions")) == 1)
 	{
 		extension_ptr->rconMissions(unique_id);
 	}
-	else if (boost::iequals(command, std::string("addBan")) == 1)
+	else if (boost::algorithm::iequals(command, std::string("addBan")) == 1)
 	{
 		extension_ptr->rconAddBan(input_str);
 		result = "[1]";
 	}
-	else if (boost::iequals(command, std::string("ban")) == 1)
+	else if (boost::algorithm::iequals(command, std::string("ban")) == 1)
 	{
 		extension_ptr->rconAddBan(input_str);
 		result = "[1]";

@@ -120,11 +120,11 @@ bool STEAM::callProtocol(std::string input_str, std::string &result, const bool 
 			if (status)
 			{
 				std::string steam_query = input_str.substr(0, found);
-				if (boost::iequals(steam_query, std::string("GetFriends")) == 1)
+				if (boost::algorithm::iequals(steam_query, std::string("GetFriends")) == 1)
 				{
 					extension_ptr->steamQuery(unique_id, true, false, steamIDs, true);
 				}
-				else if (boost::iequals(steam_query, std::string("STEAMBanned")) == 1)
+				else if (boost::algorithm::iequals(steam_query, std::string("STEAMBanned")) == 1)
 				{
 					extension_ptr->steamQuery(unique_id, false, true, steamIDs, true);
 				}

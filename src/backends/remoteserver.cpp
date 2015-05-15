@@ -245,29 +245,29 @@ void RemoteConnection::mainLoop()
 					if (recv_str[0] == '#')
 					{
 						// Command
-						if (boost::iequals(recv_str, std::string("#START")) == 1)
+						if (boost::algorithm::iequals(recv_str, std::string("#START")) == 1)
 						{
 							store_receive = true;
 							store_str.clear();
 						}
-						else if (boost::iequals(recv_str, std::string("#END")) == 1)
+						else if (boost::algorithm::iequals(recv_str, std::string("#END")) == 1)
 						{
 							store_receive = false;
 						}
-						else if (boost::iequals(recv_str, std::string("#SEND")) == 1)
+						else if (boost::algorithm::iequals(recv_str, std::string("#SEND")) == 1)
 						{
 							std::lock_guard<std::mutex> lock(remoteServer_ptr->inputs_mutex);
 							std::string temp_str = Poco::NumberFormatter::format(unique_client_id) + ":" + store_str;
 							remoteServer_ptr->inputs.push_back(std::move(temp_str));
 							*remoteServer_ptr->inputs_flag = true;
 						}
-						else if (boost::iequals(recv_str, std::string("#QUIT")) == 1)
+						else if (boost::algorithm::iequals(recv_str, std::string("#QUIT")) == 1)
 						{
 							isOpen = false;
 							send_str = "Closing Connection\n";
 							socket().sendBytes(send_str.c_str(), send_str.size());
 						}
-						else if (boost::iequals(recv_str, std::string("#HELP")) == 1)
+						else if (boost::algorithm::iequals(recv_str, std::string("#HELP")) == 1)
 						{
 							send_str = "\n\r";
 							send_str += "Example of Usage\n\r";

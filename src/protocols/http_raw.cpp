@@ -48,7 +48,7 @@ bool HTTP_RAW::init(AbstractExt *extension, const std::string &database_id, cons
 	if (extension_ptr->pConf->hasOption(database_id + ".Type"))
 	{
 		std::string database_type = extension_ptr->pConf->getString(database_id + ".Type", "");
-		if (boost::iequals(database_type, std::string("HTTP")))
+		if (boost::algorithm::iequals(database_type, std::string("HTTP")))
 		{
 			if (extension_ptr->pConf->has(database_id + ".Username"))
 			{
@@ -56,7 +56,7 @@ bool HTTP_RAW::init(AbstractExt *extension, const std::string &database_id, cons
 				http_basic_credentials.setPassword(extension_ptr->pConf->getString(database_id + ".Password", ""));
 				auth = true;
 			}			
-		 	if (boost::iequals(init_str, std::string("FULL_RETURN")))
+		 	if (boost::algorithm::iequals(init_str, std::string("FULL_RETURN")))
 			{
 				http_return = 1;
 				#ifdef DEBUG_TESTING
@@ -114,12 +114,12 @@ bool HTTP_RAW::callProtocol(std::string input_str, std::string &result, const bo
 			std::unique_ptr<Poco::Net::HTTPClientSession> session = http_pool->get();
 			Poco::Net::HTTPRequest request(Poco::Net::HTTPMessage::HTTP_1_1);
 
-			if (input_str.substr(0,4) == "POST")
+			if (boost::algorithm::starts_with(input_str, "POST"))
 			{
 				request.setMethod(Poco::Net::HTTPRequest::HTTP_POST);
 				request.setURI(input_str.substr(5));
 			}
-			else if (input_str.substr(0,4) == "GET:")
+			else if (boost::algorithm::starts_with(input_str, "GET:")
 			{
 				request.setMethod(Poco::Net::HTTPRequest::HTTP_GET);
 				request.setURI(input_str.substr(4));

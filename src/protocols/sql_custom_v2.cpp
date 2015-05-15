@@ -169,19 +169,19 @@ bool SQL_CUSTOM_V2::init(AbstractExt *extension, const std::string &database_id,
 			int default_strip_chars_action = 0;
 
 			std::string strip_chars_action_str = template_ini->getString("Default.Strip Chars Action", "Strip");
-			if	(boost::iequals(strip_chars_action_str, std::string("Strip")) == 1)
+			if	(boost::algorithm::iequals(strip_chars_action_str, std::string("Strip")) == 1)
 			{
 				default_strip_chars_action = 1;
 			}
-			else if	(boost::iequals(strip_chars_action_str, std::string("Strip+Log")) == 1)
+			else if	(boost::algorithm::iequals(strip_chars_action_str, std::string("Strip+Log")) == 1)
 			{
 				default_strip_chars_action = 2;
 			}
-			else if	(boost::iequals(strip_chars_action_str, std::string("Strip+Error")) == 1)
+			else if	(boost::algorithm::iequals(strip_chars_action_str, std::string("Strip+Error")) == 1)
 			{
 				default_strip_chars_action = 3;
 			}
-			else if (boost::iequals(strip_chars_action_str, std::string("None")) == 1)
+			else if (boost::algorithm::iequals(strip_chars_action_str, std::string("None")) == 1)
 			{
 				default_strip_chars_action = 0;
 			}
@@ -209,19 +209,19 @@ bool SQL_CUSTOM_V2::init(AbstractExt *extension, const std::string &database_id,
 				if (template_ini->has(call_name + ".Strip Chars Action"))
 				{
 					strip_chars_action_str = template_ini->getString(call_name + ".Strip Chars Action", "");
-					if	(boost::iequals(strip_chars_action_str, std::string("Strip")) == 1)
+					if	(boost::algorithm::iequals(strip_chars_action_str, std::string("Strip")) == 1)
 					{
 						custom_calls[call_name].strip_chars_action = 1;
 					}
-					else if	(boost::iequals(strip_chars_action_str, std::string("Strip+Log")) == 1)
+					else if	(boost::algorithm::iequals(strip_chars_action_str, std::string("Strip+Log")) == 1)
 					{
 						custom_calls[call_name].strip_chars_action = 2;
 					}
-					else if	(boost::iequals(strip_chars_action_str, std::string("Strip+Error")) == 1)
+					else if	(boost::algorithm::iequals(strip_chars_action_str, std::string("Strip+Error")) == 1)
 					{
 						custom_calls[call_name].strip_chars_action = 3;
 					}
-					else if (boost::iequals(strip_chars_action_str, std::string("None")) == 1)
+					else if (boost::algorithm::iequals(strip_chars_action_str, std::string("None")) == 1)
 					{
 						custom_calls[call_name].strip_chars_action = 0;
 					}
@@ -271,43 +271,43 @@ bool SQL_CUSTOM_V2::init(AbstractExt *extension, const std::string &database_id,
 								}
 								else
 								{
-									if (boost::iequals(options_tokens[x], std::string("String")) == 1)
+									if (boost::algorithm::iequals(options_tokens[x], std::string("String")) == 1)
 									{
 										outputs_options.string = true;
 									}
-									else if (boost::iequals(options_tokens[x], std::string("String_Escape_Quotes")) == 1)
+									else if (boost::algorithm::iequals(options_tokens[x], std::string("String_Escape_Quotes")) == 1)
 									{
 										outputs_options.string_escape_quotes = true;
 									}
-									else if (boost::iequals(options_tokens[x], std::string("Bool")) == 1)
+									else if (boost::algorithm::iequals(options_tokens[x], std::string("Bool")) == 1)
 									{
 										outputs_options.boolean = true;
 									}
-									else if (boost::iequals(options_tokens[x], std::string("BeGUID")) == 1)
+									else if (boost::algorithm::iequals(options_tokens[x], std::string("BeGUID")) == 1)
 									{
 										outputs_options.beguid = true;
 									}
-									else if (boost::iequals(options_tokens[x], std::string("Check")) == 1)
+									else if (boost::algorithm::iequals(options_tokens[x], std::string("Check")) == 1)
 									{
 										outputs_options.check = true;
 									}
-									else if (boost::iequals(options_tokens[x], std::string("NoCheck")) == 1)
+									else if (boost::algorithm::iequals(options_tokens[x], std::string("NoCheck")) == 1)
 									{
 										outputs_options.check = false;
 									}
-									else if (boost::iequals(options_tokens[x], std::string("Strip")) == 1)
+									else if (boost::algorithm::iequals(options_tokens[x], std::string("Strip")) == 1)
 									{
 										outputs_options.strip = true;
 									}
-									else if (boost::iequals(options_tokens[x], std::string("NoStrip")) == 1)
+									else if (boost::algorithm::iequals(options_tokens[x], std::string("NoStrip")) == 1)
 									{
 										outputs_options.strip = false;
 									}
-									else if (boost::iequals(options_tokens[x], std::string("Vac_SteamID")) == 1)
+									else if (boost::algorithm::iequals(options_tokens[x], std::string("Vac_SteamID")) == 1)
 									{
 										outputs_options.vac_steamID = true;
 									}
-									else if (boost::iequals(options_tokens[x], std::string("DateTime_ISO8601")) == 1)
+									else if (boost::algorithm::iequals(options_tokens[x], std::string("DateTime_ISO8601")) == 1)
 									{
 										outputs_options.datetime_iso8601 = true;
 									}
@@ -365,47 +365,47 @@ bool SQL_CUSTOM_V2::init(AbstractExt *extension, const std::string &database_id,
 							}
 							else
 							{
-								if (boost::iequals(sub_token_input, std::string("String")) == 1)
+								if (boost::algorithm::iequals(sub_token_input, std::string("String")) == 1)
 								{
 									inputs_options.string = true;
 								}
-								else if (boost::iequals(sub_token_input, std::string("String_Escape_Quotes")) == 1)
+								else if (boost::algorithm::iequals(sub_token_input, std::string("String_Escape_Quotes")) == 1)
 								{
 									inputs_options.string_escape_quotes = true;
 								}
-								else if (boost::iequals(sub_token_input, std::string("BeGUID")) == 1)
+								else if (boost::algorithm::iequals(sub_token_input, std::string("BeGUID")) == 1)
 								{
 									inputs_options.beguid = true;
 								}
-								else if (boost::iequals(sub_token_input, std::string("Bool")) == 1)
+								else if (boost::algorithm::iequals(sub_token_input, std::string("Bool")) == 1)
 								{
 									inputs_options.boolean = true;
 								}
-								else if (boost::iequals(sub_token_input, std::string("Check")) == 1)
+								else if (boost::algorithm::iequals(sub_token_input, std::string("Check")) == 1)
 								{
 									inputs_options.check = true;
 								}
-								else if (boost::iequals(sub_token_input, std::string("Check_Add_Quotes")) == 1)
+								else if (boost::algorithm::iequals(sub_token_input, std::string("Check_Add_Quotes")) == 1)
 								{
 									inputs_options.check_add_quotes = true;
 								}
-								else if (boost::iequals(sub_token_input, std::string("Check_Add_Escape_Quotes")) == 1)
+								else if (boost::algorithm::iequals(sub_token_input, std::string("Check_Add_Escape_Quotes")) == 1)
 								{
 									inputs_options.check_add_escape_quotes = true;
 								}
-								else if (boost::iequals(sub_token_input, std::string("NoCheck")) == 1)
+								else if (boost::algorithm::iequals(sub_token_input, std::string("NoCheck")) == 1)
 								{
 									inputs_options.check = false;
 								}
-								else if (boost::iequals(sub_token_input, std::string("Strip")) == 1)
+								else if (boost::algorithm::iequals(sub_token_input, std::string("Strip")) == 1)
 								{
 									inputs_options.strip = true;
 								}
-								else if (boost::iequals(sub_token_input, std::string("NoStrip")) == 1)
+								else if (boost::algorithm::iequals(sub_token_input, std::string("NoStrip")) == 1)
 								{
 									inputs_options.strip = false;
 								}
-								else if (boost::iequals(sub_token_input, std::string("Vac_SteamID")) == 1)
+								else if (boost::algorithm::iequals(sub_token_input, std::string("Vac_SteamID")) == 1)
 								{
 									inputs_options.vac_steamID = true;
 								}
@@ -1132,7 +1132,7 @@ bool SQL_CUSTOM_V2::callProtocol(std::string input_str, std::string &result, con
 					// BOOL
 					else if (sql_input_option.boolean)
 					{
-						if (boost::iequals(temp_str, std::string("True")) == 1)
+						if (boost::algorithm::iequals(temp_str, std::string("True")) == 1)
 						{
 							temp_str = "1";
 						}

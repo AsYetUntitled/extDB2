@@ -74,7 +74,7 @@ bool SQL_RAW_V2::init(AbstractExt *extension, const std::string &database_id, co
 			#endif
 			extension_ptr->logger->info("extDB2: SQL_RAW_V2: Initialized: ADD_QUOTES False");
 		}
-		else if (boost::iequals(init_str, std::string("ADD_QUOTES")))
+		else if (boost::algorithm::iequals(init_str, std::string("ADD_QUOTES")))
 		{
 			stringDataTypeCheck = true;
 			#ifdef DEBUG_TESTING

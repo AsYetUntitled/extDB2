@@ -466,7 +466,7 @@ void Ext::connectRemote(char *output, const int &output_size, const std::string 
 void Ext::connectRcon(char *output, const int &output_size, const std::string &rcon_conf, std::string player_info_returned)
 // Start RCon
 {
-	if (boost::iequals(player_info_returned, "FULL") == 1)
+	if (boost::algorithm::iequals(player_info_returned, "FULL") == 1)
 	{
 		player_info_returned = "FULL";
 	}
@@ -588,13 +588,13 @@ void Ext::connectDatabase(char *output, const int &output_size, const std::strin
 		logger->info("extDB2: Database Type: {0}", database->type);
 
 
-		if ((boost::iequals(database->type, std::string("MySQL")) == 1) || (boost::iequals(database->type, "SQLite") == 1))
+		if ((boost::algorithm::iequals(database->type, std::string("MySQL")) == 1) || (boost::algorithm::iequals(database->type, "SQLite") == 1))
 		{
 			try
 			{
 				// Database
 				std::string connection_str;
-				if (boost::iequals(database->type, std::string("MySQL")) == 1)
+				if (boost::algorithm::iequals(database->type, std::string("MySQL")) == 1)
 				{
 					database->type = "MySQL";
 					if (!(extDB_connectors_info.mysql))
@@ -618,7 +618,7 @@ void Ext::connectDatabase(char *output, const int &output_size, const std::strin
 						connection_str += ";secure-auth=true";
 					}
 				}
-				else if (boost::iequals(database->type, "SQLite") == 1)
+				else if (boost::algorithm::iequals(database->type, "SQLite") == 1)
 				{
 					database->type = "SQLite";
 					if (!(extDB_connectors_info.sqlite))
@@ -734,23 +734,23 @@ void Ext::addProtocol(char *output, const int &output_size, const std::string &d
 		bool status = true;
 		if (database_id.empty())
 		{
-			if (boost::iequals(protocol, std::string("LOG")) == 1)
+			if (boost::algorithm::iequals(protocol, std::string("LOG")) == 1)
 			{
 				unordered_map_protocol[protocol_name] = std::unique_ptr<AbstractProtocol> (new LOG());
 			}
-			else if (boost::iequals(protocol, std::string("MISC")) == 1)
+			else if (boost::algorithm::iequals(protocol, std::string("MISC")) == 1)
 			{
 				unordered_map_protocol[protocol_name] = std::unique_ptr<AbstractProtocol> (new MISC());
 			}
-			else if (boost::iequals(protocol, std::string("RCON")) == 1)
+			else if (boost::algorithm::iequals(protocol, std::string("RCON")) == 1)
 			{
 				unordered_map_protocol[protocol_name] = std::unique_ptr<AbstractProtocol> (new RCON());
 			}
-			else if (boost::iequals(protocol, std::string("STEAM")) == 1)
+			else if (boost::algorithm::iequals(protocol, std::string("STEAM")) == 1)
 			{
 				unordered_map_protocol[protocol_name] = std::unique_ptr<AbstractProtocol> (new STEAM());
 			}
-			else if (boost::iequals(protocol, std::string("STEAM_V2")) == 1)
+			else if (boost::algorithm::iequals(protocol, std::string("STEAM_V2")) == 1)
 			{
 				unordered_map_protocol[protocol_name] = std::unique_ptr<AbstractProtocol> (new STEAM_V2());
 			}
@@ -763,23 +763,23 @@ void Ext::addProtocol(char *output, const int &output_size, const std::string &d
 		}
 		else
 		{
-			if (boost::iequals(protocol, std::string("HTTP_RAW")) == 1)
+			if (boost::algorithm::iequals(protocol, std::string("HTTP_RAW")) == 1)
 			{
 				unordered_map_protocol[protocol_name] = std::unique_ptr<AbstractProtocol> (new HTTP_RAW());
 			}
-			else if (boost::iequals(protocol, std::string("SQL_CUSTOM")) == 1)
+			else if (boost::algorithm::iequals(protocol, std::string("SQL_CUSTOM")) == 1)
 			{
 				unordered_map_protocol[protocol_name] = std::unique_ptr<AbstractProtocol> (new SQL_CUSTOM());
 			}
-			else if (boost::iequals(protocol, std::string("SQL_CUSTOM_V2")) == 1)
+			else if (boost::algorithm::iequals(protocol, std::string("SQL_CUSTOM_V2")) == 1)
 			{
 				unordered_map_protocol[protocol_name] = std::unique_ptr<AbstractProtocol> (new SQL_CUSTOM_V2());
 			}
-			else if (boost::iequals(protocol, std::string("SQL_RAW")) == 1)
+			else if (boost::algorithm::iequals(protocol, std::string("SQL_RAW")) == 1)
 			{
 				unordered_map_protocol[protocol_name] = std::unique_ptr<AbstractProtocol> (new SQL_RAW());
 			}
-			else if (boost::iequals(protocol, std::string("SQL_RAW_V2")) == 1)
+			else if (boost::algorithm::iequals(protocol, std::string("SQL_RAW_V2")) == 1)
 			{
 				unordered_map_protocol[protocol_name] = std::unique_ptr<AbstractProtocol> (new SQL_RAW_V2());
 			}
@@ -1361,11 +1361,11 @@ void Ext::callExtension(char *output, const int &output_size, const char *functi
 		{
 			result[0] = '\0';
 			std::getline(std::cin, input_str);
-			if (boost::iequals(input_str, "Quit") == 1)
+			if (boost::algorithm::iequals(input_str, "Quit") == 1)
 			{
 			    break;
 			}
-			else if (boost::iequals(input_str, "Test") == 1)
+			else if (boost::algorithm::iequals(input_str, "Test") == 1)
 			{
 				test = true;
 			}
