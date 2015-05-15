@@ -130,8 +130,6 @@ class Rcon
 
 		// Functions
 		void connect();
-
-		void closeSocket(const boost::system::error_code& error);
 		void startReceive();
 
 		void timerKeepAlive(const size_t delay);

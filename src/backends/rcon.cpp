@@ -154,13 +154,6 @@ void Rcon::disconnect()
 }
 
 
-void Rcon::closeSocket(const boost::system::error_code& error)
-{
-	timerKeepAlive(0);
-	rcon_socket.socket->close();
-}
-
-
 bool Rcon::status()
 {
 	return (*(rcon_socket.rcon_run_flag) && (rcon_socket.rcon_login_flag));
@@ -340,7 +333,9 @@ void Rcon::processMessageMission(Poco::StringTokenizer &tokens)
 		result_data.message += "]]";
 	}
 
-	std::vector<unsigned int> unique_id_saves;
+	#ifndef RCON_APP
+		std::vector<unsigned int> unique_id_saves;
+	#endif
 	{
 		std::lock_guard<std::mutex> lock(rcon_socket.mutex_mission_requests);
 		#ifdef RCON_APP
@@ -487,7 +482,9 @@ void Rcon::processMessagePlayers(Poco::StringTokenizer &tokens)
 		result_data.message += "]]";
 	}
 
-	std::vector<unsigned int> unique_id_saves;
+	#ifndef RCON_APP
+		std::vector<unsigned int> unique_id_saves;
+	#endif
 	{
 		std::lock_guard<std::mutex> lock(rcon_socket.mutex_players_requests);
 		#ifdef RCON_APP
