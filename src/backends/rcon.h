@@ -30,6 +30,10 @@ along with this program. If not, see <http://www.gnu.org/licenses/>.
 #include <boost/asio.hpp>
 #include <boost/crc.hpp>
 
+#include <Poco/Data/Session.h>
+#include <Poco/Data/MySQL/Connector.h>
+#include <Poco/Data/SQLite/Connector.h>
+
 #include <Poco/ExpireCache.h>
 #include <Poco/Stopwatch.h>
 #include <Poco/StringTokenizer.h>
@@ -62,6 +66,9 @@ class Rcon
 		void getPlayers(unsigned int &unique_id);
 
 	private:
+		#ifndef RCON_APP
+			AbstractExt *extension_ptr;
+		#endif
 
 		boost::asio::io_service *io_service_ptr;
 		std::string player_info_returned_mode;
@@ -95,14 +102,31 @@ class Rcon
 
 		struct BadPlayerName
 		{
+			bool enable = false;
 			std::vector<std::string> bad_strings;
 			std::vector<std::string> bad_regexs;
 			std::string kick_message;
-			bool check_playername = false;
 		};
 		BadPlayerName bad_playernames;
 
-		typedef std::pair< int, std::unordered_map < int, std::string > > RconMultiPartMsg;
+		struct ReservedSlots
+		{
+			bool enable = false;
+			int open_slots;
+
+			std::string kick_message;
+
+			std::set<std::string> whitelisted_guids;
+
+			std::unordered_map<std::string, std::string> players_whitelisted;
+			std::unordered_map<std::string, std::string> players_non_whitelisted;
+
+			std::unique_ptr<Poco::Data::Session> session;
+			std::mutex mutex;
+		};
+		ReservedSlots reserved_slots;
+
+		typedef std::pair< int, std::unordered_map<int, std::string> > RconMultiPartMsg;
 		struct RconSocket
 		{
 			std::atomic<bool> *rcon_run_flag;
@@ -154,7 +178,5 @@ class Rcon
 		void processMessagePlayers(Poco::StringTokenizer &tokens);
 		void chatMessage(std::size_t &bytes_received);
 
-		#ifndef RCON_APP
-			AbstractExt *extension_ptr;
-		#endif
+		void connectDatabase(std::string &database_conf, Poco::AutoPtr<Poco::Util::IniFileConfiguration> pConf);
 };
