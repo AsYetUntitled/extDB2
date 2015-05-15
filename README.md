@@ -44,11 +44,7 @@ http://www.exilemod.com/   (Coming Soon)
  - STEAM    (Ability to Query Steam for VAC Bans / Friend Info)
  - STEAM_V2 (Ability to Query Steam for VAC Bans / Friend Info)
 
-  
-#### Known Issues
- - https://github.com/Torndeco/extDB2/wiki/Known-Issues
-  
-  
+
 #### Documentation @  
 https://github.com/Torndeco/extDB2/wiki
   
