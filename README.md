@@ -3,14 +3,14 @@
 I got bored waiting on Arma 2017 / Epoch for Arma3.  
 So i decided to write up an C++ Extension for Arma3server.
 
- 
-#### Known Public Missions / Mods using older extDB  
-http://www.altisliferpg.com  
-http://a3wasteland.com/  
-
 
 #### Known Public Missions / Mods using extDB2
-http://www.exilemod.com/   (Coming Soon)
+http://www.exilemod.com   (Coming Soon)
+  
+
+#### Known Public Missions / Mods using older extDB  
+http://www.altisliferpg.com  
+http://a3wasteland.com  
 
 
 ### Features
