@@ -119,7 +119,7 @@ bool HTTP_RAW::callProtocol(std::string input_str, std::string &result, const bo
 				request.setMethod(Poco::Net::HTTPRequest::HTTP_POST);
 				request.setURI(input_str.substr(5));
 			}
-			else if (boost::algorithm::starts_with(input_str, "GET:")
+			else if (boost::algorithm::starts_with(input_str, "GET:"))
 			{
 				request.setMethod(Poco::Net::HTTPRequest::HTTP_GET);
 				request.setURI(input_str.substr(4));
