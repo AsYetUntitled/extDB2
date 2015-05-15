@@ -530,7 +530,6 @@ void Rcon::chatMessage(std::size_t &bytes_received)
 			std::string player_number = result.substr(0, (found - 2));
 			logger->info("DEBUG Player Number: {0}", player_number);
 			const std::string::size_type found2 = result.find("(");
-			std::string player_name = result.substr(found, found2);
 			logger->info("DEBUG Player Name: {0}.", player_name);
 
 			if (bad_playernames.check_playername)
