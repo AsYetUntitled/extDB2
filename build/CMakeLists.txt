@@ -38,7 +38,6 @@ SET(SOURCES
 	../src/backends/rcon.cpp
 	../src/backends/remoteserver.cpp
 	../src/backends/steam.cpp
-	../src/protocols/abstract_protocol.cpp
 	../src/protocols/http_raw.cpp
 	../src/protocols/sql_custom.cpp
 	../src/protocols/sql_custom_v2.cpp

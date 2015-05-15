@@ -35,7 +35,7 @@ along with this program. If not, see <http://www.gnu.org/licenses/>.
 #include "abstract_protocol.h"
 
 
-bool HTTP_RAW::init(AbstractExt *extension, const std::string &database_id, const std::string init_str)
+bool HTTP_RAW::init(AbstractExt *extension, const std::string &database_id, const std::string &init_str)
 {
 	extension_ptr = extension;
 

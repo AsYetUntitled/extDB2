@@ -31,7 +31,7 @@ along with this program. If not, see <http://www.gnu.org/licenses/>.
 #include <Poco/Exception.h>
 
 
-bool SQL_RAW::init(AbstractExt *extension, const std::string &database_id, const std::string init_str)
+bool SQL_RAW::init(AbstractExt *extension, const std::string &database_id, const std::string &init_str)
 {
 	extension_ptr = extension;
 	if (extension_ptr->extDB_connectors_info.databases.count(database_id) == 0)

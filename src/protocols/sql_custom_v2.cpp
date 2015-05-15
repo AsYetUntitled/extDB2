@@ -47,7 +47,7 @@ along with this program. If not, see <http://www.gnu.org/licenses/>.
 #include "../sanitize.h"
 
 
-bool SQL_CUSTOM_V2::init(AbstractExt *extension, const std::string &database_id, const std::string init_str)
+bool SQL_CUSTOM_V2::init(AbstractExt *extension, const std::string &database_id, const std::string &init_str)
 {
 	extension_ptr = extension;
 	if (extension_ptr->extDB_connectors_info.databases.count(database_id) == 0)

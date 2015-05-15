@@ -21,7 +21,7 @@ along with this program. If not, see <http://www.gnu.org/licenses/>.
 #include <boost/filesystem.hpp>
 
 
-bool LOG::init(AbstractExt *extension, const std::string &database_id, const std::string init_str)
+bool LOG::init(AbstractExt *extension, const std::string &database_id, const std::string &init_str)
 {
 	bool status = false;
 	extension_ptr = extension;

@@ -31,7 +31,7 @@ From Frank https://gist.github.com/Fank/11127158
 #include "../backends/steam.h"
 
 
-bool STEAM::init(AbstractExt *extension, const std::string &database_id, const std::string init_str)
+bool STEAM::init(AbstractExt *extension, const std::string &database_id, const std::string &init_str)
 {
 	bool status;
 	extension_ptr = extension;

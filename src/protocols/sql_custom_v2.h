@@ -34,12 +34,10 @@ along with this program. If not, see <http://www.gnu.org/licenses/>.
 class SQL_CUSTOM_V2: public AbstractProtocol
 {
 	public:
-		bool init(AbstractExt *extension, const std::string &database_id, const std::string init_str);
+		bool init(AbstractExt *extension, const std::string &database_id, const std::string &init_str);
 		bool callProtocol(std::string input_str, std::string &result, const bool async_method, const unsigned int unique_id=1);
 		
-	private:
-		AbstractExt::DBConnectionInfo *database_ptr;
-		
+	private:	
 		Poco::MD5Engine md5;
 		std::mutex mutex_md5;
 

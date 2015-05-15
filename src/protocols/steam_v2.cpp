@@ -29,7 +29,7 @@ From Frank https://gist.github.com/Fank/11127158
 #include "../backends/steam.h"
 
 
-bool STEAM_V2::init(AbstractExt *extension, const std::string &database_id, const std::string init_str)
+bool STEAM_V2::init(AbstractExt *extension, const std::string &database_id, const std::string &init_str)
 {
 	extension_ptr = extension;
 	return true;

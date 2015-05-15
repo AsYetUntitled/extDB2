@@ -24,7 +24,7 @@ along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 
 
-bool RCON::init(AbstractExt *extension,  const std::string &database_id, const std::string init_str)
+bool RCON::init(AbstractExt *extension,  const std::string &database_id, const std::string &init_str)
 {
 	extension_ptr = extension;
 
