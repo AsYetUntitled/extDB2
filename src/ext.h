@@ -46,8 +46,10 @@ class Ext: public AbstractExt
 		void stop();	
 		void callExtension(char *output, const int &output_size, const char *function);
 		void rconCommand(std::string input_str);
-		void rconMissions(std::string input_str, unsigned int unique_id);
-		void rconPlayers(std::string input_str, unsigned int unique_id);
+
+		void rconAddBan(std::string input_str);
+		void rconMissions(unsigned int unique_id);
+		void rconPlayers(unsigned int unique_id);
 
 	protected:
 		const unsigned int saveResult_mutexlock(const resultData &result_data);

@@ -23,7 +23,6 @@ along with this program. If not, see <http://www.gnu.org/licenses/>.
 #include <Poco/StringTokenizer.h>
 
 
-
 bool RCON::init(AbstractExt *extension,  const std::string &database_id, const std::string &init_str)
 {
 	extension_ptr = extension;
@@ -47,18 +46,26 @@ void RCON::processCommand(std::string &command, std::string &input_str, const un
 {
 	if (boost::iequals(command, std::string("players")) == 1)
 	{
-		extension_ptr->logger->info("extDB2: RCON: DEBUG PLAYERS: {0}", result);
-		extension_ptr->rconPlayers(input_str, unique_id);
+		extension_ptr->rconPlayers(unique_id);
 	}
 	else if (boost::iequals(command, std::string("missions")) == 1)
 	{
-		extension_ptr->logger->info("extDB2: RCON: DEBUG MISSIONS: {0}", result);
-		extension_ptr->rconMissions(input_str, unique_id);
+		extension_ptr->rconMissions(unique_id);
+	}
+	else if (boost::iequals(command, std::string("addBan")) == 1)
+	{
+		extension_ptr->rconAddBan(input_str);
+		result = "[1]";
+	}
+	else if (boost::iequals(command, std::string("ban")) == 1)
+	{
+		extension_ptr->rconAddBan(input_str);
+		result = "[1]";
 	}
 	else
 	{
 		extension_ptr->rconCommand(input_str);
-		result = "[1]"; 
+		result = "[1]";
 	}
 }
 

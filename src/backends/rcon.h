@@ -56,6 +56,8 @@ class Rcon
 		bool status();
 
 		void sendCommand(std::string command);
+
+		void addBan(std::string command);
 		void getMissions(unsigned int &unique_id);
 		void getPlayers(unsigned int &unique_id);
 
@@ -136,11 +138,13 @@ class Rcon
 		void createKeepAlive(const boost::system::error_code& error);
 
 		void sendPacket(RconPacket &rcon_packet);
+		void sendBanPacket(RconPacket &rcon_packet);
 		void extractData(std::size_t &bytes_received, int pos, std::string &result);
 
 		void connectionHandler(const boost::system::error_code& error);
 		void handleReceive(const boost::system::error_code& error, std::size_t bytes_received);
 		void handleSent(std::shared_ptr<std::string> packet, const boost::system::error_code &error, std::size_t bytes_transferred);
+		void handleBanSent(std::shared_ptr<std::string> packet, const boost::system::error_code &error, std::size_t bytes_transferred);
 
 		void loginResponse();
 		void serverResponse(std::size_t &bytes_received);

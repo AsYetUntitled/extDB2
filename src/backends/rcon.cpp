@@ -302,7 +302,6 @@ void Rcon::processMessage(unsigned char &sequence_number, std::string &message)
 void Rcon::processMessageMission(Poco::StringTokenizer &tokens)
 {
 	std::vector<std::string> info_vector;
-
 	for (int i = 1; i < (tokens.count()); ++i)
 	{
 		if (boost::algorithm::ends_with(tokens[i], ".pbo"))
@@ -701,6 +700,92 @@ void Rcon::sendPacket(RconPacket &rcon_packet)
 }
 
 
+void Rcon::sendBanPacket(RconPacket &rcon_packet)
+{
+	std::ostringstream cmdStream;
+	cmdStream.put(0xFFu);
+	cmdStream.put(rcon_packet.packetCode);
+	
+	if (rcon_packet.packetCode == 0x01) //Everything else
+	{
+		//cmdStream.put(getSequenceNum(rcon_socket));
+		cmdStream.put(0x00);
+		cmdStream << rcon_packet.cmd;
+	}
+	else if (rcon_packet.packetCode == 0x02) //Respond to Chat Messages
+	{
+		cmdStream.put(rcon_packet.cmd_char_workaround);
+	}
+	else if (rcon_packet.packetCode == 0x00) //Login
+	{
+		logger->info("Rcon: Sending Login Packet");
+		cmdStream << rcon_packet.cmd;
+	}
+
+	std::string cmd = cmdStream.str();
+	boost::crc_32_type crc32;
+	crc32.process_bytes(cmd.data(), cmd.length());
+	long int crcVal = crc32.checksum();
+
+	std::stringstream hexStream;
+	hexStream << std::setfill('0') << std::setw(sizeof(int)*2);
+	hexStream << std::hex << crcVal;
+	std::string crcAsHex = hexStream.str();
+
+	unsigned char reversedCrc[4];
+	unsigned int x;
+
+	std::stringstream converterStream;
+	for (int i = 0; i < 4; i++)
+	{
+		converterStream << std::hex << crcAsHex.substr(6-(2*i),2).c_str();
+		converterStream >> x;
+		converterStream.clear();
+		reversedCrc[i] = x;
+	}
+
+	// Create Packet
+	std::stringstream cmdPacketStream;
+	cmdPacketStream.put(0x42); // B
+	cmdPacketStream.put(0x45); // E
+	cmdPacketStream.put(reversedCrc[0]); // 4-byte Checksum
+	cmdPacketStream.put(reversedCrc[1]);
+	cmdPacketStream.put(reversedCrc[2]);
+	cmdPacketStream.put(reversedCrc[3]);
+	cmdPacketStream << cmd;
+
+	std::shared_ptr<std::string> packet;
+	packet.reset( new std::string(cmdPacketStream.str()) );
+
+	rcon_socket.socket->async_send(boost::asio::buffer(*packet),
+							boost::bind(&Rcon::handleBanSent, this, packet,
+							boost::asio::placeholders::error,
+							boost::asio::placeholders::bytes_transferred));
+}
+
+
+void Rcon::handleBanSent(std::shared_ptr<std::string> packet, const boost::system::error_code& error, std::size_t bytes_transferred)
+{
+	if (error)
+	{
+		logger->warn("Rcon: Error handleBanSent: {0}", error.message());
+	}
+	else
+	{
+		std::string command("loadBans");
+		logger->info("Rcon: handleBanSent: {0}", command);
+
+		RconPacket rcon_packet;
+		char *cmd = new char[command.size() + 1];
+		std::strcpy(cmd, command.c_str());
+		rcon_packet.cmd = cmd;
+		rcon_packet.packetCode = 0x01;
+
+		sendPacket(rcon_packet);
+		delete []rcon_packet.cmd;
+	}
+}
+
 void Rcon::handleSent(std::shared_ptr<std::string> packet, const boost::system::error_code& error, std::size_t bytes_transferred)
 {
 	if (error)
@@ -741,6 +826,21 @@ void Rcon::getMissions(unsigned int &unique_id)
 		std::lock_guard<std::mutex> lock(rcon_socket.mutex_mission_requests);
 		rcon_socket.mission_requests.push_back(unique_id);
 	}
+	delete []rcon_packet.cmd;
+}
+
+
+void Rcon::addBan(std::string command)
+{
+	logger->info("Rcon: addBan: {0}", command);
+
+	RconPacket rcon_packet;
+	char *cmd = new char[command.size() + 1];
+	std::strcpy(cmd, command.c_str());
+	rcon_packet.cmd = cmd;
+	rcon_packet.packetCode = 0x01;
+
+	sendBanPacket(rcon_packet);
 	delete []rcon_packet.cmd;
 }
 
@@ -826,7 +926,6 @@ void Rcon::getPlayers(unsigned int &unique_id)
 		if (options.count("file"))
 		{
 			std::ifstream fin(options["file"].as<std::string>());
-			//std::ifstream fin("test");
 			if (fin.is_open() == false)
 			{
 				console->warn("ERROR: File is Open");
@@ -885,6 +984,14 @@ void Rcon::getPlayers(unsigned int &unique_id)
 				else if (input_str == "missions")
 				{
 					rcon.getMissions(unique_id);	
+				}
+				else if (input_str.substr(0,6) == "addban")
+				{
+					rcon.addBan(input_str);	
+				}
+				else if (input_str.substr(0,3) == "ban")
+				{
+					rcon.addBan(input_str);	
 				}
 				else
 				{
