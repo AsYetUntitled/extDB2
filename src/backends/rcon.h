@@ -86,8 +86,11 @@ class Rcon
 		Rcon(boost::asio::io_service &io_service, std::shared_ptr<spdlog::logger> spdlog);
 		~Rcon();
 
+		void timerReconnect(const size_t delay);
+		void Reconnect(const boost::system::error_code& error);
+
 		#ifndef RCON_APP
-			void extInit(AbstractExt *extension			
+			void extInit(AbstractExt *extension);	
 		#endif
 
 		void start(RconSettings &rcon, BadPlayernameSettings &bad_playername, WhitelistSettings &reserved_slots);
@@ -113,6 +116,7 @@ class Rcon
 			AbstractExt *extension_ptr;
 		#endif
 
+		bool auto_reconnect = true;
 		char *rcon_password;
 
 		boost::asio::io_service *io_service_ptr;

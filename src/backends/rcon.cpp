@@ -78,7 +78,7 @@ Rcon::~Rcon(void)
 
 void Rcon::timerKeepAlive(const size_t delay)
 {
-    if (delay == 0)
+	if (delay == 0)
 	{
 		rcon_socket.keepalive_timer->cancel();
 	}
@@ -87,6 +87,25 @@ void Rcon::timerKeepAlive(const size_t delay)
 		rcon_socket.keepalive_timer->expires_from_now(boost::posix_time::seconds(delay));
 		rcon_socket.keepalive_timer->async_wait(boost::bind(&Rcon::createKeepAlive, this, boost::asio::placeholders::error));
 	}
+}
+
+void Rcon::timerReconnect(const size_t delay)
+{
+    if (delay == 0)
+	{
+		rcon_socket.keepalive_timer->cancel();
+	}
+	else
+	{
+		rcon_socket.keepalive_timer->expires_from_now(boost::posix_time::seconds(delay));
+		rcon_socket.keepalive_timer->async_wait(boost::bind(&Rcon::Reconnect, this, boost::asio::placeholders::error));
+	}
+}
+
+void Rcon::Reconnect(const boost::system::error_code& error)
+{
+	boost::asio::ip::udp::endpoint endpoint(boost::asio::ip::address::from_string(rcon_settings.address), rcon_settings.port);
+	rcon_socket.socket->async_connect(endpoint, boost::bind(&Rcon::connectionHandler, this, boost::asio::placeholders::error));
 }
 
 
@@ -98,17 +117,24 @@ void Rcon::timerKeepAlive(const size_t delay)
 #endif
 
 
-	void Rcon::start(RconSettings &rcon, BadPlayernameSettings &bad_playername, WhitelistSettings &whitelist)
+void Rcon::start(RconSettings &rcon, BadPlayernameSettings &bad_playername, WhitelistSettings &whitelist)
 {
-	rcon_settings = rcon_settings;
-	bad_playername_settings = bad_playername_settings;
-	whitelist_settings = whitelist;
+	try
+	{
+		rcon_settings = std::move(rcon);
+		bad_playername_settings = std::move(bad_playername);
+		whitelist_settings = std::move(whitelist);
 
-	boost::asio::ip::udp::endpoint endpoint(boost::asio::ip::address::from_string(rcon_settings.address), rcon_settings.port);
-	rcon_socket.socket->async_connect(endpoint, boost::bind(&Rcon::connectionHandler, this, boost::asio::placeholders::error));
+		rcon_password = new char[rcon_settings.password.size() + 1];
+		std::strcpy(rcon_password, rcon_settings.password.c_str());
 
-	rcon_password = new char[rcon_settings.password.size() + 1];
-	std::strcpy(rcon_password, rcon_settings.password.c_str());
+		boost::asio::ip::udp::endpoint endpoint(boost::asio::ip::address::from_string(rcon_settings.address), rcon_settings.port);
+		rcon_socket.socket->async_connect(endpoint, boost::bind(&Rcon::connectionHandler, this, boost::asio::placeholders::error));
+	}
+	catch (boost::system::system_error const& e)
+	{
+	    std::cout << "Warning: could not connect : " << e.what() << std::endl;
+	}
 }
 
 
@@ -122,7 +148,12 @@ void Rcon::connectionHandler(const boost::system::error_code& error)
 	else
 	{
 		logger->info("Rcon: UDP Socket Connection Error");
-		disconnect();
+		timerKeepAlive(0);
+		rcon_socket.socket->close();
+		if (auto_reconnect)
+		{
+			timerReconnect(5);
+		}
 	}
 }
 
@@ -139,12 +170,13 @@ void Rcon::connect()
 	rcon_packet.cmd = rcon_password;
 	rcon_packet.packetCode = 0x00;
 	sendPacket(rcon_packet);
-	logger->info("Rcon: Sent Login Info: {0}", std::string(rcon_packet.cmd));
+	logger->info("Rcon: Sent Login Info");
 }
 
 
 void Rcon::disconnect()
 {
+	auto_reconnect = false;
 	timerKeepAlive(0);
 	rcon_socket.socket->close();
 }
@@ -188,6 +220,13 @@ void Rcon::handleReceive(const boost::system::error_code& error, std::size_t byt
 	else
 	{
 		logger->info("Rcon: UDP handleReceive Error: {0}", error.message());
+
+		timerKeepAlive(0);
+		rcon_socket.socket->close();
+		if (auto_reconnect)
+		{
+			timerReconnect(5);
+		}
 	}
 }
 
@@ -777,7 +816,7 @@ void Rcon::sendBanPacket(RconPacket &rcon_packet)
 	}
 	else if (rcon_packet.packetCode == 0x00) //Login
 	{
-		logger->info("Rcon: Sending Login Packet");
+		logger->info("Rcon: Sending Ban Packet");
 		cmdStream << rcon_packet.cmd;
 	}
 
@@ -1060,8 +1099,8 @@ void Rcon::connectDatabase(std::string &database_conf, Poco::AutoPtr<Poco::Util:
 		boost::program_options::options_description desc("Options");
 		desc.add_options()
 			("help", "Print help messages")
-			("config_file", boost::program_options::value<std::string>(), "Rcon Config File")
-			("config_section", boost::program_options::value<std::string>(), "Rcon Config Section to Use")
+			("config_file", boost::program_options::value<std::string>()->required(), "Rcon Config File")
+			("config_section", boost::program_options::value<std::string>()->required(), "Rcon Config Section to Use")
 			("run_file", boost::program_options::value<std::string>(), "File to run i.e rcon restart warnings");
 		boost::program_options::variables_map options;
 
@@ -1105,7 +1144,7 @@ void Rcon::connectDatabase(std::string &database_conf, Poco::AutoPtr<Poco::Util:
 
 			std::string conf_section = options["config_section"].as<std::string>();
 			Poco::AutoPtr<Poco::Util::IniFileConfiguration> pConf(new Poco::Util::IniFileConfiguration(config_file_path.make_preferred().string()));
-			if (pConf->hasOption(conf_section))
+			if (pConf->hasOption(conf_section + ".Password"))
 			{
 				boost::filesystem::path config_file_path(options["config_file"].as<std::string>());
 				config_file_path /= "rcon-conf.ini";
@@ -1162,85 +1201,85 @@ void Rcon::connectDatabase(std::string &database_conf, Poco::AutoPtr<Poco::Util:
 					}
 				}
 				rcon.start(rcon_settings, bad_playername_settings, whitelist_settings);
-			}
 
-			if (options.count("file"))
-			{
-				std::ifstream fin(options["file"].as<std::string>());
-				if (fin.is_open() == false)
+				if (options.count("file"))
 				{
-					console->warn("Error: File is Open");
-					return 1;
+					std::ifstream fin(options["file"].as<std::string>());
+					if (fin.is_open() == false)
+					{
+						console->warn("Error: File is Open");
+						return 1;
+					}
+					else
+					{
+						console->info("File is OK");
+					}
+					
+					std::string line;
+					while (std::getline(fin, line))
+					{
+						console->info("{0}", line);
+						if (line.empty())
+						{
+							boost::this_thread::sleep( boost::posix_time::milliseconds(1000) );
+							console->info("Sleep", line);
+						}
+						else
+						{
+							rcon.sendCommand(line);
+						}
+					}
+					console->info("OK");
+					rcon.disconnect();
+					return 0;
 				}
 				else
 				{
-					console->info("File is OK");
-				}
-				
-				std::string line;
-				while (std::getline(fin, line))
-				{
-					console->info("{0}", line);
-					if (line.empty())
-					{
-						boost::this_thread::sleep( boost::posix_time::milliseconds(1000) );
-						console->info("Sleep", line);
-					}
-					else
-					{
-						rcon.sendCommand(line);
-					}
-				}
-				console->info("OK");
-				rcon.disconnect();
-				return 0;
-			}
-			else
-			{
-				console->info("**********************************");
-				console->info("**********************************");
-				console->info("To talk type ");
-				console->info("SAY -1 Server Restart in 10 mins");
-				console->info();
-				console->info("To see all players type");
-				console->info("players");
-				console->info("**********************************");
-				console->info("**********************************");
-				console->info();
+					console->info("**********************************");
+					console->info("**********************************");
+					console->info("To talk type ");
+					console->info("SAY -1 Server Restart in 10 mins");
+					console->info();
+					console->info("To see all players type");
+					console->info("players");
+					console->info("**********************************");
+					console->info("**********************************");
+					console->info();
 
-				std::string input_str;
-				unsigned int unique_id = 1;
-				for (;;) {
-					std::getline(std::cin, input_str);
-					if (boost::algorithm::iequals(input_str,"quit") == 1)
-					{
-						console->info("Quitting Please Wait");
-						rcon.disconnect();
-						break;
+					std::string input_str;
+					unsigned int unique_id = 1;
+					for (;;) {
+						std::getline(std::cin, input_str);
+						if (boost::algorithm::iequals(input_str,"quit") == 1)
+						{
+							console->info("Quitting Please Wait");
+							rcon.disconnect();
+							break;
+						}
+						else if (boost::algorithm::istarts_with(input_str,"players"))
+						{
+							rcon.getPlayers(unique_id);	
+						}
+						else if (boost::algorithm::istarts_with(input_str,"missions"))
+						{
+							rcon.getMissions(unique_id);	
+						}
+						else if (boost::algorithm::istarts_with(input_str,"addban"))
+						{
+							rcon.addBan(input_str);	
+						}
+						else if (boost::algorithm::istarts_with(input_str,"ban"))
+						{
+							rcon.addBan(input_str);	
+						}
+						else
+						{
+							rcon.sendCommand(input_str);
+						}
 					}
-					else if (boost::algorithm::istarts_with(input_str,"players"))
-					{
-						rcon.getPlayers(unique_id);	
-					}
-					else if (boost::algorithm::istarts_with(input_str,"missions"))
-					{
-						rcon.getMissions(unique_id);	
-					}
-					else if (boost::algorithm::istarts_with(input_str,"addban"))
-					{
-						rcon.addBan(input_str);	
-					}
-					else if (boost::algorithm::istarts_with(input_str,"ban"))
-					{
-						rcon.addBan(input_str);	
-					}
-					else
-					{
-						rcon.sendCommand(input_str);
-					}
+					console->info("Quitting");
+					return 0;
 				}
-				console->info("Quitting");
-				return 0;
 			}
 		}
 	}
