@@ -85,7 +85,7 @@ bool SQL_CUSTOM_V2::init(AbstractExt *extension, const std::string &database_id,
 
 	boost::filesystem::path sql_custom_path(extension_ptr->extDB_info.path);
 	sql_custom_path /= "extDB";
-	sql_custom_path /= "SQL_CUSTOM_V2";
+	sql_custom_path /= "sql_custom_v2";
 	boost::filesystem::create_directories(sql_custom_path); // Creating Directory if missing
 
 	bool status = false;
