@@ -470,68 +470,83 @@ void Ext::connectRcon(char *output, const int &output_size, const std::string &r
 	{
 		std::strcpy(output, ("[0,\"Rcon is Already Running\"]"));
 	}
+	else if (pConf->hasOption(rcon_conf + ".password"))
+	{
+		#ifdef DEBUG_TESTING
+			console->info("extDB2: Loading Rcon Config");
+		#endif
+		logger->info("extDB2: Loading Rcon Config");
+
+		// Rcon Settings
+		Rcon::RconSettings rcon_settings;
+		rcon_settings.address = pConf->getString((rcon_conf + ".IP"), "127.0.0.1");
+		rcon_settings.port = pConf->getInt((rcon_conf + ".Port"), 2302);
+		rcon_settings.password = pConf->getString((rcon_conf + ".Password"), "password");
+		if (boost::algorithm::iequals(player_info_returned, "FULL") == 1)
+		{
+			rcon_settings.full_player_info_returned = true;
+		}
+
+		#ifdef DEBUG_TESTING
+			console->info("extDB2: Loading Rcon IP: {0}, Port: {1}", rcon_settings.address, rcon_settings.port);
+		#endif
+		logger->info("extDB2: Loading Rcon IP: {0}, Port: {1}", rcon_settings.address, rcon_settings.port);
+
+		// Bad Player Name
+		Rcon::BadPlayernameSettings bad_playername_settings;
+		bad_playername_settings.enable = pConf->getBool((rcon_conf + ".Bad Playername Enable"), false);
+
+		if (bad_playername_settings.enable)
+		{
+			#ifdef DEBUG_TESTING
+				console->info("extDB2: RCon Bad Playername Enabled");
+			#endif
+			logger->info("extDB2: RCon Bad Playername Enabled");
+
+			bad_playername_settings.kick_message = pConf->getString(((rcon_conf) + ".Bad Playername Kick Message"), "");
+
+			bad_playername_settings.bad_strings.push_back(":");
+			Poco::StringTokenizer tokens(pConf->getString(((rcon_conf) + ".Bad Playername Strings"), ""), ":");
+			for (auto &token : tokens)
+			{
+				bad_playername_settings.bad_strings.push_back(token);
+			}
+
+			int regrex_rule_num = 0;
+			std::string regex_rule_num_str;
+			while (true)
+			{
+				++regrex_rule_num;
+				regex_rule_num_str = Poco::NumberFormatter::format(regrex_rule_num);
+				if (!(pConf->has(rcon_conf + ".Bad Playername Regrex_" + regex_rule_num_str)))
+				{
+					break;
+				}
+				else
+				{
+					bad_playername_settings.bad_regexs.push_back(pConf->getString(rcon_conf + ".BadPlayerStringsRegrex_" + regex_rule_num_str));
+				}
+			}
+		}
+
+		// Reserved Slots	
+		Rcon::WhitelistSettings whitelist_settings;
+		whitelist_settings.enable = pConf->getBool((rcon_conf + ".Whitelist Enable"), false);
+		if (whitelist_settings.enable)
+		{
+			whitelist_settings.open_slots = pConf->getInt((rcon_conf + ".Whitelist Public Slots"), 0);
+			whitelist_settings.database = pConf->getString((rcon_conf + ".Whitelist Database"), "");
+			whitelist_settings.sql_statement = pConf->getString((rcon_conf + ".Whitelist SQL"), "");
+		}
+		
+		// Start Rcon
+		rcon->start(rcon_settings, bad_playername_settings, whitelist_settings);
+		extDB_connectors_info.rcon = true;
+		std::strcpy(output, "[1]");
+	}
 	else
 	{
-		if (pConf->hasOption(rcon_conf + ".Port"))
-		{
-			std::vector<std::string> bad_playername_strings; 
-			bad_playername_strings.push_back(":");
-
-			std::string bad_playername_kick_message;
-
-			std::vector<std::string> regrex_rules;
-
-			bool enable_check_playername = pConf->getBool((rcon_conf + ".BadPlayerNameChecks"), false);
-			if (enable_check_playername)
-			{
-				bad_playername_kick_message = pConf->getString(((rcon_conf) + ".BadPlayerNameKickMessage"), "");
-
-				std::string temp_str;
-				temp_str = pConf->getString(((rcon_conf) + ".BadPlayerStrings"), "");
-				Poco::StringTokenizer tokens(temp_str, ":");
-				for (auto &token : tokens)
-				{
-					bad_playername_strings.push_back(token);
-				}
-
-				std::string regex_rule_num_str;
-				int regrex_rule_num = 0;
-				while (true)
-				{
-					++regrex_rule_num;
-					regex_rule_num_str = Poco::NumberFormatter::format(regrex_rule_num);
-					if (!(pConf->has(rcon_conf + ".BadPlayerStringsRegrex_" + regex_rule_num_str)))
-					{
-						break;
-					}
-					else
-					{
-						regrex_rules.push_back(pConf->getString(rcon_conf + ".BadPlayerStringsRegrex_" + regex_rule_num_str));
-					}
-				}
-			}
-
-			Rcon::RconSettings rcon_settings;
-			rcon_settings.address = pConf->getString((rcon_conf + ".IP"), "127.0.0.1");
-			rcon_settings.port = pConf->getInt((rcon_conf + ".Port"), 2302);
-			rcon_settings.password = pConf->getString((rcon_conf + ".Password"), "password");
-			if (boost::algorithm::iequals(player_info_returned, "FULL") == 1)
-			{
-				rcon_settings.full_player_info_returned = true;
-			}
-			
-			Rcon::BadPlayerName bad_playername_settings;
-			Rcon::ReservedSlots reserved_slots_settings;
-
-			rcon->start(rcon_settings, bad_playername_settings, reserved_slots_settings);
-
-			extDB_connectors_info.rcon = true;
-			std::strcpy(output, "[1]");
-		}
-		else
-		{
-			std::strcpy(output, ("[0,\"No Config Option Found\"]"));
-		}
+		std::strcpy(output, ("[0,\"No Config Option Found\"]"));
 	}
 }
 
@@ -1308,6 +1323,9 @@ void Ext::callExtension(char *output, const int &output_size, const char *functi
 				}
 			}
 		}
+		#ifdef DEBUG_LOGGING
+			logger->info("extDB2: Extension Output to Server: {0}", output);
+		#endif
 	}
 	catch (spdlog::spdlog_ex& e)
 	{

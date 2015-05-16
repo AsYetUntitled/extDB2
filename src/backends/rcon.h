@@ -53,21 +53,22 @@ class Rcon
 		};
 		RconSettings rcon_settings;
 
-		struct BadPlayerName
+		struct BadPlayernameSettings
 		{
 			bool enable = false;
 			std::vector<std::string> bad_strings;
 			std::vector<std::string> bad_regexs;
 			std::string kick_message;
 		};
-		BadPlayerName bad_playername_settings;
+		BadPlayernameSettings bad_playername_settings;
 
-		struct ReservedSlots
+		struct WhitelistSettings
 		{
 			int open_slots;
 			bool enable = false;
 
 			bool connected_database = false;
+			std::string database;
 
 			std::set<std::string> whitelisted_guids;
 
@@ -77,7 +78,7 @@ class Rcon
 			std::string sql_statement;
 			std::string kick_message;
 		};
-		ReservedSlots reserved_slots_settings;
+		WhitelistSettings whitelist_settings;
 
 		std::unique_ptr<Poco::Data::Session> reserved_slots_session;
 		std::mutex reserved_slots_mutex;
@@ -86,10 +87,10 @@ class Rcon
 		~Rcon();
 
 		#ifndef RCON_APP
-			void extInit(AbstractExt *extension);
+			void extInit(AbstractExt *extension			
 		#endif
 
-		void start(RconSettings &rcon, BadPlayerName &bad_playername, ReservedSlots &reserved_slots);
+		void start(RconSettings &rcon, BadPlayernameSettings &bad_playername, WhitelistSettings &reserved_slots);
 
 		void disconnect();
 		bool status();
