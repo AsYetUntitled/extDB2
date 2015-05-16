@@ -121,6 +121,7 @@ class Rcon
 			std::unordered_map<std::string, std::string> players_whitelisted;
 			std::unordered_map<std::string, std::string> players_non_whitelisted;
 
+			bool connected = false;
 			std::unique_ptr<Poco::Data::Session> session;
 			std::mutex mutex;
 		};
@@ -179,4 +180,6 @@ class Rcon
 		void chatMessage(std::size_t &bytes_received);
 
 		void connectDatabase(std::string &database_conf, Poco::AutoPtr<Poco::Util::IniFileConfiguration> pConf);
+		void checkBadPlayerString(std::string &player_number, std::string &player_name);
+		void checkWhitelistedPlayer(std::string &player_number, std::string &player_name, std::string &player_guid);
 };

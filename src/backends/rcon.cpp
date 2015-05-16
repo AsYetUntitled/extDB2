@@ -364,8 +364,14 @@ void Rcon::processMessageMission(Poco::StringTokenizer &tokens)
 
 void Rcon::processMessagePlayers(Poco::StringTokenizer &tokens)
 {
-	std::vector<RconPlayerInfo> info_vector;
+	{
+		// Reset
+		std::lock_guard<std::mutex> lock(reserved_slots.mutex);
+		reserved_slots.players_whitelisted.clear();
+		reserved_slots.players_non_whitelisted.clear();
+	}
 
+	std::vector<RconPlayerInfo> info_vector;
 	std::string player_str;
 	for (int i = 3; i < (tokens.count() - 1); ++i)
 	{
@@ -408,34 +414,17 @@ void Rcon::processMessagePlayers(Poco::StringTokenizer &tokens)
 				player_data.lobby = "false";
 			}
 
+			logger->info("DEBUG players Player Number: {0}", player_data.number);
+			logger->info("DEBUG players Player Name: {0}.", player_data.player_name);
+			logger->info("DEBUG players Player GUID: {0}.", player_data.guid);
+
 			if (bad_playernames.enable)
 			{
-				bool kicked = false;
-				for (auto &bad_string : bad_playernames.bad_strings)
-				{
-					logger->info("Rcon: checking string: {0}", bad_string);
-					if (!(boost::algorithm::ifind_first(player_data.player_name, bad_string).empty()))
-					{
-						kicked = true;
-						sendCommand("kick " + player_data.number + " " + bad_playernames.kick_message);
-						logger->info("RCon: Kicked Playername: {0} String: {1}", player_data.player_name, bad_string);
-						break;
-					}
-				}
-				if (!kicked)
-				{
-					for (auto &bad_regex : bad_playernames.bad_regexs)
-					{
-						logger->info("Rcon: checking string: {0}", bad_regex);
-						std::regex expression(bad_regex);
-						if (std::regex_search(player_data.player_name, expression))
-						{
-							sendCommand("kick " + player_data.number + " " + bad_playernames.kick_message);
-							logger->info("RCon: Kicked Playername: {0} Regrex: {1}", player_data.player_name, bad_regex);
-							break;
-						}
-					}
-				}
+				checkBadPlayerString(player_data.number, player_data.player_name);
+			}
+			if (reserved_slots.enable)
+			{
+				checkWhitelistedPlayer(player_data.number, player_data.player_name, player_data.guid);
 			}
 			info_vector.push_back(std::move(player_data));
 		}
@@ -510,6 +499,70 @@ void Rcon::processMessagePlayers(Poco::StringTokenizer &tokens)
 }
 
 
+void Rcon::checkBadPlayerString(std::string &player_number, std::string &player_name)
+{
+	bool kicked = false;
+	for (auto &bad_string : bad_playernames.bad_strings)
+	{
+		if (!(boost::algorithm::ifind_first(player_name, bad_string).empty()))
+		{
+			kicked = true;
+			sendCommand("kick " + player_number + " " + bad_playernames.kick_message);
+			logger->info("RCon: Kicked Playername: {0} String: {1}", player_name, bad_string);
+			break;
+		}
+	}
+	if (!kicked)
+	{
+		for (auto &bad_regex : bad_playernames.bad_regexs)
+		{
+			std::regex expression(bad_regex);
+			if(std::regex_search(player_name, expression))
+			{
+				kicked = true;
+				sendCommand("kick " + player_number + " " + bad_playernames.kick_message);
+				logger->info("RCon: Kicked Playername: {0} Regrex: {1}", player_name, bad_regex);
+				break;
+			}
+		}
+	}
+}
+
+
+void Rcon::checkWhitelistedPlayer(std::string &player_number, std::string &player_name, std::string &player_guid)
+{
+	bool whitelisted_player = false;
+	{
+		std::lock_guard<std::mutex> lock(reserved_slots.mutex);
+		if (reserved_slots.whitelisted_guids.find(player_guid) != reserved_slots.whitelisted_guids.end())
+		{
+			// Checking unordered_map for Whitelisted GUID
+			whitelisted_player = true;
+			reserved_slots.players_whitelisted[std::move(player_guid)] = std::move(player_name);
+		}
+		if (!whitelisted_player && reserved_slots.connected)
+		{
+			// Checking database for Whitelisted GUID
+			// TODO DATABASE QUERY
+		}
+
+		if (!whitelisted_player)
+		{
+			// NON-WHITELISTED PLAYER
+			if (reserved_slots.players_non_whitelisted.size() <= reserved_slots.open_slots)
+			{
+				reserved_slots.players_non_whitelisted[std::move(player_guid)] = std::move(player_name);
+			}
+			else
+			{
+				sendCommand("kick " + player_number + " " + reserved_slots.kick_message);
+			}
+		}
+	}
+}
+
+
+
 void Rcon::chatMessage(std::size_t &bytes_received)
 {
 	// Received Chat Messages
@@ -524,7 +577,6 @@ void Rcon::chatMessage(std::size_t &bytes_received)
 	sendPacket(rcon_packet);
 	startReceive();
 
-
 	if (bad_playernames.enable || reserved_slots.enable )
 	{
 		if (boost::algorithm::starts_with(result, "Player #"))
@@ -536,48 +588,25 @@ void Rcon::chatMessage(std::size_t &bytes_received)
 					result = result.substr(8);
 					const std::string::size_type found = result.find(" ");
 					std::string player_number = result.substr(0, (found - 2));
-					logger->info("DEBUG Player Number: {0}", player_number);
 					const std::string::size_type found2 = result.find("(");
 					std::string player_name = result.substr(found, found2 - 2);
-					logger->info("DEBUG Player Name: {0}.", player_name);
 
-					bool kicked = false;
-					for (auto &bad_string : bad_playernames.bad_strings)
-					{
-						if (!(boost::algorithm::ifind_first(player_name, bad_string).empty()))
-						{
-							kicked = true;
-							sendCommand("kick " + player_number + " " + bad_playernames.kick_message);
-							logger->info("RCon: Kicked Playername: {0} String: {1}", player_name, bad_string);
-							break;
-						}
-					}
-					if (!kicked)
-					{
-						for (auto &bad_regex : bad_playernames.bad_regexs)
-						{
-							std::regex expression(bad_regex);
-							if(std::regex_search(player_name, expression))
-							{
-								kicked = true;
-								sendCommand("kick " + player_number + " " + bad_playernames.kick_message);
-								logger->info("RCon: Kicked Playername: {0} Regrex: {1}", player_name, bad_regex);
-								break;
-							}
-						}
-					}
+					logger->info("DEBUG Connected Player Number: {0}", player_number);
+					logger->info("DEBUG Connected Player Name: {0}.", player_name);
+					checkBadPlayerString(player_number, player_name);
 				}
 			}
 			else if (boost::algorithm::ends_with(result, "disconnect"))
 			{
-				std::lock_guard<std::mutex> lock(reserved_slots.mutex);
-
 				auto pos = result.find(" ", result.find("#"));
-
 				std::string player_name = result.substr(pos + 1, result.size() - 11);
 
-				reserved_slots.players_whitelisted.erase(player_name);
-				reserved_slots.players_non_whitelisted.erase(player_name);
+				logger->info("DEBUG Disconnected Player Name: {0}", player_name);
+				{
+					std::lock_guard<std::mutex> lock(reserved_slots.mutex);
+					reserved_slots.players_whitelisted.erase(player_name);
+					reserved_slots.players_non_whitelisted.erase(player_name);
+				}
 			}
 		}
 		else if (reserved_slots.enable && (boost::algorithm::starts_with(result, "Verified GUID")))
@@ -592,25 +621,11 @@ void Rcon::chatMessage(std::size_t &bytes_received)
 			std::string player_number = result.substr(pos_1 + 1, result.size() - pos_2);
 			std::string player_name = result.substr(pos_2);
 
-			{
-				std::lock_guard<std::mutex> lock(reserved_slots.mutex);
-				if (reserved_slots.whitelisted_guids.find(player_guid) != reserved_slots.whitelisted_guids.end())
-				{
-					reserved_slots.players_whitelisted[std::move(player_guid)] = std::move(player_name);
-				}
-				else
-				{
-					// TODO Query Database for player whitelist
-					if (reserved_slots.players_non_whitelisted.size() > reserved_slots.open_slots)
-					{
-						sendCommand("kick " + player_number + " " + reserved_slots.kick_message);
-					}
-					else
-					{
-						reserved_slots.players_non_whitelisted[std::move(player_guid)] = std::move(player_name);
-					}
-				}
-			}
+			logger->info("DEBUG Verified Player Number: {0}", player_number);
+			logger->info("DEBUG Verified Player Name: {0}.", player_name);
+			logger->info("DEBUG Verified Player GUID: {0}.", player_guid);
+
+			checkWhitelistedPlayer(player_number, player_name, player_guid);
 		}
 	}
 }
@@ -921,7 +936,6 @@ void Rcon::connectDatabase(std::string &database_conf, Poco::AutoPtr<Poco::Util:
 {
 	if (database_conf.empty())
 	{
-		bool connected = true;
 		if (pConf->hasOption(database_conf + ".Type"))
 		{
 			std::string db_type = pConf->getString(database_conf + ".Type");
@@ -976,45 +990,50 @@ void Rcon::connectDatabase(std::string &database_conf, Poco::AutoPtr<Poco::Util:
 					reserved_slots.session.reset(new Poco::Data::Session(db_type, connection_str));
 					if (reserved_slots.session->isConnected())
 					{
-						logger->info("Rcon: Database Session Pool Started");
+						logger->info("Rcon: Database Session Started");
 					}
 					else
 					{
-						logger->warn("Rcon: Database Session Pool Failed");
-						connected = false;
+						logger->warn("Rcon: Database Session Failed");
+						reserved_slots.connected = false;
 					}
 				}
 				catch (Poco::Data::NotConnectedException& e)
 				{
 					logger->error("Rcon: Database NotConnectedException Error: {0}", e.displayText());
-					connected = false;
+					reserved_slots.connected = false;
 				}
 				catch (Poco::Data::MySQL::ConnectionException& e)
 				{
 					logger->error("Rcon: Database ConnectionException Error: {0}", e.displayText());
-					connected = false;
+					reserved_slots.connected = false;
 				}
 				catch (Poco::Exception& e)
 				{
 					logger->error("Rcon: Database Exception Error: {0}", e.displayText());
-					connected = false;
+					reserved_slots.connected = false;
 				}
 			}
 			else
 			{
 				logger->warn("Rcon: No Database Engine Found for {0}", db_type);
-				connected = false;
+				reserved_slots.connected = false;
 			}
 		}
 		else
 		{
-			logger->warn("Rcon: No Config Option Found: {0}", database_conf);
-			connected = false;
+			logger->warn("Rcon: No Database Config Option Found: {0}", database_conf);
+			reserved_slots.connected = false;
+		}
+
+		if (!reserved_slots.connected)
+		{
+			reserved_slots.session.release();
 		}
 	}
 	else
 	{
-		logger->warn("Rcon: No Config Option Found: {0}", database_conf);
+		logger->warn("Rcon: No Database Config Option Found: {0}", database_conf);
 	}
 }
 
