@@ -44,6 +44,44 @@ along with this program. If not, see <http://www.gnu.org/licenses/>.
 class Rcon
 {
 	public:
+		struct RconSettings
+		{
+			std::string address;
+			unsigned int port;
+			std::string password;
+			bool full_player_info_returned = false;
+		};
+		RconSettings rcon_settings;
+
+		struct BadPlayerName
+		{
+			bool enable = false;
+			std::vector<std::string> bad_strings;
+			std::vector<std::string> bad_regexs;
+			std::string kick_message;
+		};
+		BadPlayerName bad_playername_settings;
+
+		struct ReservedSlots
+		{
+			int open_slots;
+			bool enable = false;
+
+			bool connected_database = false;
+
+			std::set<std::string> whitelisted_guids;
+
+			std::unordered_map<std::string, std::string> players_whitelisted;
+			std::unordered_map<std::string, std::string> players_non_whitelisted;
+
+			std::string sql_statement;
+			std::string kick_message;
+		};
+		ReservedSlots reserved_slots_settings;
+
+		std::unique_ptr<Poco::Data::Session> reserved_slots_session;
+		std::mutex reserved_slots_mutex;
+
 		Rcon(boost::asio::io_service &io_service, std::shared_ptr<spdlog::logger> spdlog);
 		~Rcon();
 
@@ -51,10 +89,7 @@ class Rcon
 			void extInit(AbstractExt *extension);
 		#endif
 
-		void start(std::string address, unsigned int port, std::string password, std::string player_info_returned, 
-					std::vector<std::string> bad_playername_strings, std::vector<std::string> bad_playername_regexs,
-					std::string bad_playername_kick_message, 
-					bool enable_check_playername);
+		void start(RconSettings &rcon, BadPlayerName &bad_playername, ReservedSlots &reserved_slots);
 
 		void disconnect();
 		bool status();
@@ -66,15 +101,24 @@ class Rcon
 		void getPlayers(unsigned int &unique_id);
 
 	private:
-		#ifndef RCON_APP
+		#ifdef RCON_APP
+			struct DBConnectors
+			{
+				bool mysql=false;
+				bool sqlite=false;
+			};
+			DBConnectors DB_connectors_info;
+		#else
 			AbstractExt *extension_ptr;
 		#endif
 
+		char *rcon_password;
+
 		boost::asio::io_service *io_service_ptr;
-		std::string player_info_returned_mode;
 		std::shared_ptr<spdlog::logger> logger;
 
-		// Inputs are strings + Outputs are strings.  Info is not kept for long, so no point converting to a different datatype just to convert back to string for armaserver
+		// Inputs are strings + Outputs are strings.  
+		// 		Info is not kept for long, so there no point converting to a different datatype just to convert back to a string for armaserver
 		struct RconPlayerInfo   
 		{
 			std::string number;
@@ -100,32 +144,6 @@ class Rcon
 			int request_type;
 		};
 
-		struct BadPlayerName
-		{
-			bool enable = false;
-			std::vector<std::string> bad_strings;
-			std::vector<std::string> bad_regexs;
-			std::string kick_message;
-		};
-		BadPlayerName bad_playernames;
-
-		struct ReservedSlots
-		{
-			bool enable = false;
-			int open_slots;
-
-			std::string kick_message;
-
-			std::set<std::string> whitelisted_guids;
-
-			std::unordered_map<std::string, std::string> players_whitelisted;
-			std::unordered_map<std::string, std::string> players_non_whitelisted;
-
-			bool connected = false;
-			std::unique_ptr<Poco::Data::Session> session;
-			std::mutex mutex;
-		};
-		ReservedSlots reserved_slots;
 
 		typedef std::pair< int, std::unordered_map<int, std::string> > RconMultiPartMsg;
 		struct RconSocket
@@ -152,10 +170,7 @@ class Rcon
 		};
 		RconSocket rcon_socket;
 
-		char *rcon_password;
-		
 
-		// Functions
 		void connect();
 		void startReceive();
 

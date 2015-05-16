@@ -44,7 +44,7 @@ along with this program. If not, see <http://www.gnu.org/licenses/>.
 #include <boost/asio.hpp>
 #include <boost/bind.hpp>
 #include <boost/crc.hpp>
-#include <boost/filesystem/path.hpp>
+#include <boost/filesystem.hpp>
 
 #include <Poco/Data/MySQL/MySQLException.h>
 
@@ -98,24 +98,17 @@ void Rcon::timerKeepAlive(const size_t delay)
 #endif
 
 
-void Rcon::start(std::string address, unsigned int port, std::string password, std::string player_info_returned, 
-				std::vector<std::string> bad_playername_strings, std::vector<std::string> bad_playername_regexs, 
-				std::string bad_playername_kick_message, bool bad_playernames_enable)
+void Rcon::start(RconSettings &rcon, BadPlayerName &bad_playername, ReservedSlots &reserved_slots)
 {
-	bad_playernames.bad_strings = bad_playername_strings;
-	bad_playernames.bad_regexs = bad_playername_regexs;
+	rcon_settings = rcon_settings;
+	bad_playername_settings = bad_playername_settings;
+	reserved_slots_settings = reserved_slots_settings;
 
-	bad_playernames.kick_message = bad_playername_kick_message;
-
-	bad_playernames.enable = bad_playernames_enable;
-
-
-	player_info_returned_mode = player_info_returned;
-	boost::asio::ip::udp::endpoint endpoint(boost::asio::ip::address::from_string(address), port);
+	boost::asio::ip::udp::endpoint endpoint(boost::asio::ip::address::from_string(rcon_settings.address), rcon_settings.port);
 	rcon_socket.socket->async_connect(endpoint, boost::bind(&Rcon::connectionHandler, this, boost::asio::placeholders::error));
 
-	rcon_password = new char[password.size() + 1];
-	std::strcpy(rcon_password, password.c_str());
+	rcon_password = new char[rcon_settings.password.size() + 1];
+	std::strcpy(rcon_password, rcon_settings.password.c_str());
 }
 
 
@@ -366,9 +359,9 @@ void Rcon::processMessagePlayers(Poco::StringTokenizer &tokens)
 {
 	{
 		// Reset
-		std::lock_guard<std::mutex> lock(reserved_slots.mutex);
-		reserved_slots.players_whitelisted.clear();
-		reserved_slots.players_non_whitelisted.clear();
+		std::lock_guard<std::mutex> lock(reserved_slots_mutex);
+		reserved_slots_settings.players_whitelisted.clear();
+		reserved_slots_settings.players_non_whitelisted.clear();
 	}
 
 	std::vector<RconPlayerInfo> info_vector;
@@ -418,11 +411,11 @@ void Rcon::processMessagePlayers(Poco::StringTokenizer &tokens)
 			logger->info("DEBUG players Player Name: {0}.", player_data.player_name);
 			logger->info("DEBUG players Player GUID: {0}.", player_data.guid);
 
-			if (bad_playernames.enable)
+			if (bad_playername_settings.enable)
 			{
 				checkBadPlayerString(player_data.number, player_data.player_name);
 			}
-			if (reserved_slots.enable)
+			if (reserved_slots_settings.enable)
 			{
 				checkWhitelistedPlayer(player_data.number, player_data.player_name, player_data.guid);
 			}
@@ -442,7 +435,7 @@ void Rcon::processMessagePlayers(Poco::StringTokenizer &tokens)
 	else
 	{
 		result_data.message = "[1,[";
-		if (player_info_returned_mode == "FULL")
+		if (rcon_settings.full_player_info_returned)
 		{
 			for(auto &info : info_vector)
 			{
@@ -502,25 +495,25 @@ void Rcon::processMessagePlayers(Poco::StringTokenizer &tokens)
 void Rcon::checkBadPlayerString(std::string &player_number, std::string &player_name)
 {
 	bool kicked = false;
-	for (auto &bad_string : bad_playernames.bad_strings)
+	for (auto &bad_string : bad_playername_settings.bad_strings)
 	{
 		if (!(boost::algorithm::ifind_first(player_name, bad_string).empty()))
 		{
 			kicked = true;
-			sendCommand("kick " + player_number + " " + bad_playernames.kick_message);
+			sendCommand("kick " + player_number + " " + bad_playername_settings.kick_message);
 			logger->info("RCon: Kicked Playername: {0} String: {1}", player_name, bad_string);
 			break;
 		}
 	}
 	if (!kicked)
 	{
-		for (auto &bad_regex : bad_playernames.bad_regexs)
+		for (auto &bad_regex : bad_playername_settings.bad_regexs)
 		{
 			std::regex expression(bad_regex);
 			if(std::regex_search(player_name, expression))
 			{
 				kicked = true;
-				sendCommand("kick " + player_number + " " + bad_playernames.kick_message);
+				sendCommand("kick " + player_number + " " + bad_playername_settings.kick_message);
 				logger->info("RCon: Kicked Playername: {0} Regrex: {1}", player_name, bad_regex);
 				break;
 			}
@@ -533,14 +526,14 @@ void Rcon::checkWhitelistedPlayer(std::string &player_number, std::string &playe
 {
 	bool whitelisted_player = false;
 	{
-		std::lock_guard<std::mutex> lock(reserved_slots.mutex);
-		if (reserved_slots.whitelisted_guids.find(player_guid) != reserved_slots.whitelisted_guids.end())
+		std::lock_guard<std::mutex> lock(reserved_slots_mutex);
+		if (reserved_slots_settings.whitelisted_guids.find(player_guid) != reserved_slots_settings.whitelisted_guids.end())
 		{
 			// Checking unordered_map for Whitelisted GUID
 			whitelisted_player = true;
-			reserved_slots.players_whitelisted[std::move(player_guid)] = std::move(player_name);
+			reserved_slots_settings.players_whitelisted[std::move(player_guid)] = std::move(player_name);
 		}
-		if (!whitelisted_player && reserved_slots.connected)
+		if (!whitelisted_player && reserved_slots_settings.connected_database)
 		{
 			// Checking database for Whitelisted GUID
 			// TODO DATABASE QUERY
@@ -549,13 +542,13 @@ void Rcon::checkWhitelistedPlayer(std::string &player_number, std::string &playe
 		if (!whitelisted_player)
 		{
 			// NON-WHITELISTED PLAYER
-			if (reserved_slots.players_non_whitelisted.size() <= reserved_slots.open_slots)
+			if (reserved_slots_settings.players_non_whitelisted.size() <= reserved_slots_settings.open_slots)
 			{
-				reserved_slots.players_non_whitelisted[std::move(player_guid)] = std::move(player_name);
+				reserved_slots_settings.players_non_whitelisted[std::move(player_guid)] = std::move(player_name);
 			}
 			else
 			{
-				sendCommand("kick " + player_number + " " + reserved_slots.kick_message);
+				sendCommand("kick " + player_number + " " + reserved_slots_settings.kick_message);
 			}
 		}
 	}
@@ -577,13 +570,13 @@ void Rcon::chatMessage(std::size_t &bytes_received)
 	sendPacket(rcon_packet);
 	startReceive();
 
-	if (bad_playernames.enable || reserved_slots.enable )
+	if (reserved_slots_settings.enable || reserved_slots_settings.enable)
 	{
 		if (boost::algorithm::starts_with(result, "Player #"))
 		{
 			if (boost::algorithm::ends_with(result, " connected")) //Whitespace so doesn't pickup on disconnect
 			{
-				if (bad_playernames.enable)
+				if (bad_playername_settings.enable)
 				{
 					result = result.substr(8);
 					const std::string::size_type found = result.find(" ");
@@ -603,13 +596,13 @@ void Rcon::chatMessage(std::size_t &bytes_received)
 
 				logger->info("DEBUG Disconnected Player Name: {0}", player_name);
 				{
-					std::lock_guard<std::mutex> lock(reserved_slots.mutex);
-					reserved_slots.players_whitelisted.erase(player_name);
-					reserved_slots.players_non_whitelisted.erase(player_name);
+					std::lock_guard<std::mutex> lock(reserved_slots_mutex);
+					reserved_slots_settings.players_whitelisted.erase(player_name);
+					reserved_slots_settings.players_non_whitelisted.erase(player_name);
 				}
 			}
 		}
-		else if (reserved_slots.enable && (boost::algorithm::starts_with(result, "Verified GUID")))
+		else if (reserved_slots_settings.enable && (boost::algorithm::starts_with(result, "Verified GUID")))
 		{
 			auto pos_1 = result.find("(");
 			auto pos_2 = result.find(")", pos_1);
@@ -951,10 +944,18 @@ void Rcon::connectDatabase(std::string &database_conf, Poco::AutoPtr<Poco::Util:
 					if (boost::algorithm::iequals(db_type, std::string("MySQL")) == 1)
 					{
 						db_type = "MySQL";
-						if (!(extension_ptr->extDB_connectors_info.mysql))
+						#ifdef RCON_APP
+							if (!(DB_connectors_info.mysql))
+						#else
+							if (!(extension_ptr->extDB_connectors_info.mysql))
+						#endif
 						{
 							Poco::Data::MySQL::Connector::registerConnector();
-							extension_ptr->extDB_connectors_info.mysql = true;
+							#ifdef RCON_APP
+								DB_connectors_info.mysql = true;
+							#else
+								extension_ptr->extDB_connectors_info.mysql = true;
+							#endif
 						}
 						connection_str += "host=" + pConf->getString(database_conf + ".IP") + ";";
 						connection_str += "port=" + pConf->getString(database_conf + ".Port") + ";";
@@ -975,60 +976,72 @@ void Rcon::connectDatabase(std::string &database_conf, Poco::AutoPtr<Poco::Util:
 					else if (boost::algorithm::iequals(db_type, "SQLite") == 1)
 					{
 						db_type = "SQLite";
-						if (!(extension_ptr->extDB_connectors_info.sqlite))
+						#ifdef RCON_APP
+							if (!(DB_connectors_info.sqlite))
+						#else
+							if (!(extension_ptr->extDB_connectors_info.sqlite))
+						#endif
 						{
 							Poco::Data::SQLite::Connector::registerConnector();
-							extension_ptr->extDB_connectors_info.sqlite = true;
+							#ifdef RCON_APP
+								DB_connectors_info.sqlite = true;
+							#else
+								extension_ptr->extDB_connectors_info.sqlite = true;
+							#endif
 						}
 
-						boost::filesystem::path sqlite_path(extension_ptr->extDB_info.path);
+						#ifdef RCON_APP
+							boost::filesystem::path sqlite_path(boost::filesystem::current_path());
+						#else
+							boost::filesystem::path sqlite_path(extension_ptr->extDB_info.path);
+						#endif					
 						sqlite_path /= "extDB";
 						sqlite_path /= "sqlite";
 						sqlite_path /= pConf->getString(database_conf + ".Name");
 						connection_str = sqlite_path.make_preferred().string();
 					}
-					reserved_slots.session.reset(new Poco::Data::Session(db_type, connection_str));
-					if (reserved_slots.session->isConnected())
+					reserved_slots_session.reset(new Poco::Data::Session(db_type, connection_str));
+					if (reserved_slots_session->isConnected())
 					{
 						logger->info("Rcon: Database Session Started");
 					}
 					else
 					{
 						logger->warn("Rcon: Database Session Failed");
-						reserved_slots.connected = false;
+						reserved_slots_settings.connected_database = false;
 					}
 				}
 				catch (Poco::Data::NotConnectedException& e)
 				{
 					logger->error("Rcon: Database NotConnectedException Error: {0}", e.displayText());
-					reserved_slots.connected = false;
+					reserved_slots_settings.connected_database = false;
 				}
 				catch (Poco::Data::MySQL::ConnectionException& e)
 				{
 					logger->error("Rcon: Database ConnectionException Error: {0}", e.displayText());
-					reserved_slots.connected = false;
+					reserved_slots_settings.connected_database = false;
 				}
 				catch (Poco::Exception& e)
 				{
 					logger->error("Rcon: Database Exception Error: {0}", e.displayText());
-					reserved_slots.connected = false;
+					reserved_slots_settings.connected_database = false;
 				}
 			}
 			else
 			{
 				logger->warn("Rcon: No Database Engine Found for {0}", db_type);
-				reserved_slots.connected = false;
+				reserved_slots_settings.connected_database = false;
 			}
 		}
 		else
 		{
 			logger->warn("Rcon: No Database Config Option Found: {0}", database_conf);
-			reserved_slots.connected = false;
+			reserved_slots_settings.connected_database = false;
 		}
 
-		if (!reserved_slots.connected)
+		if (!reserved_slots_settings.connected_database)
 		{
-			reserved_slots.session.release();
+			reserved_slots_session.release();
 		}
 	}
 	else
@@ -1090,11 +1103,16 @@ void Rcon::connectDatabase(std::string &database_conf, Poco::AutoPtr<Poco::Util:
 		}
 
 		Rcon rcon(io_service, console);
-		std::string address = options["ip"].as<std::string>();
-		int port = options["port"].as<int>();
-		std::string password = options["password"].as<std::string>();
 
-		rcon.start(address, port, password, "FULL", std::vector<std::string>(), std::vector<std::string>(), std::string(), false);
+		Rcon::RconSettings rcon_settings;
+		rcon_settings.address = options["ip"].as<std::string>();
+		rcon_settings.port = options["port"].as<int>();
+		rcon_settings.password = options["password"].as<std::string>();
+		
+		Rcon::BadPlayerName bad_playername_settings;
+		Rcon::ReservedSlots reserved_slots_settings;
+
+		rcon.start(rcon_settings, bad_playername_settings, reserved_slots_settings);
 		
 		if (options.count("file"))
 		{

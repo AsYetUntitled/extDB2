@@ -466,14 +466,6 @@ void Ext::connectRemote(char *output, const int &output_size, const std::string 
 void Ext::connectRcon(char *output, const int &output_size, const std::string &rcon_conf, std::string player_info_returned)
 // Start RCon
 {
-	if (boost::algorithm::iequals(player_info_returned, "FULL") == 1)
-	{
-		player_info_returned = "FULL";
-	}
-	else
-	{
-		player_info_returned = "PARTIAL";
-	}
 	if (extDB_connectors_info.rcon)
 	{
 		std::strcpy(output, ("[0,\"Rcon is Already Running\"]"));
@@ -519,13 +511,22 @@ void Ext::connectRcon(char *output, const int &output_size, const std::string &r
 				}
 			}
 
-			rcon->start(pConf->getString((rcon_conf + ".IP"), "127.0.0.1"), pConf->getInt((rcon_conf + ".Port"), 2302), 
-						pConf->getString((rcon_conf + ".Password"), "password"), 
-						player_info_returned,
-						bad_playername_strings, regrex_rules, bad_playername_kick_message, enable_check_playername);
+			Rcon::RconSettings rcon_settings;
+			rcon_settings.address = pConf->getString((rcon_conf + ".IP"), "127.0.0.1");
+			rcon_settings.port = pConf->getInt((rcon_conf + ".Port"), 2302);
+			rcon_settings.password = pConf->getString((rcon_conf + ".Password"), "password");
+			if (boost::algorithm::iequals(player_info_returned, "FULL") == 1)
+			{
+				rcon_settings.full_player_info_returned = true;
+			}
+			
+			Rcon::BadPlayerName bad_playername_settings;
+			Rcon::ReservedSlots reserved_slots_settings;
 
-			std::strcpy(output, "[1]");
+			rcon->start(rcon_settings, bad_playername_settings, reserved_slots_settings);
+
 			extDB_connectors_info.rcon = true;
+			std::strcpy(output, "[1]");
 		}
 		else
 		{
