@@ -337,6 +337,11 @@ Ext::Ext(std::string dll_path, std::unordered_map<std::string, std::string> opti
 		logger->info();
 		spdlog::set_pattern("[%H:%M:%S %z] [Thread %t] %v");
 	}
+	catch(const boost::filesystem::filesystem_error& e)
+	{
+		std::cout << "BOOST FILESYSTEM ERROR: " << e.what() << std::endl;
+		std::exit(EXIT_FAILURE);
+	}
 	catch (spdlog::spdlog_ex& e)
 	{
 		std::cout << "SPDLOG ERROR: " <<  e.what() << std::endl;
