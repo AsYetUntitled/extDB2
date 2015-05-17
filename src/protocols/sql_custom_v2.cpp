@@ -775,7 +775,6 @@ void SQL_CUSTOM_V2::executeSQL(Poco::Data::Statement &sql_statement, std::string
 	}
 	catch (Poco::Data::ConnectionFailedException& e)
 	{
-		// Error
 		status = false;
 		#ifdef DEBUG_TESTING
 			extension_ptr->console->error("extDB2: SQL_CUSTOM_V2: Error ConnectionFailedException: {0}", e.displayText());
@@ -969,7 +968,6 @@ void SQL_CUSTOM_V2::callPreparedStatement(std::string &input_str, std::string ca
 	}
 	catch (Poco::Data::ConnectionFailedException& e)
 	{
-		// Error
 		status = false;
 		#ifdef DEBUG_TESTING
 			extension_ptr->console->error("extDB2: SQL_CUSTOM_V2: Error ConnectionFailedException: {0}", e.displayText());
