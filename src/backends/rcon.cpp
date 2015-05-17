@@ -117,7 +117,7 @@ void Rcon::Reconnect(const boost::system::error_code& error)
 #endif
 
 
-void Rcon::start(RconSettings &rcon, BadPlayernameSettings &bad_playername, WhitelistSettings &whitelist)
+void Rcon::start(RconSettings &rcon, BadPlayernameSettings &bad_playername, WhitelistSettings &whitelist, Poco::AutoPtr<Poco::Util::IniFileConfiguration> pConf)
 {
 	try
 	{
@@ -128,6 +128,11 @@ void Rcon::start(RconSettings &rcon, BadPlayernameSettings &bad_playername, Whit
 		rcon_password = new char[rcon_settings.password.size() + 1];
 		std::strcpy(rcon_password, rcon_settings.password.c_str());
 
+		if (whitelist_settings.enable && (!whitelist.database.empty()))
+		{
+			connectDatabase(whitelist.database, pConf);
+		}
+		
 		boost::asio::ip::udp::endpoint endpoint(boost::asio::ip::address::from_string(rcon_settings.address), rcon_settings.port);
 		rcon_socket.socket->async_connect(endpoint, boost::bind(&Rcon::connectionHandler, this, boost::asio::placeholders::error));
 	}
@@ -236,7 +241,6 @@ void Rcon::loginResponse()
 	if (rcon_socket.recv_buffer[8] == 0x01)
 	{
 		*(rcon_socket.rcon_login_flag) = true;
-		//resetSequenceNum(rcon_socket);
 
 		logger->info("Rcon: Login Success");
 		timerKeepAlive(30);
@@ -367,22 +371,18 @@ void Rcon::processMessageMission(Poco::StringTokenizer &tokens)
 		result_data.message += "]]";
 	}
 
-	#ifndef RCON_APP
+	#ifdef RCON_APP
+		logger->info("RCON: Mission: {0}", result_data.message);
+	#else
 		std::vector<unsigned int> unique_id_saves;
-	#endif
-	{
-		std::lock_guard<std::mutex> lock(rcon_socket.mutex_mission_requests);
-		#ifdef RCON_APP
-			logger->info("RCON: Mission: {0}", result_data.message);
-		#else
-			for (unsigned int unique_id : rcon_socket.mission_requests)
-			{
-				unique_id_saves.push_back(unique_id);
-			}
-			rcon_socket.mission_requests.clear();
-		#endif
-	}
-	#ifndef RCON_APP
+		{
+			std::lock_guard<std::mutex> lock(rcon_socket.mutex_mission_requests);
+				for (unsigned int unique_id : rcon_socket.mission_requests)
+				{
+					unique_id_saves.push_back(unique_id);
+				}
+				rcon_socket.mission_requests.clear();
+		}
 		for (unsigned int unique_id: unique_id_saves)
 		{
 			if (unique_id != 1)
@@ -397,7 +397,6 @@ void Rcon::processMessageMission(Poco::StringTokenizer &tokens)
 void Rcon::processMessagePlayers(Poco::StringTokenizer &tokens)
 {
 	{
-		// Reset
 		std::lock_guard<std::mutex> lock(reserved_slots_mutex);
 		whitelist_settings.players_whitelisted.clear();
 		whitelist_settings.players_non_whitelisted.clear();
@@ -454,10 +453,12 @@ void Rcon::processMessagePlayers(Poco::StringTokenizer &tokens)
 			{
 				checkBadPlayerString(player_data.number, player_data.player_name);
 			}
+			/*  Don't want to kick players that are already ingame for not beening whitelisted
 			if (whitelist_settings.enable)
 			{
 				checkWhitelistedPlayer(player_data.number, player_data.player_name, player_data.guid);
 			}
+			*/
 			info_vector.push_back(std::move(player_data));
 		}
 		else
@@ -572,9 +573,16 @@ void Rcon::checkWhitelistedPlayer(std::string &player_number, std::string &playe
 			whitelisted_player = true;
 			whitelist_settings.players_whitelisted[std::move(player_guid)] = std::move(player_name);
 		}
-		if (!whitelisted_player && whitelist_settings.connected_database)
+		else if (!whitelisted_player && whitelist_settings.connected_database)
 		{
 			// Checking database for Whitelisted GUID
+			whitelist_statement->bindClear();
+			*whitelist_statement.get(), Poco::Data::Keywords::use(player_guid);
+			whitelist_statement->bindFixup();
+
+			// TODO DATABASE QUERY
+			bool status = true;
+			executeSQL(status);
 			// TODO DATABASE QUERY
 		}
 
@@ -1039,10 +1047,12 @@ void Rcon::connectDatabase(std::string &database_conf, Poco::AutoPtr<Poco::Util:
 						sqlite_path /= pConf->getString(database_conf + ".Name");
 						connection_str = sqlite_path.make_preferred().string();
 					}
-					reserved_slots_session.reset(new Poco::Data::Session(db_type, connection_str));
-					if (reserved_slots_session->isConnected())
+					Poco::Data::Session session(db_type, connection_str);
+					if (session.isConnected())
 					{
 						logger->info("Rcon: Database Session Started");
+						whitelist_statement.reset(new Poco::Data::Statement(session));
+						*whitelist_statement.get() << whitelist_settings.sql_statement;
 					}
 					else
 					{
@@ -1077,15 +1087,92 @@ void Rcon::connectDatabase(std::string &database_conf, Poco::AutoPtr<Poco::Util:
 			logger->warn("Rcon: No Database Config Option Found: {0}", database_conf);
 			whitelist_settings.connected_database = false;
 		}
-
-		if (!whitelist_settings.connected_database)
-		{
-			reserved_slots_session.release();
-		}
 	}
 	else
 	{
 		logger->warn("Rcon: No Database Config Option Found: {0}", database_conf);
+	}
+}
+
+
+void Rcon::executeSQL(bool &status)
+{
+	try
+	{
+		whitelist_statement->execute();
+	}
+	catch (Poco::InvalidAccessException& e)
+	{
+		status = false;
+		#ifdef DEBUG_TESTING
+			extension_ptr->console->error("extDB2: SQL_CUSTOM_V2: Error NotConnectedException: {0}", e.displayText());
+		#endif
+		extension_ptr->logger->error("extDB2: SQL_CUSTOM_V2: Error NotConnectedException: {0}", e.displayText());
+	}
+	catch (Poco::Data::NotConnectedException& e)
+	{
+		status = false;
+		#ifdef DEBUG_TESTING
+			extension_ptr->console->error("extDB2: SQL_CUSTOM_V2: Error NotConnectedException: {0}", e.displayText());
+		#endif
+		extension_ptr->logger->error("extDB2: SQL_CUSTOM_V2: Error NotConnectedException: {0}", e.displayText());
+	}
+	catch (Poco::NotImplementedException& e)
+	{
+		status = false;
+		#ifdef DEBUG_TESTING
+			extension_ptr->console->error("extDB2: SQL_CUSTOM_V2: Error NotImplementedException: {0}", e.displayText());
+		#endif
+		extension_ptr->logger->error("extDB2: SQL_CUSTOM_V2: Error NotImplementedException: {0}", e.displayText());
+	}
+	catch (Poco::Data::SQLite::DBLockedException& e)
+	{
+		status = false;
+		#ifdef DEBUG_TESTING
+			extension_ptr->console->error("extDB2: SQL_CUSTOM_V2: Error DBLockedException: {0}", e.displayText());
+		#endif
+		extension_ptr->logger->error("extDB2: SQL_CUSTOM_V2: Error DBLockedException: {0}", e.displayText());
+	}
+	catch (Poco::Data::MySQL::ConnectionException& e)
+	{
+		status = false;
+		#ifdef DEBUG_TESTING
+			extension_ptr->console->error("extDB2: SQL_CUSTOM_V2: Error ConnectionException: {0}", e.displayText());
+		#endif
+		extension_ptr->logger->error("extDB2: SQL_CUSTOM_V2: Error ConnectionException: {0}", e.displayText());
+	}
+	catch(Poco::Data::MySQL::StatementException& e)
+	{
+		status = false;
+		#ifdef DEBUG_TESTING
+			extension_ptr->console->error("extDB2: SQL_CUSTOM_V2: Error StatementException: {0}", e.displayText());
+		#endif
+		extension_ptr->logger->error("extDB2: SQL_CUSTOM_V2: Error StatementException: {0}", e.displayText());
+	}
+	catch (Poco::Data::ConnectionFailedException& e)
+	{
+		// Error
+		status = false;
+		#ifdef DEBUG_TESTING
+			extension_ptr->console->error("extDB2: SQL_CUSTOM_V2: Error ConnectionFailedException: {0}", e.displayText());
+		#endif
+		extension_ptr->logger->error("extDB2: SQL_CUSTOM_V2: Error ConnectionFailedException: {0}", e.displayText());
+	}
+	catch (Poco::Data::DataException& e)
+	{
+		status = false;
+		#ifdef DEBUG_TESTING
+			extension_ptr->console->error("extDB2: SQL_CUSTOM_V2: Error DataException: {0}", e.displayText());
+		#endif
+		extension_ptr->logger->error("extDB2: SQL_CUSTOM_V2: Error DataException: {0}", e.displayText());
+	}
+	catch (Poco::Exception& e)
+	{
+		status = false;
+		#ifdef DEBUG_TESTING
+			extension_ptr->console->error("extDB2: SQL_CUSTOM_V2: Error Exception: {0}", e.displayText());
+		#endif
+		extension_ptr->logger->error("extDB2: SQL_CUSTOM_V2: Error Exception: {0}", e.displayText());
 	}
 }
 
@@ -1179,14 +1266,14 @@ void Rcon::connectDatabase(std::string &database_conf, Poco::AutoPtr<Poco::Util:
 						while (true)
 						{
 							++regrex_rule_num;
-							regex_rule_num_str = Poco::NumberFormatter::format(regrex_rule_num);
-							if (!(pConf->has(conf_section + ".Bad Playername Regrex_" + regex_rule_num_str)))
+							regex_rule_num_str = ".Bad Playername Regrex_" + Poco::NumberFormatter::format(regrex_rule_num);
+							if (!(pConf->has(conf_section + regex_rule_num_str)))
 							{
 								break;
 							}
 							else
 							{
-								bad_playername_settings.bad_regexs.push_back(pConf->getString(conf_section + ".BadPlayerStringsRegrex_" + regex_rule_num_str));
+								bad_playername_settings.bad_regexs.push_back(pConf->getString(conf_section + regex_rule_num_str));
 							}
 						}
 					}
@@ -1200,7 +1287,7 @@ void Rcon::connectDatabase(std::string &database_conf, Poco::AutoPtr<Poco::Util:
 						whitelist_settings.sql_statement = pConf->getString((conf_section + ".Whitelist SQL"), "");
 					}
 				}
-				rcon.start(rcon_settings, bad_playername_settings, whitelist_settings);
+				rcon.start(rcon_settings, bad_playername_settings, whitelist_settings, pConf);
 
 				if (options.count("file"))
 				{

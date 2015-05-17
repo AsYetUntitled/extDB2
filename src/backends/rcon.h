@@ -30,9 +30,15 @@ along with this program. If not, see <http://www.gnu.org/licenses/>.
 #include <boost/asio.hpp>
 #include <boost/crc.hpp>
 
+#include <Poco/Data/RecordSet.h>
 #include <Poco/Data/Session.h>
 #include <Poco/Data/MySQL/Connector.h>
 #include <Poco/Data/SQLite/Connector.h>
+
+#include <Poco/Data/MySQL/Connector.h>
+#include <Poco/Data/MySQL/MySQLException.h>
+#include <Poco/Data/SQLite/Connector.h>
+#include <Poco/Data/SQLite/SQLiteException.h>
 
 #include <Poco/ExpireCache.h>
 #include <Poco/Stopwatch.h>
@@ -80,7 +86,8 @@ class Rcon
 		};
 		WhitelistSettings whitelist_settings;
 
-		std::unique_ptr<Poco::Data::Session> reserved_slots_session;
+		std::unique_ptr<Poco::Data::Statement> whitelist_statement;
+
 		std::mutex reserved_slots_mutex;
 
 		Rcon(boost::asio::io_service &io_service, std::shared_ptr<spdlog::logger> spdlog);
@@ -93,7 +100,7 @@ class Rcon
 			void extInit(AbstractExt *extension);	
 		#endif
 
-		void start(RconSettings &rcon, BadPlayernameSettings &bad_playername, WhitelistSettings &reserved_slots);
+		void start(RconSettings &rcon, BadPlayernameSettings &bad_playername, WhitelistSettings &reserved_slots, Poco::AutoPtr<Poco::Util::IniFileConfiguration> pConf);
 
 		void disconnect();
 		bool status();
@@ -200,6 +207,8 @@ class Rcon
 		void chatMessage(std::size_t &bytes_received);
 
 		void connectDatabase(std::string &database_conf, Poco::AutoPtr<Poco::Util::IniFileConfiguration> pConf);
+		void executeSQL(bool &status);
+
 		void checkBadPlayerString(std::string &player_number, std::string &player_name);
 		void checkWhitelistedPlayer(std::string &player_number, std::string &player_name, std::string &player_guid);
 };

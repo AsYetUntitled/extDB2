@@ -358,16 +358,12 @@ void Ext::stop()
 	#endif
 	logger->info("extDB2: Stopping ...");
 	io_work_ptr.reset();
-	logger->info("extDB2: IO Worker Killed");
 	if (extDB_connectors_info.rcon)
 	{
 		rcon->disconnect();
-		logger->info("extDB2: Rcon Stopped");
 	}
 	threads.join_all();
-	logger->info("extDB2: Threads Stopped");
 	io_service.stop();
-	logger->info("extDB2: IO Service Stopped");
 	if (extDB_connectors_info.mysql)
 	{
 		//Poco::Data::MySQL::Connector::unregisterConnector();
@@ -540,7 +536,7 @@ void Ext::connectRcon(char *output, const int &output_size, const std::string &r
 		}
 		
 		// Start Rcon
-		rcon->start(rcon_settings, bad_playername_settings, whitelist_settings);
+		rcon->start(rcon_settings, bad_playername_settings, whitelist_settings, pConf);
 		extDB_connectors_info.rcon = true;
 		std::strcpy(output, "[1]");
 	}
