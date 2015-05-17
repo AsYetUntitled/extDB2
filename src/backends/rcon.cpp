@@ -443,12 +443,12 @@ void Rcon::processMessagePlayers(Poco::StringTokenizer &tokens)
 			{
 				checkBadPlayerString(player_data.number, player_data.player_name);
 			}
-			/*  Don't want to kick players that are already ingame for not beening whitelisted
-			if (whitelist_settings.enable)
+
+			if (whitelist_settings.enable && (whitelist_settings.open_slots == 0))
 			{
 				checkWhitelistedPlayer(player_data.number, player_data.player_name, player_data.guid);
 			}
-			*/
+
 			info_vector.push_back(std::move(player_data));
 		}
 		else
@@ -594,7 +594,7 @@ void Rcon::checkWhitelistedPlayer(std::string &player_number, std::string &playe
 		if (!whitelisted_player)
 		{
 			// NON-WHITELISTED PLAYER
-			if (whitelist_settings.players_non_whitelisted.size() <= whitelist_settings.open_slots)
+			if (whitelist_settings.players_non_whitelisted.size() < whitelist_settings.open_slots)
 			{
 				whitelist_settings.players_non_whitelisted[std::move(player_guid)] = std::move(player_name);
 			}
@@ -660,14 +660,14 @@ void Rcon::chatMessage(std::size_t &bytes_received)
 			auto pos_1 = result.find("(");
 			auto pos_2 = result.find(")", pos_1);
 
-			std::string player_guid = result.substr(pos_1, result.size() - pos_2);
+			std::string player_guid = result.substr((pos_1 + 1), (pos_2 - (pos_1 + 1)));
 
 			pos_1 = result.find("#");
 			pos_2 = result.find(" ", pos_1);
-			std::string player_number = result.substr(pos_1 + 1, result.size() - pos_2);
+			std::string player_number = result.substr((pos_1 + 1), (pos_2 - (pos_1 + 1)));
 			std::string player_name = result.substr(pos_2);
 
-			logger->info("DEBUG Verified Player Number: {0}", player_number);
+			logger->info("DEBUG Verified Player Number: {0}.", player_number);
 			logger->info("DEBUG Verified Player Name: {0}.", player_name);
 			logger->info("DEBUG Verified Player GUID: {0}.", player_guid);
 
@@ -1276,6 +1276,8 @@ void Rcon::checkDatabase(bool &status, bool &error)
 					{
 						whitelist_settings.open_slots = pConf->getInt((conf_section + ".Whitelist Public Slots"), 0);
 						whitelist_settings.database = pConf->getString((conf_section + ".Whitelist Database"), "");
+						whitelist_settings.kick_message = pConf->getString(((conf_section) + ".Whitelist Kick Message"), "");
+
 						whitelist_settings.sql_statement = pConf->getString((conf_section + ".Whitelist SQL"), "");
 
 						Poco::StringTokenizer tokens(pConf->getString((conf_section + ".Whitelist BEGuids"), ""), ":", Poco::StringTokenizer::TOK_TRIM);

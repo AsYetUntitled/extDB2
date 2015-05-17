@@ -538,6 +538,7 @@ void Ext::connectRcon(char *output, const int &output_size, const std::string &r
 			whitelist_settings.open_slots = pConf->getInt((rcon_conf + ".Whitelist Public Slots"), 0);
 			whitelist_settings.database = pConf->getString((rcon_conf + ".Whitelist Database"), "");
 			whitelist_settings.sql_statement = pConf->getString((rcon_conf + ".Whitelist SQL"), "");
+			whitelist_settings.kick_message = pConf->getString(((rcon_conf) + ".Whitelist Kick Message"), "");
 
 			Poco::StringTokenizer tokens(pConf->getString((rcon_conf + ".Whitelist BEGuids"), ""), ":", Poco::StringTokenizer::TOK_TRIM);
 			for (auto &token : tokens)

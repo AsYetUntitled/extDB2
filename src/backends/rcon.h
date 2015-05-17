@@ -70,7 +70,7 @@ class Rcon
 
 		struct WhitelistSettings
 		{
-			int open_slots;
+			int open_slots = 0;
 			bool enable = false;
 
 			bool connected_database = false;
