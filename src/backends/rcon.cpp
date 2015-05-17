@@ -57,8 +57,6 @@ along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 
 
-
-
 Rcon::Rcon(boost::asio::io_service &io_service, std::shared_ptr<spdlog::logger> spdlog)
 {
 	io_service_ptr = &io_service;
@@ -119,27 +117,20 @@ void Rcon::Reconnect(const boost::system::error_code& error)
 
 void Rcon::start(RconSettings &rcon, BadPlayernameSettings &bad_playername, WhitelistSettings &whitelist, Poco::AutoPtr<Poco::Util::IniFileConfiguration> pConf)
 {
-	try
-	{
-		rcon_settings = std::move(rcon);
-		bad_playername_settings = std::move(bad_playername);
-		whitelist_settings = std::move(whitelist);
+	rcon_settings = std::move(rcon);
+	bad_playername_settings = std::move(bad_playername);
+	whitelist_settings = std::move(whitelist);
 
-		rcon_password = new char[rcon_settings.password.size() + 1];
-		std::strcpy(rcon_password, rcon_settings.password.c_str());
+	rcon_password = new char[rcon_settings.password.size() + 1];
+	std::strcpy(rcon_password, rcon_settings.password.c_str());
 
-		if (whitelist_settings.enable && (!whitelist.database.empty()))
-		{
-			connectDatabase(whitelist.database, pConf);
-		}
-		
-		boost::asio::ip::udp::endpoint endpoint(boost::asio::ip::address::from_string(rcon_settings.address), rcon_settings.port);
-		rcon_socket.socket->async_connect(endpoint, boost::bind(&Rcon::connectionHandler, this, boost::asio::placeholders::error));
-	}
-	catch (boost::system::system_error const& e)
+	if (whitelist_settings.enable && (!whitelist.database.empty()))
 	{
-	    std::cout << "Warning: could not connect : " << e.what() << std::endl;
+		connectDatabase(whitelist.database, pConf);
 	}
+	
+	boost::asio::ip::udp::endpoint endpoint(boost::asio::ip::address::from_string(rcon_settings.address), rcon_settings.port);
+	rcon_socket.socket->async_connect(endpoint, boost::bind(&Rcon::connectionHandler, this, boost::asio::placeholders::error));
 }
 
 
@@ -332,7 +323,7 @@ void Rcon::processMessage(unsigned char &sequence_number, std::string &message)
 		}
 		else
 		{
-			// TODO Unknown Command
+			logger->warn("RCon: Unknown Message {0}", message);
 		}
 	}
 }
@@ -567,23 +558,38 @@ void Rcon::checkWhitelistedPlayer(std::string &player_number, std::string &playe
 	bool whitelisted_player = false;
 	{
 		std::lock_guard<std::mutex> lock(reserved_slots_mutex);
-		if (whitelist_settings.whitelisted_guids.find(player_guid) != whitelist_settings.whitelisted_guids.end())
+
+		// Checking vector for Whitelisted GUID
+		if (std::find(whitelist_settings.whitelisted_guids.begin(), whitelist_settings.whitelisted_guids.end(), player_guid) != whitelist_settings.whitelisted_guids.end())
 		{
-			// Checking unordered_map for Whitelisted GUID
+			// Whitelisted Player - Unordered_map
 			whitelisted_player = true;
 			whitelist_settings.players_whitelisted[std::move(player_guid)] = std::move(player_name);
 		}
+		// Checking database for Whitelisted GUID
 		else if (!whitelisted_player && whitelist_settings.connected_database)
 		{
-			// Checking database for Whitelisted GUID
+			bool status = false;
+			bool error = false;
+
 			whitelist_statement->bindClear();
 			*whitelist_statement.get(), Poco::Data::Keywords::use(player_guid);
 			whitelist_statement->bindFixup();
-
-			// TODO DATABASE QUERY
-			bool status = true;
-			executeSQL(status);
-			// TODO DATABASE QUERY
+			checkDatabase(status, error);
+			
+			if (error)
+			{
+				// Whitelisted Player - DB, error occured during Database Check
+				logger->info("RCon: Database Player Check error occurred, will assume player is whitelisted");
+				whitelisted_player = true;
+				whitelist_settings.players_whitelisted[std::move(player_guid)] = std::move(player_name);
+			}
+			else if (status)
+			{
+				// Whitelisted Player - DB
+				whitelisted_player = true;
+				whitelist_settings.players_whitelisted[std::move(player_guid)] = std::move(player_name);
+			}
 		}
 
 		if (!whitelisted_player)
@@ -595,6 +601,7 @@ void Rcon::checkWhitelistedPlayer(std::string &player_number, std::string &playe
 			}
 			else
 			{
+				logger->info("RCon: Kicked Playername: {0} GUID: {1}  Not Whitelisted", player_name, player_guid);
 				sendCommand("kick " + player_number + " " + whitelist_settings.kick_message);
 			}
 		}
@@ -615,7 +622,6 @@ void Rcon::chatMessage(std::size_t &bytes_received)
 	rcon_packet.packetCode = 0x02;
 	rcon_packet.cmd_char_workaround = rcon_socket.recv_buffer[8];
 	sendPacket(rcon_packet);
-	startReceive();
 
 	if (whitelist_settings.enable || whitelist_settings.enable)
 	{
@@ -668,6 +674,7 @@ void Rcon::chatMessage(std::size_t &bytes_received)
 			checkWhitelistedPlayer(player_number, player_name, player_guid);
 		}
 	}
+	startReceive();
 }
 
 
@@ -974,36 +981,34 @@ void Rcon::getPlayers(unsigned int &unique_id)
 void Rcon::connectDatabase(std::string &database_conf, Poco::AutoPtr<Poco::Util::IniFileConfiguration> pConf)
 // Connection to Database, database_id used when connecting to multiple different database.
 {
-	if (database_conf.empty())
+	if (!database_conf.empty())
 	{
 		if (pConf->hasOption(database_conf + ".Type"))
 		{
 			std::string db_type = pConf->getString(database_conf + ".Type");
 			logger->info("Rcon: Database Type: {0}", db_type);
-
-
 			if ((boost::algorithm::iequals(db_type, std::string("MySQL")) == 1) || (boost::algorithm::iequals(db_type, "SQLite") == 1))
 			{
 				try
 				{
-					// Database
+					// Database Type
 					std::string connection_str;
 					if (boost::algorithm::iequals(db_type, std::string("MySQL")) == 1)
 					{
 						db_type = "MySQL";
 						#ifdef RCON_APP
 							if (!(DB_connectors_info.mysql))
+							{
+								Poco::Data::MySQL::Connector::registerConnector();
+								DB_connectors_info.mysql = true;
+							}
 						#else
 							if (!(extension_ptr->extDB_connectors_info.mysql))
-						#endif
-						{
-							Poco::Data::MySQL::Connector::registerConnector();
-							#ifdef RCON_APP
-								DB_connectors_info.mysql = true;
-							#else
+							{
+								Poco::Data::MySQL::Connector::registerConnector();
 								extension_ptr->extDB_connectors_info.mysql = true;
-							#endif
-						}
+							}
+						#endif
 						connection_str += "host=" + pConf->getString(database_conf + ".IP") + ";";
 						connection_str += "port=" + pConf->getString(database_conf + ".Port") + ";";
 						connection_str += "user=" + pConf->getString(database_conf + ".Username") + ";";
@@ -1025,28 +1030,26 @@ void Rcon::connectDatabase(std::string &database_conf, Poco::AutoPtr<Poco::Util:
 						db_type = "SQLite";
 						#ifdef RCON_APP
 							if (!(DB_connectors_info.sqlite))
-						#else
-							if (!(extension_ptr->extDB_connectors_info.sqlite))
-						#endif
-						{
-							Poco::Data::SQLite::Connector::registerConnector();
-							#ifdef RCON_APP
+							{
+								Poco::Data::SQLite::Connector::registerConnector();	
 								DB_connectors_info.sqlite = true;
-							#else
-								extension_ptr->extDB_connectors_info.sqlite = true;
-							#endif
-						}
-
-						#ifdef RCON_APP
+							}
 							boost::filesystem::path sqlite_path(boost::filesystem::current_path());
 						#else
+							if (!(extension_ptr->extDB_connectors_info.sqlite))
+							{
+								Poco::Data::SQLite::Connector::registerConnector();
+								extension_ptr->extDB_connectors_info.sqlite = true;
+							}
 							boost::filesystem::path sqlite_path(extension_ptr->extDB_info.path);
-						#endif					
+						#endif
 						sqlite_path /= "extDB";
 						sqlite_path /= "sqlite";
 						sqlite_path /= pConf->getString(database_conf + ".Name");
 						connection_str = sqlite_path.make_preferred().string();
 					}
+
+					// Session
 					Poco::Data::Session session(db_type, connection_str);
 					if (session.isConnected())
 					{
@@ -1091,88 +1094,77 @@ void Rcon::connectDatabase(std::string &database_conf, Poco::AutoPtr<Poco::Util:
 	else
 	{
 		logger->warn("Rcon: No Database Config Option Found: {0}", database_conf);
+		whitelist_settings.connected_database = false;
 	}
 }
 
 
-void Rcon::executeSQL(bool &status)
+void Rcon::checkDatabase(bool &status, bool &error)
 {
 	try
 	{
 		whitelist_statement->execute();
+		Poco::Data::RecordSet rs(*whitelist_statement.get());
+		if (rs.columnCount() == 1)
+		{
+			rs.moveFirst();
+			if (rs[0].isInteger())
+			{
+				if (rs[0].convert<int>() > 0)
+				{
+					status = true;
+				}
+				else
+				{
+					status = false;
+				}
+			}
+		}
 	}
 	catch (Poco::InvalidAccessException& e)
 	{
-		status = false;
-		#ifdef DEBUG_TESTING
-			extension_ptr->console->error("extDB2: SQL_CUSTOM_V2: Error NotConnectedException: {0}", e.displayText());
-		#endif
-		extension_ptr->logger->error("extDB2: SQL_CUSTOM_V2: Error NotConnectedException: {0}", e.displayText());
+		error = false;
+		logger->error("Rcon: Error NotConnectedException: {0}", e.displayText());
 	}
 	catch (Poco::Data::NotConnectedException& e)
 	{
-		status = false;
-		#ifdef DEBUG_TESTING
-			extension_ptr->console->error("extDB2: SQL_CUSTOM_V2: Error NotConnectedException: {0}", e.displayText());
-		#endif
-		extension_ptr->logger->error("extDB2: SQL_CUSTOM_V2: Error NotConnectedException: {0}", e.displayText());
+		error = false;
+		logger->error("Rcon: Error NotConnectedException: {0}", e.displayText());
 	}
 	catch (Poco::NotImplementedException& e)
 	{
-		status = false;
-		#ifdef DEBUG_TESTING
-			extension_ptr->console->error("extDB2: SQL_CUSTOM_V2: Error NotImplementedException: {0}", e.displayText());
-		#endif
-		extension_ptr->logger->error("extDB2: SQL_CUSTOM_V2: Error NotImplementedException: {0}", e.displayText());
+		error = false;
+		logger->error("Rcon: Error NotImplementedException: {0}", e.displayText());
 	}
 	catch (Poco::Data::SQLite::DBLockedException& e)
 	{
-		status = false;
-		#ifdef DEBUG_TESTING
-			extension_ptr->console->error("extDB2: SQL_CUSTOM_V2: Error DBLockedException: {0}", e.displayText());
-		#endif
-		extension_ptr->logger->error("extDB2: SQL_CUSTOM_V2: Error DBLockedException: {0}", e.displayText());
+		error = false;
+		logger->error("Rcon: Error DBLockedException: {0}", e.displayText());
 	}
 	catch (Poco::Data::MySQL::ConnectionException& e)
 	{
-		status = false;
-		#ifdef DEBUG_TESTING
-			extension_ptr->console->error("extDB2: SQL_CUSTOM_V2: Error ConnectionException: {0}", e.displayText());
-		#endif
-		extension_ptr->logger->error("extDB2: SQL_CUSTOM_V2: Error ConnectionException: {0}", e.displayText());
+		error = false;
+		logger->error("Rcon: Error ConnectionException: {0}", e.displayText());
 	}
 	catch(Poco::Data::MySQL::StatementException& e)
 	{
-		status = false;
-		#ifdef DEBUG_TESTING
-			extension_ptr->console->error("extDB2: SQL_CUSTOM_V2: Error StatementException: {0}", e.displayText());
-		#endif
-		extension_ptr->logger->error("extDB2: SQL_CUSTOM_V2: Error StatementException: {0}", e.displayText());
+		error = false;
+		logger->error("Rcon: Error StatementException: {0}", e.displayText());
 	}
 	catch (Poco::Data::ConnectionFailedException& e)
 	{
-		// Error
-		status = false;
-		#ifdef DEBUG_TESTING
-			extension_ptr->console->error("extDB2: SQL_CUSTOM_V2: Error ConnectionFailedException: {0}", e.displayText());
-		#endif
-		extension_ptr->logger->error("extDB2: SQL_CUSTOM_V2: Error ConnectionFailedException: {0}", e.displayText());
+		error = false;
+		logger->error("Rcon: Error ConnectionFailedException: {0}", e.displayText());
 	}
 	catch (Poco::Data::DataException& e)
 	{
-		status = false;
-		#ifdef DEBUG_TESTING
-			extension_ptr->console->error("extDB2: SQL_CUSTOM_V2: Error DataException: {0}", e.displayText());
-		#endif
-		extension_ptr->logger->error("extDB2: SQL_CUSTOM_V2: Error DataException: {0}", e.displayText());
+		error = false;
+		logger->error("Rcon: Error DataException: {0}", e.displayText());
 	}
 	catch (Poco::Exception& e)
 	{
-		status = false;
-		#ifdef DEBUG_TESTING
-			extension_ptr->console->error("extDB2: SQL_CUSTOM_V2: Error Exception: {0}", e.displayText());
-		#endif
-		extension_ptr->logger->error("extDB2: SQL_CUSTOM_V2: Error Exception: {0}", e.displayText());
+		error = false;
+		logger->error("Rcon: Error Exception: {0}", e.displayText());
 	}
 }
 
@@ -1247,7 +1239,6 @@ void Rcon::executeSQL(bool &status)
 				if (options.count("run_file") == 0)
 				{
 					bad_playername_settings.enable = pConf->getBool((conf_section + ".Bad Playername Enable"), false);
-
 					if (bad_playername_settings.enable)
 					{
 						console->info("extDB2: RCon Bad Playername Enabled");
@@ -1285,6 +1276,12 @@ void Rcon::executeSQL(bool &status)
 						whitelist_settings.open_slots = pConf->getInt((conf_section + ".Whitelist Public Slots"), 0);
 						whitelist_settings.database = pConf->getString((conf_section + ".Whitelist Database"), "");
 						whitelist_settings.sql_statement = pConf->getString((conf_section + ".Whitelist SQL"), "");
+
+						Poco::StringTokenizer tokens(pConf->getString((conf_section + ".Whitelist BEGuids"), ""), ":", Poco::StringTokenizer::TOK_TRIM);
+						for (auto &token : tokens)
+						{
+							whitelist_settings.whitelisted_guids.push_back(token);
+						}
 					}
 				}
 				rcon.start(rcon_settings, bad_playername_settings, whitelist_settings, pConf);
@@ -1294,7 +1291,7 @@ void Rcon::executeSQL(bool &status)
 					std::ifstream fin(options["file"].as<std::string>());
 					if (fin.is_open() == false)
 					{
-						console->warn("Error: File is Open");
+						console->warn("Error: File is already Opened");
 						return 1;
 					}
 					else
@@ -1308,8 +1305,7 @@ void Rcon::executeSQL(bool &status)
 						console->info("{0}", line);
 						if (line.empty())
 						{
-							boost::this_thread::sleep( boost::posix_time::milliseconds(1000) );
-							console->info("Sleep", line);
+							boost::this_thread::sleep(boost::posix_time::milliseconds(1000));
 						}
 						else
 						{

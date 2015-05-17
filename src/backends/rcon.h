@@ -76,7 +76,7 @@ class Rcon
 			bool connected_database = false;
 			std::string database;
 
-			std::set<std::string> whitelisted_guids;
+			std::vector<std::string> whitelisted_guids;
 
 			std::unordered_map<std::string, std::string> players_whitelisted;
 			std::unordered_map<std::string, std::string> players_non_whitelisted;
@@ -207,7 +207,7 @@ class Rcon
 		void chatMessage(std::size_t &bytes_received);
 
 		void connectDatabase(std::string &database_conf, Poco::AutoPtr<Poco::Util::IniFileConfiguration> pConf);
-		void executeSQL(bool &status);
+		void checkDatabase(bool &status, bool &error);
 
 		void checkBadPlayerString(std::string &player_number, std::string &player_name);
 		void checkWhitelistedPlayer(std::string &player_number, std::string &player_name, std::string &player_guid);
