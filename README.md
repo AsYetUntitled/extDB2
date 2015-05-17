@@ -73,6 +73,5 @@ https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=2SUEFTGABTA
  - [Fank](https://gist.github.com/Fank) for his code to convert SteamID to BEGUID. 
  - [Gabime](https://github.com/gabime) for Spdlog.
  - [rajkosto](https://github.com/rajkosto) for his work on DayZ Hive, using same code for parsering arma values.
- - killerty69 for fix loadbans after AutoBan player.
  - [killzonekid](http://killzonekid.com) for his blog.
  - [Tonic](https://github.com/TAWTonic) & Atlis RPG Admins for beening literally beening bleeding edge testers for extDB.   

@@ -1,5 +1,5 @@
 /*
-Copyright (C) 2015 Declan Ireland <http://github.com/torndeco/extDB>
+Copyright (C) 2015 Declan Ireland <http://github.com/torndeco/extDB2>
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by

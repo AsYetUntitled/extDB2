@@ -1,5 +1,5 @@
 /*
-Copyright (C) 2014 Declan Ireland <http://github.com/torndeco/extDB>
+Copyright (C) 2014 Declan Ireland <http://github.com/torndeco/extDB2>
 Copyright (C) 2009-2012 Rajko Stojadinovic <http://github.com/rajkosto/hive>
 
 
