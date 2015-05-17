@@ -1,4 +1,12 @@
 -------------------------------------------------------------------------------
+56 :
+	ADDED: Rcon Whitelisting / Reserve Slots
+
+	FIXED: Multiple fixes for Rcon Player kicks
+
+	Minor: Code Improvement to 2: + 1: Calls
+
+-------------------------------------------------------------------------------
 55 :
 	ADDED: Rcon Player kicks for bad characters/strings (regex rules)
 
