@@ -39,8 +39,7 @@ along with this program. If not, see <http://www.gnu.org/licenses/>.
 	#include "../abstract_ext.h"
 #endif
 
-#include <boost/algorithm/string/predicate.hpp>
-#include <boost/algorithm/string/replace.hpp>
+#include <boost/algorithm/string.hpp>
 #include <boost/asio.hpp>
 #include <boost/bind.hpp>
 #include <boost/crc.hpp>
@@ -623,7 +622,8 @@ void Rcon::chatMessage(std::size_t &bytes_received)
 	rcon_packet.cmd_char_workaround = rcon_socket.recv_buffer[8];
 	sendPacket(rcon_packet);
 
-	if (whitelist_settings.enable || whitelist_settings.enable)
+	//boost::algorithm::trim(result);
+	if (bad_playername_settings.enable || whitelist_settings.enable)
 	{
 		if (boost::algorithm::starts_with(result, "Player #"))
 		{
@@ -634,15 +634,15 @@ void Rcon::chatMessage(std::size_t &bytes_received)
 					result = result.substr(8);
 					const std::string::size_type found = result.find(" ");
 					std::string player_number = result.substr(0, (found - 2));
-					const std::string::size_type found2 = result.find("(");
+					const std::string::size_type found2 = result.find_last_of("(");
 					std::string player_name = result.substr(found, found2 - 2);
 
-					logger->info("DEBUG Connected Player Number: {0}", player_number);
+					logger->info("DEBUG Connected Player Number: {0}.", player_number);
 					logger->info("DEBUG Connected Player Name: {0}.", player_name);
 					checkBadPlayerString(player_number, player_name);
 				}
 			}
-			else if (boost::algorithm::ends_with(result, "disconnect"))
+			else if (whitelist_settings.enable && boost::algorithm::ends_with(result, "disconnect"))
 			{
 				auto pos = result.find(" ", result.find("#"));
 				std::string player_name = result.substr(pos + 1, result.size() - 11);
@@ -1188,15 +1188,16 @@ void Rcon::checkDatabase(bool &status, bool &error)
 			boost::program_options::store(boost::program_options::parse_command_line(nNumberofArgs, pszArgs, desc), options);
 			if (options.count("help") )
 			{
-				console->info("Rcon Command Line, based off bercon by Prithu \"bladez\" Parker");
+				console->info("Rcon Command Line, originally based off bercon by Prithu \"bladez\" Parker");
 				console->info("\t\t @ https://github.com/bladez-/bercon");
 				console->info("");
 				console->info("");
-				console->info("Rewritten for extDB + crossplatform by Torndeco");
-				console->info("\t\t @ https://github.com/Torndeco/extDB");
+				console->info("Almost Completely Rewritten for extDB2 + crossplatform by Torndeco");
+				console->info("\t\t @ https://github.com/Torndeco/extDB2");
 				console->info("");
-				console->info("File Option is just for parsing rcon commands to be ran, i.e server restart warnings");
-				console->info("\t\t For actually restarts use a cron program to run a script");
+				console->info("Run File Option is just for parsing rcon commands to be ran, i.e server restart warnings");
+				console->info("\t\t The file is just a text file with rcon commands, empty line = wait 1 second");
+				console->info("\t\t Useful option for restart warnings i.e run the program using a cron job / script");
 				console->info("");
 				return 0;
 			}
