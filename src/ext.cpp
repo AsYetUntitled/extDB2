@@ -518,14 +518,16 @@ void Ext::connectRcon(char *output, const int &output_size, const std::string &r
 			while (true)
 			{
 				++regrex_rule_num;
-				regex_rule_num_str = Poco::NumberFormatter::format(regrex_rule_num);
-				if (!(pConf->has(rcon_conf + ".Bad Playername Regrex_" + regex_rule_num_str)))
+				regex_rule_num_str = rcon_conf + ".Bad Playername Regex_" + Poco::NumberFormatter::format(regrex_rule_num);
+				if (!(pConf->has(regex_rule_num_str)))
 				{
+					logger->info("extDB2: Missing {0}", regex_rule_num_str);
 					break;
 				}
 				else
 				{
-					bad_playername_settings.bad_regexs.push_back(pConf->getString(rcon_conf + ".BadPlayerStringsRegrex_" + regex_rule_num_str));
+					logger->info("extDB2: Loading {0}", regex_rule_num_str);
+					bad_playername_settings.bad_regexs.push_back(pConf->getString(regex_rule_num_str));
 				}
 			}
 		}
@@ -536,9 +538,10 @@ void Ext::connectRcon(char *output, const int &output_size, const std::string &r
 		if (whitelist_settings.enable)
 		{
 			whitelist_settings.open_slots = pConf->getInt((rcon_conf + ".Whitelist Public Slots"), 0);
-			whitelist_settings.database = pConf->getString((rcon_conf + ".Whitelist Database"), "");
-			whitelist_settings.sql_statement = pConf->getString((rcon_conf + ".Whitelist SQL"), "");
 			whitelist_settings.kick_message = pConf->getString(((rcon_conf) + ".Whitelist Kick Message"), "");
+
+			whitelist_settings.database = pConf->getString((rcon_conf + ".Whitelist Database"), "");
+			whitelist_settings.sql_statement = pConf->getString((rcon_conf + ".Whitelist SQL Prepared Statement"), "");
 
 			Poco::StringTokenizer tokens(pConf->getString((rcon_conf + ".Whitelist BEGuids"), ""), ":", Poco::StringTokenizer::TOK_TRIM);
 			for (auto &token : tokens)

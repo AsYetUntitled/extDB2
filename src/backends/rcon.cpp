@@ -123,9 +123,16 @@ void Rcon::start(RconSettings &rcon, BadPlayernameSettings &bad_playername, Whit
 	rcon_password = new char[rcon_settings.password.size() + 1];
 	std::strcpy(rcon_password, rcon_settings.password.c_str());
 
-	if (whitelist_settings.enable && (!whitelist.database.empty()))
+	if (whitelist_settings.enable)
 	{
-		connectDatabase(whitelist.database, pConf);
+		if (whitelist_settings.database.empty())
+		{
+			logger->info("Rcon: No Database Backend");
+		}
+		else
+		{
+			connectDatabase(pConf);
+		}
 	}
 	
 	boost::asio::ip::udp::endpoint endpoint(boost::asio::ip::address::from_string(rcon_settings.address), rcon_settings.port);
@@ -631,21 +638,21 @@ void Rcon::chatMessage(std::size_t &bytes_received)
 			{
 				if (bad_playername_settings.enable)
 				{
-					result = result.substr(8);
+					result = result.substr(7);
 					const std::string::size_type found = result.find(" ");
-					std::string player_number = result.substr(0, (found - 2));
+					std::string player_number = result.substr(0, (found - 1));
 					const std::string::size_type found2 = result.find_last_of("(");
-					std::string player_name = result.substr(found, found2 - 2);
+					std::string player_name = result.substr(found+1, found2-(found+1));
 
 					logger->info("DEBUG Connected Player Number: {0}.", player_number);
 					logger->info("DEBUG Connected Player Name: {0}.", player_name);
 					checkBadPlayerString(player_number, player_name);
 				}
 			}
-			else if (whitelist_settings.enable && boost::algorithm::ends_with(result, "disconnect"))
+			else if (whitelist_settings.enable && boost::algorithm::ends_with(result, "disconnected"))
 			{
 				auto pos = result.find(" ", result.find("#"));
-				std::string player_name = result.substr(pos + 1, result.size() - 11);
+				std::string player_name = result.substr(pos + 1, result.size() - (pos + 14));
 
 				logger->info("DEBUG Disconnected Player Name: {0}", player_name);
 				{
@@ -978,123 +985,122 @@ void Rcon::getPlayers(unsigned int &unique_id)
 }
 
 
-void Rcon::connectDatabase(std::string &database_conf, Poco::AutoPtr<Poco::Util::IniFileConfiguration> pConf)
+void Rcon::connectDatabase(Poco::AutoPtr<Poco::Util::IniFileConfiguration> pConf)
 // Connection to Database, database_id used when connecting to multiple different database.
 {
-	if (!database_conf.empty())
+	if (pConf->hasOption(whitelist_settings.database + ".Type"))
 	{
-		if (pConf->hasOption(database_conf + ".Type"))
+		std::string db_type = pConf->getString(whitelist_settings.database + ".Type");
+		logger->info("Rcon: Database Type: {0}", db_type);
+		if ((boost::algorithm::iequals(db_type, std::string("MySQL")) == 1) || (boost::algorithm::iequals(db_type, "SQLite") == 1))
 		{
-			std::string db_type = pConf->getString(database_conf + ".Type");
-			logger->info("Rcon: Database Type: {0}", db_type);
-			if ((boost::algorithm::iequals(db_type, std::string("MySQL")) == 1) || (boost::algorithm::iequals(db_type, "SQLite") == 1))
+			try
 			{
-				try
+				// Database Type
+				std::string connection_str;
+				if (boost::algorithm::iequals(db_type, std::string("MySQL")) == 1)
 				{
-					// Database Type
-					std::string connection_str;
-					if (boost::algorithm::iequals(db_type, std::string("MySQL")) == 1)
-					{
-						db_type = "MySQL";
-						#ifdef RCON_APP
-							if (!(DB_connectors_info.mysql))
-							{
-								Poco::Data::MySQL::Connector::registerConnector();
-								DB_connectors_info.mysql = true;
-							}
-						#else
-							if (!(extension_ptr->extDB_connectors_info.mysql))
-							{
-								Poco::Data::MySQL::Connector::registerConnector();
-								extension_ptr->extDB_connectors_info.mysql = true;
-							}
-						#endif
-						connection_str += "host=" + pConf->getString(database_conf + ".IP") + ";";
-						connection_str += "port=" + pConf->getString(database_conf + ".Port") + ";";
-						connection_str += "user=" + pConf->getString(database_conf + ".Username") + ";";
-						connection_str += "password=" + pConf->getString(database_conf + ".Password") + ";";
-						connection_str += "db=" + pConf->getString(database_conf + ".Name") + ";";
-						connection_str += "auto-reconnect=true";
-
-						if (pConf->getBool(database_conf + ".Compress", false))
+					db_type = "MySQL";
+					#ifdef RCON_APP
+						if (!(DB_connectors_info.mysql))
 						{
-							connection_str += ";compress=true";
+							Poco::Data::MySQL::Connector::registerConnector();
+							DB_connectors_info.mysql = true;
 						}
-						if (pConf->getBool(database_conf + ".Secure Auth", false))
+					#else
+						if (!(extension_ptr->extDB_connectors_info.mysql))
 						{
-							connection_str += ";secure-auth=true";
+							Poco::Data::MySQL::Connector::registerConnector();
+							extension_ptr->extDB_connectors_info.mysql = true;
 						}
-					}
-					else if (boost::algorithm::iequals(db_type, "SQLite") == 1)
-					{
-						db_type = "SQLite";
-						#ifdef RCON_APP
-							if (!(DB_connectors_info.sqlite))
-							{
-								Poco::Data::SQLite::Connector::registerConnector();	
-								DB_connectors_info.sqlite = true;
-							}
-							boost::filesystem::path sqlite_path(boost::filesystem::current_path());
-						#else
-							if (!(extension_ptr->extDB_connectors_info.sqlite))
-							{
-								Poco::Data::SQLite::Connector::registerConnector();
-								extension_ptr->extDB_connectors_info.sqlite = true;
-							}
-							boost::filesystem::path sqlite_path(extension_ptr->extDB_info.path);
-						#endif
-						sqlite_path /= "extDB";
-						sqlite_path /= "sqlite";
-						sqlite_path /= pConf->getString(database_conf + ".Name");
-						connection_str = sqlite_path.make_preferred().string();
-					}
+					#endif
+					connection_str += "host=" + pConf->getString(whitelist_settings.database + ".IP") + ";";
+					connection_str += "port=" + pConf->getString(whitelist_settings.database + ".Port") + ";";
+					connection_str += "user=" + pConf->getString(whitelist_settings.database + ".Username") + ";";
+					connection_str += "password=" + pConf->getString(whitelist_settings.database + ".Password") + ";";
+					connection_str += "db=" + pConf->getString(whitelist_settings.database + ".Name") + ";";
+					connection_str += "auto-reconnect=true";
 
-					// Session
-					Poco::Data::Session session(db_type, connection_str);
-					if (session.isConnected())
+					if (pConf->getBool(whitelist_settings.database + ".Compress", false))
 					{
-						logger->info("Rcon: Database Session Started");
-						whitelist_statement.reset(new Poco::Data::Statement(session));
-						*whitelist_statement.get() << whitelist_settings.sql_statement;
+						connection_str += ";compress=true";
 					}
-					else
+					if (pConf->getBool(whitelist_settings.database + ".Secure Auth", false))
 					{
-						logger->warn("Rcon: Database Session Failed");
-						whitelist_settings.connected_database = false;
+						connection_str += ";secure-auth=true";
 					}
 				}
-				catch (Poco::Data::NotConnectedException& e)
+				else if (boost::algorithm::iequals(db_type, "SQLite") == 1)
 				{
-					logger->error("Rcon: Database NotConnectedException Error: {0}", e.displayText());
-					whitelist_settings.connected_database = false;
+					db_type = "SQLite";
+					#ifdef RCON_APP
+						if (!(DB_connectors_info.sqlite))
+						{
+							Poco::Data::SQLite::Connector::registerConnector();	
+							DB_connectors_info.sqlite = true;
+						}
+						boost::filesystem::path sqlite_path(boost::filesystem::current_path());
+					#else
+						if (!(extension_ptr->extDB_connectors_info.sqlite))
+						{
+							Poco::Data::SQLite::Connector::registerConnector();
+							extension_ptr->extDB_connectors_info.sqlite = true;
+						}
+						boost::filesystem::path sqlite_path(extension_ptr->extDB_info.path);
+					#endif
+					sqlite_path /= "extDB";
+					sqlite_path /= "sqlite";
+					sqlite_path /= pConf->getString(whitelist_settings.database + ".Name");
+					connection_str = sqlite_path.make_preferred().string();
 				}
-				catch (Poco::Data::MySQL::ConnectionException& e)
+
+				// Session
+				whitelist_session.reset(new Poco::Data::Session(db_type, connection_str));
+				if (whitelist_session->isConnected())
 				{
-					logger->error("Rcon: Database ConnectionException Error: {0}", e.displayText());
-					whitelist_settings.connected_database = false;
+					logger->info("Rcon: Database Session Started");
+					whitelist_statement.reset(new Poco::Data::Statement(*whitelist_session.get()));
+					*whitelist_statement.get() << whitelist_settings.sql_statement;
+					whitelist_settings.connected_database = true;
 				}
-				catch (Poco::Exception& e)
+				else
 				{
-					logger->error("Rcon: Database Exception Error: {0}", e.displayText());
+					logger->warn("Rcon: Database Session Failed");
 					whitelist_settings.connected_database = false;
 				}
 			}
-			else
+			catch (Poco::Data::NotConnectedException& e)
 			{
-				logger->warn("Rcon: No Database Engine Found for {0}", db_type);
+				logger->error("Rcon: Database NotConnectedException Error: {0}", e.displayText());
+				whitelist_settings.connected_database = false;
+			}
+			catch (Poco::Data::MySQL::ConnectionException& e)
+			{
+				logger->error("Rcon: Database ConnectionException Error: {0}", e.displayText());
+				whitelist_settings.connected_database = false;
+			}
+			catch (Poco::Exception& e)
+			{
+				logger->error("Rcon: Database Exception Error: {0}", e.displayText());
 				whitelist_settings.connected_database = false;
 			}
 		}
 		else
 		{
-			logger->warn("Rcon: No Database Config Option Found: {0}", database_conf);
+			logger->warn("Rcon: No Database Engine Found for {0}", db_type);
 			whitelist_settings.connected_database = false;
 		}
 	}
 	else
 	{
-		logger->warn("Rcon: No Database Config Option Found: {0}", database_conf);
+		logger->warn("Rcon: No Database Config Option Found: {0}", whitelist_settings.database);
 		whitelist_settings.connected_database = false;
+	}
+
+	if (!(whitelist_settings.connected_database))
+	{
+		whitelist_statement.release();
+		whitelist_session.release();
 	}
 }
 
@@ -1103,6 +1109,7 @@ void Rcon::checkDatabase(bool &status, bool &error)
 {
 	try
 	{
+		logger->info("Rcon: checking Database");
 		whitelist_statement->execute();
 		Poco::Data::RecordSet rs(*whitelist_statement.get());
 		if (rs.columnCount() == 1)
@@ -1112,10 +1119,12 @@ void Rcon::checkDatabase(bool &status, bool &error)
 			{
 				if (rs[0].convert<int>() > 0)
 				{
+					logger->info("Rcon: checking Database: True");
 					status = true;
 				}
 				else
 				{
+					logger->info("Rcon: checking Database: False");
 					status = false;
 				}
 			}
@@ -1278,7 +1287,7 @@ void Rcon::checkDatabase(bool &status, bool &error)
 						whitelist_settings.database = pConf->getString((conf_section + ".Whitelist Database"), "");
 						whitelist_settings.kick_message = pConf->getString(((conf_section) + ".Whitelist Kick Message"), "");
 
-						whitelist_settings.sql_statement = pConf->getString((conf_section + ".Whitelist SQL"), "");
+						whitelist_settings.sql_statement = pConf->getString((conf_section + ".Whitelist SQL Prepared Statement"), "");
 
 						Poco::StringTokenizer tokens(pConf->getString((conf_section + ".Whitelist BEGuids"), ""), ":", Poco::StringTokenizer::TOK_TRIM);
 						for (auto &token : tokens)

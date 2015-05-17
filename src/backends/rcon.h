@@ -86,6 +86,7 @@ class Rcon
 		};
 		WhitelistSettings whitelist_settings;
 
+		std::unique_ptr<Poco::Data::Session> whitelist_session;
 		std::unique_ptr<Poco::Data::Statement> whitelist_statement;
 
 		std::mutex reserved_slots_mutex;
@@ -206,7 +207,7 @@ class Rcon
 		void processMessagePlayers(Poco::StringTokenizer &tokens);
 		void chatMessage(std::size_t &bytes_received);
 
-		void connectDatabase(std::string &database_conf, Poco::AutoPtr<Poco::Util::IniFileConfiguration> pConf);
+		void connectDatabase(Poco::AutoPtr<Poco::Util::IniFileConfiguration> pConf);
 		void checkDatabase(bool &status, bool &error);
 
 		void checkBadPlayerString(std::string &player_number, std::string &player_name);
