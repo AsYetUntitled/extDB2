@@ -28,8 +28,8 @@ along with this program. If not, see <http://www.gnu.org/licenses/>.
 #include "spdlog/spdlog.h"
 
 
-#define EXTDB_VERSION "55"
-#define EXTDB_CONF_VERSION 4
+#define EXTDB_VERSION "56"
+#define EXTDB_CONF_VERSION 5
 
 
 
