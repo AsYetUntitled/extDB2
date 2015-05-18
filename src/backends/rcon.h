@@ -74,6 +74,7 @@ class Rcon
 			bool enable = false;
 
 			bool connected_database = false;
+			bool kick_on_failed_sql_query = false;
 			std::string database;
 
 			std::vector<std::string> whitelisted_guids;

@@ -586,9 +586,17 @@ void Rcon::checkWhitelistedPlayer(std::string &player_number, std::string &playe
 			if (error)
 			{
 				// Whitelisted Player - DB, error occured during Database Check
-				logger->info("RCon: Database Player Check error occurred, will assume player is whitelisted");
-				whitelisted_player = true;
-				whitelist_settings.players_whitelisted[std::move(player_guid)] = std::move(player_name);
+				if (whitelist_settings.kick_on_failed_sql_query)
+				{
+					logger->info("RCon: Database Player Check error occurred, kicking player");
+					sendCommand("kick " + player_number + " " + whitelist_settings.kick_message);
+				}
+				else
+				{
+					logger->info("RCon: Database Player Check error occurred, will assume player is whitelisted");
+					whitelisted_player = true;
+					whitelist_settings.players_whitelisted[std::move(player_guid)] = std::move(player_name);
+				}
 			}
 			else if (status)
 			{
@@ -1288,6 +1296,7 @@ void Rcon::checkDatabase(bool &status, bool &error)
 						whitelist_settings.kick_message = pConf->getString(((conf_section) + ".Whitelist Kick Message"), "");
 
 						whitelist_settings.sql_statement = pConf->getString((conf_section + ".Whitelist SQL Prepared Statement"), "");
+						whitelist_settings.kick_on_failed_sql_query = pConf->getBool((rcon_conf + ".Whitelist Kick on SQL Query Failed"), false);
 
 						Poco::StringTokenizer tokens(pConf->getString((conf_section + ".Whitelist BEGuids"), ""), ":", Poco::StringTokenizer::TOK_TRIM);
 						for (auto &token : tokens)
