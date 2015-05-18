@@ -483,33 +483,9 @@ void SQL_CUSTOM_V2::getResult(std::string &input_str, Custom_Call_UnorderedMap::
 	{
 		if (custom_calls_itr->second.returnInsertID)
 		{
-			if (!session.isConnected())
-			{
-				result = "[1,[-1,["; // Return -1 If Session Died
-			}
-			else
-			{
-				Poco::UInt64 insertID;
-				std::string insertID_str;
-				//insertID = Poco::AnyCast<Poco::UInt64>(session.getProperty("insertId"));
-
-				// Workaround
-				bool status = true;
-				Poco::Data::Statement sql(session);
-				sql << "SELECT LAST_INSERT_ID()", Poco::Data::Keywords::into(insertID);
-				executeSQL(sql, result, status);
-				// End of Workaround
-
-				insertID_str = Poco::NumberFormatter::format(insertID);
-				if (status)
-				{
-					result = "[1,[" + insertID_str + ",[";
-				}
-				else
-				{
-					result = "[1,[0,["; // Return 0 if insertID fails
-				}
-			}
+			Poco::UInt64 insertID;
+			insertID = Poco::AnyCast<Poco::UInt64>((session.impl())->getInsertId());
+			result = "[1,[" + Poco::NumberFormatter::format(insertID) + ",[";
 		}
 		else
 		{
@@ -828,12 +804,9 @@ void SQL_CUSTOM_V2::callPreparedStatement(std::string &input_str, std::string ca
 				{
 					break;
 				}
-				else 
+				else if (i == (statement_cache_itr->second.size() - 1))
 				{
-					if (i == (statement_cache_itr->second.size() - 1))
-					{
-						getResult(input_str, custom_calls_itr, session, statement_cache_itr->second[i], result, status);
-					}
+					getResult(input_str, custom_calls_itr, session, statement_cache_itr->second[i], result, status);
 				}
 			}
 		}
@@ -939,7 +912,11 @@ void SQL_CUSTOM_V2::callPreparedStatement(std::string &input_str, std::string ca
 			}
 
 			executeSQL(sql_statement, result, status);
-			if (status && (it_sql_prepared_statements_vector + 1 == custom_calls_itr->second.sql_prepared_statements.end()))
+			if (!status)
+			{
+				break;
+			}
+			else if (it_sql_prepared_statements_vector + 1 == custom_calls_itr->second.sql_prepared_statements.end())
 			{
 				getResult(input_str, custom_calls_itr, session, sql_statement, result, status);
 			}
