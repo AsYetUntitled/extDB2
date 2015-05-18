@@ -1296,7 +1296,7 @@ void Rcon::checkDatabase(bool &status, bool &error)
 						whitelist_settings.kick_message = pConf->getString(((conf_section) + ".Whitelist Kick Message"), "");
 
 						whitelist_settings.sql_statement = pConf->getString((conf_section + ".Whitelist SQL Prepared Statement"), "");
-						whitelist_settings.kick_on_failed_sql_query = pConf->getBool((rcon_conf + ".Whitelist Kick on SQL Query Failed"), false);
+						whitelist_settings.kick_on_failed_sql_query = pConf->getBool((conf_section + ".Whitelist Kick on SQL Query Failed"), false);
 
 						Poco::StringTokenizer tokens(pConf->getString((conf_section + ".Whitelist BEGuids"), ""), ":", Poco::StringTokenizer::TOK_TRIM);
 						for (auto &token : tokens)
