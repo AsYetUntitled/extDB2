@@ -601,7 +601,7 @@ void Rcon::checkWhitelistedPlayer(std::string &player_number, std::string &playe
 		if (!whitelisted_player)
 		{
 			// NON-WHITELISTED PLAYER
-			if ((whitelist_settings.players_non_whitelisted.size() && whitelist_settings.players_whitelisted.size()) < whitelist_settings.open_slots)
+			if ((whitelist_settings.players_non_whitelisted.size() + whitelist_settings.players_whitelisted.size()) <= whitelist_settings.open_slots)
 			{
 				whitelist_settings.players_non_whitelisted[std::move(player_guid)] = std::move(player_name);
 			}
