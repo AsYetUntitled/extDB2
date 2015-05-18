@@ -19,10 +19,12 @@ http://a3wasteland.com
  - Unique ID for fetching Results
  - Multi-Part Messages
  - Arma2 Legacy randomize configfile support  
+
  - Commandline Arguments Support
- - Rcon Support + Fetching missions / players from Rcon
- - Steam VAC + Friends Queries  
+ - Rcon Support
+ - Rcon Whitelisting + Kicking for Bad Playernames
  - RemoteTCP Support to send/receive text from extDB2  
+ - Steam VAC + Friends Queries  
 
 
 ### Supported Backends
@@ -30,6 +32,11 @@ http://a3wasteland.com
  - MySQL
  - SQLite
  - HTTP
+ 
+
+ ### No Longer Supported Backends
+
+ - Redis
  
 
 #### Protocols
