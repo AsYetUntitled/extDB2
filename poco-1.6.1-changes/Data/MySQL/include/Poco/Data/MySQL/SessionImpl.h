@@ -125,7 +125,7 @@ public:
 		/// Returns the name of the connector.
 
 	// Custom
-	Poco::Any SessionImpl::getInsertId();
+	Poco::Any getInsertId();
 
 private:
 

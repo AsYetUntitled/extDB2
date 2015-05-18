@@ -68,7 +68,7 @@ public:
 	Poco::Any getProperty(const std::string& name);
 	
 	//Custom
-	Poco::Any PooledSessionImpl::getInsertId();
+	Poco::Any getInsertId();
 	
 protected:
 	SessionImpl* access() const;
