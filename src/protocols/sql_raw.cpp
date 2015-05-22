@@ -34,7 +34,7 @@ along with this program. If not, see <http://www.gnu.org/licenses/>.
 bool SQL_RAW::init(AbstractExt *extension, const std::string &database_id, const std::string &init_str)
 {
 	extension_ptr = extension;
-	if (extension_ptr->extDB_connectors_info.databases.count(database_id) == 0)
+	if (extension_ptr->ext_connectors_info.databases.count(database_id) == 0)
 	{
 		#ifdef DEBUG_TESTING
 			extension_ptr->console->warn("extDB2: SQL_RAW: No Database Connection ID: {0}", database_id);
@@ -43,7 +43,7 @@ bool SQL_RAW::init(AbstractExt *extension, const std::string &database_id, const
 		return false;
 	}
 
-	database_ptr = &extension_ptr->extDB_connectors_info.databases[database_id];
+	database_ptr = &extension_ptr->ext_connectors_info.databases[database_id];
 
 	bool status;
 	if (database_ptr->type == "MySQL")

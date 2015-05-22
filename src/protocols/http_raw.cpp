@@ -41,7 +41,7 @@ bool HTTP_RAW::init(AbstractExt *extension, const std::string &database_id, cons
 
 	std::string host = extension_ptr->pConf->getString(database_id + ".Host", "127.0.0.1");
 	int port = extension_ptr->pConf->getInt(database_id + ".Port", 80);
-	int max_sessions = extension_ptr->pConf->getInt(database_id + ".MaxSessions", extension_ptr->extDB_info.max_threads);
+	int max_sessions = extension_ptr->pConf->getInt(database_id + ".MaxSessions", extension_ptr->ext_info.max_threads);
 	http_pool = new HTTP(host, port, max_sessions);
 
 	bool status;

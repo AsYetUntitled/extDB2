@@ -101,6 +101,7 @@ void Rcon::timerReconnect(const size_t delay)
 
 void Rcon::Reconnect(const boost::system::error_code& error)
 {
+	logger->info("Rcon: Attempting to Reconnect");
 	boost::asio::ip::udp::endpoint endpoint(boost::asio::ip::address::from_string(rcon_settings.address), rcon_settings.port);
 	rcon_socket.socket->async_connect(endpoint, boost::bind(&Rcon::connectionHandler, this, boost::asio::placeholders::error));
 }
@@ -137,6 +138,11 @@ void Rcon::start(RconSettings &rcon, BadPlayernameSettings &bad_playername, Whit
 	
 	boost::asio::ip::udp::endpoint endpoint(boost::asio::ip::address::from_string(rcon_settings.address), rcon_settings.port);
 	rcon_socket.socket->async_connect(endpoint, boost::bind(&Rcon::connectionHandler, this, boost::asio::placeholders::error));
+
+	#ifndef RCON_APP
+		// Disable Auto Reconnects for extension i.e if Rcon Settings are wrong
+		auto_reconnect = false;
+	#endif
 }
 
 
@@ -144,6 +150,9 @@ void Rcon::connectionHandler(const boost::system::error_code& error)
 {
 	if (!error)
 	{
+		#ifndef RCON_APP
+			auto_reconnect = true;  // Re-enable Auto Reconnects for extension i.e if Rcon Settings are good
+		#endif
 		startReceive();
 		connect();
 	}
@@ -934,7 +943,7 @@ void Rcon::sendCommand(std::string command)
 	rcon_packet.packetCode = 0x01;
 
 	sendPacket(rcon_packet);
-	delete []rcon_packet.cmd;
+	delete []rcon_packet.cmd;		
 }
 
 
@@ -1016,10 +1025,10 @@ void Rcon::connectDatabase(Poco::AutoPtr<Poco::Util::IniFileConfiguration> pConf
 							DB_connectors_info.mysql = true;
 						}
 					#else
-						if (!(extension_ptr->extDB_connectors_info.mysql))
+						if (!(extension_ptr->ext_connectors_info.mysql))
 						{
 							Poco::Data::MySQL::Connector::registerConnector();
-							extension_ptr->extDB_connectors_info.mysql = true;
+							extension_ptr->ext_connectors_info.mysql = true;
 						}
 					#endif
 					connection_str += "host=" + pConf->getString(whitelist_settings.database + ".IP") + ";";
@@ -1049,12 +1058,12 @@ void Rcon::connectDatabase(Poco::AutoPtr<Poco::Util::IniFileConfiguration> pConf
 						}
 						boost::filesystem::path sqlite_path(boost::filesystem::current_path());
 					#else
-						if (!(extension_ptr->extDB_connectors_info.sqlite))
+						if (!(extension_ptr->ext_connectors_info.sqlite))
 						{
 							Poco::Data::SQLite::Connector::registerConnector();
-							extension_ptr->extDB_connectors_info.sqlite = true;
+							extension_ptr->ext_connectors_info.sqlite = true;
 						}
-						boost::filesystem::path sqlite_path(extension_ptr->extDB_info.path);
+						boost::filesystem::path sqlite_path(extension_ptr->ext_info.path);
 					#endif
 					sqlite_path /= "extDB";
 					sqlite_path /= "sqlite";

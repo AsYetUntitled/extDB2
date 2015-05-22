@@ -30,5 +30,5 @@ class RCON: public AbstractProtocol
 		void processCommand(std::string &command, std::string &input_str, const unsigned int unique_id, std::string &result);
 
 	private:
-		std::vector < std::string > allowed_commands;
+		std::vector <std::string> allowed_commands;
 };

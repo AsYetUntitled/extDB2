@@ -33,12 +33,12 @@ bool RCON::init(AbstractExt *extension,  const std::string &database_id, const s
 		allowed_commands.insert(allowed_commands.begin(), tokens.begin(), tokens.end());
 		#ifdef DEBUG_TESTING
 			extension_ptr->console->warn("extDB2: RCON: Commands Allowed: {0}", init_str);
-			extension_ptr->console->warn("extDB2: RCON Status: {0}", extension_ptr->extDB_connectors_info.rcon);
+			extension_ptr->console->warn("extDB2: RCON Status: {0}", extension_ptr->ext_connectors_info.rcon);
 		#endif
 		extension_ptr->logger->warn("extDB2: RCON: Commands Allowed: {0}", init_str);
-		extension_ptr->logger->warn("extDB2: RCON Status: {0}", extension_ptr->extDB_connectors_info.rcon);
+		extension_ptr->logger->warn("extDB2: RCON Status: {0}", extension_ptr->ext_connectors_info.rcon);
 	}
-	return extension_ptr->extDB_connectors_info.rcon;
+	return extension_ptr->ext_connectors_info.rcon;
 }
 
 

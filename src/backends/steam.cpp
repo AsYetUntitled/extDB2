@@ -338,7 +338,7 @@ void Steam::updateSteamBans(std::vector<std::string> &steamIDs)
 							if ((steam_info.NumberOfVACBans >= rconBanSettings.NumberOfVACBans) && (steam_info.DaysSinceLastBan <= rconBanSettings.DaysSinceLastBan))
 							{
 								steam_info.extDBBanned = true;
-								if ((extension_ptr->extDB_connectors_info.rcon) && rconBanSettings.autoBan)
+								if ((extension_ptr->ext_connectors_info.rcon) && rconBanSettings.autoBan)
 								{
 									if (extension_ptr->vacBans_logger)
 									{

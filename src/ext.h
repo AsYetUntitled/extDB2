@@ -22,9 +22,7 @@ along with this program. If not, see <http://www.gnu.org/licenses/>.
 #include <unordered_map>
 
 #include <boost/asio.hpp>
-#ifdef _WIN32
-	#include <boost/filesystem.hpp>
-#endif
+#include <boost/filesystem.hpp>
 #include <boost/thread/thread.hpp>
 
 #include <Poco/Data/SessionPool.h>
@@ -41,7 +39,7 @@ along with this program. If not, see <http://www.gnu.org/licenses/>.
 class Ext: public AbstractExt
 {
 	public:
-		Ext(std::string path, std::unordered_map<std::string, std::string> options, bool status);
+		Ext(std::string shared_libary_path, std::unordered_map<std::string, std::string> &options);
 		~Ext();
 		void stop();	
 		void callExtension(char *output, const int &output_size, const char *function);

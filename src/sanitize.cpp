@@ -52,16 +52,15 @@ template <typename Iterator, typename Skipper>
 template <typename Iterator, typename Skipper>
 struct SqfParametersParser : boost::spirit::qi::grammar<Iterator, Sqf::Parameters(), Skipper>
 {
-	
-	SqfValueParser<Iterator,Skipper> val_parser;
-	boost::spirit::qi::rule<Iterator,  Sqf::Value(), Skipper> one_value;
-	boost::spirit::qi::rule<Iterator, Sqf::Parameters(), Skipper> start;
-	
 	SqfParametersParser() : SqfParametersParser::base_type(start,"Sqf::Parameters")
 	{
 		val_parser.name("one_value");
 		start = *(val_parser);
 	}
+
+	SqfValueParser<Iterator,Skipper> val_parser;
+	boost::spirit::qi::rule<Iterator,  Sqf::Value(), Skipper> one_value;
+	boost::spirit::qi::rule<Iterator, Sqf::Parameters(), Skipper> start;
 };
 
 namespace Sqf

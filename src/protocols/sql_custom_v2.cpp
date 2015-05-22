@@ -50,7 +50,7 @@ along with this program. If not, see <http://www.gnu.org/licenses/>.
 bool SQL_CUSTOM_V2::init(AbstractExt *extension, const std::string &database_id, const std::string &init_str)
 {
 	extension_ptr = extension;
-	if (extension_ptr->extDB_connectors_info.databases.count(database_id) == 0)
+	if (extension_ptr->ext_connectors_info.databases.count(database_id) == 0)
 	{
 		#ifdef DEBUG_TESTING
 			extension_ptr->console->warn("extDB2: SQL_CUSTOM_V2: No Database Connection ID: {0}", database_id);
@@ -59,7 +59,7 @@ bool SQL_CUSTOM_V2::init(AbstractExt *extension, const std::string &database_id,
 		return false;
 	}
 
-	database_ptr = &extension_ptr->extDB_connectors_info.databases[database_id];
+	database_ptr = &extension_ptr->ext_connectors_info.databases[database_id];
 	if ((database_ptr->type != std::string("MySQL")) && (database_ptr->type != std::string("SQLite")))
 	{
 		// DATABASE NOT SETUP YET
@@ -83,7 +83,7 @@ bool SQL_CUSTOM_V2::init(AbstractExt *extension, const std::string &database_id,
 	Poco::AutoPtr<Poco::Util::IniFileConfiguration> template_ini;
 	template_ini = new Poco::Util::IniFileConfiguration();
 
-	boost::filesystem::path sql_custom_path(extension_ptr->extDB_info.path);
+	boost::filesystem::path sql_custom_path(extension_ptr->ext_info.path);
 	sql_custom_path /= "extDB";
 	sql_custom_path /= "sql_custom_v2";
 	boost::filesystem::create_directories(sql_custom_path); // Creating Directory if missing

@@ -73,7 +73,7 @@ along with this program. If not, see <http://www.gnu.org/licenses/>.
 #include "protocols/steam_v2.h"
 
 
-Ext::Ext(std::string dll_path, std::unordered_map<std::string, std::string> options, bool status)
+Ext::Ext(std::string shared_library_path, std::unordered_map<std::string, std::string> &options)
 {
 	try
 	{
@@ -82,62 +82,62 @@ Ext::Ext(std::string dll_path, std::unordered_map<std::string, std::string> opti
 			bool conf_randomized = false;
 		#endif
 		
-		boost::filesystem::path extDB_config_path;
+		boost::filesystem::path config_path;
 
 		if (options.count("WORK") > 0)
 		{
 			// Override extDB2 Location
-			extDB_config_path = options["WORK"];
-			extDB_config_path /= "extdb-conf.ini";
-			if (boost::filesystem::exists(extDB_config_path))
+			config_path = options["WORK"];
+			config_path /= "extdb-conf.ini";
+			if (boost::filesystem::exists(config_path))
 			{
 				conf_found = true;
-				extDB_info.path = extDB_config_path.parent_path().string();
+				ext_info.path = config_path.parent_path().string();
 			}
 			else
 			{
 				// Override extDB2 Location -- Randomized Search
 				#ifdef _WIN32
-					extDB_config_path = extDB_config_path.parent_path();
-					search(extDB_config_path, conf_found, conf_randomized);
+					config_path = config_path.parent_path();
+					search(config_path, conf_found, conf_randomized);
 				#endif
 			}
 		}
 		else
 		{
-			// extDB2 DLL Location   This fails on Windows why ????
-			extDB_config_path = dll_path;
-			extDB_config_path = extDB_config_path.parent_path();
-			extDB_config_path /= "extdb-conf.ini";
-			if (boost::filesystem::is_regular_file(extDB_config_path))
+			// extDB2 Shared Library Location
+			config_path = shared_library_path;
+			config_path = config_path.parent_path();
+			config_path /= "extdb-conf.ini";
+			if (boost::filesystem::is_regular_file(config_path))
 			{
 				conf_found = true;
-				extDB_info.path = extDB_config_path.parent_path().string();
+				ext_info.path = config_path.parent_path().string();
 			}
 			// extDB2 Arma3 Location
 			else if (boost::filesystem::is_regular_file("extdb-conf.ini"))
 			{
 				conf_found = true;
-				extDB_config_path = boost::filesystem::path("extdb-conf.ini");
-				extDB_info.path = extDB_config_path.parent_path().string();
+				config_path = boost::filesystem::path("extdb-conf.ini");
+				ext_info.path = config_path.parent_path().string();
 			}
 			else
 			{
 				#ifdef _WIN32	// Windows Only, Linux Arma2 Doesn't have extension Support
 					// Search for Randomize Config File -- Legacy Security Support For Arma2Servers		
 
-					extDB_config_path = extDB_config_path.parent_path();
+					config_path = config_path.parent_path();
 					// CHECK DLL PATH FOR CONFIG)
-					if (!extDB_config_path.string().empty())
+					if (!config_path.string().empty())
 					{
-						search(extDB_config_path, conf_found, conf_randomized);
+						search(config_path, conf_found, conf_randomized);
 					}
 
 					// CHECK ARMA ROOT DIRECTORY FOR CONFIG
 					if (!conf_found)
 					{
-						extDB_config_path = boost::filesystem::current_path().string();
-						search(extDB_config_path, conf_found, conf_randomized);
+						config_path = boost::filesystem::current_path().string();
+						search(config_path, conf_found, conf_randomized);
 					}
 				#endif
 			}
@@ -145,8 +145,8 @@ Ext::Ext(std::string dll_path, std::unordered_map<std::string, std::string> opti
 
 		if (conf_found)
 		{
-			pConf = new Poco::Util::IniFileConfiguration(extDB_config_path.make_preferred().string());
-			extDB_info.logger_flush = pConf->getBool("Log.Flush", true);
+			pConf = new Poco::Util::IniFileConfiguration(config_path.make_preferred().string());
+			ext_info.logger_flush = pConf->getBool("Log.Flush", true);
 
 			#ifdef _WIN32	// Windows Only, Linux Arma2 Doesn't have extension Support
 				// Search for Randomize Config File -- Legacy Security Support For Arma2Servers
@@ -167,8 +167,8 @@ Ext::Ext(std::string dll_path, std::unordered_map<std::string, std::string> opti
 					}
 					randomized_filename += ".ini";
 
-					boost::filesystem::path randomize_configfile_path = extDB_config_path.parent_path() /= randomized_filename;
-					boost::filesystem::rename(extDB_config_path, randomize_configfile_path);
+					boost::filesystem::path randomize_configfile_path = config_path.parent_path() /= randomized_filename;
+					boost::filesystem::rename(config_path, randomize_configfile_path);
 				}
 			#endif
 		}
@@ -184,20 +184,19 @@ Ext::Ext(std::string dll_path, std::unordered_map<std::string, std::string> opti
 		Poco::DateTime current_dateTime;
 
 		boost::filesystem::path log_relative_path;
-		log_relative_path = boost::filesystem::path(extDB_info.path);
+		log_relative_path = boost::filesystem::path(ext_info.path);
 		log_relative_path /= "extDB";
 		log_relative_path /= "logs";
 		log_relative_path /= Poco::DateTimeFormatter::format(current_dateTime, "%Y");
 		log_relative_path /= Poco::DateTimeFormatter::format(current_dateTime, "%n");
 		log_relative_path /= Poco::DateTimeFormatter::format(current_dateTime, "%d");
 
-		extDB_info.log_path = log_relative_path.make_preferred().string();
+		ext_info.log_path = log_relative_path.make_preferred().string();
 		boost::filesystem::create_directories(log_relative_path);
 
 		log_relative_path /= Poco::DateTimeFormatter::format(current_dateTime, "%H-%M-%S");
 
-		auto logger_temp = spdlog::rotating_logger_mt("extDB2 File Logger", log_relative_path.make_preferred().string(), 1048576 * 100, 3, extDB_info.logger_flush);
-		logger.swap(logger_temp);
+		logger.reset(new spdlog::logger("extDB2 File Logger", std::make_shared<spdlog::sinks::simple_file_sink_mt>(log_relative_path.make_preferred().string(), ext_info.logger_flush)));
 
 		spdlog::set_level(spdlog::level::info);
 		spdlog::set_pattern("%v");
@@ -266,9 +265,9 @@ Ext::Ext(std::string dll_path, std::unordered_map<std::string, std::string> opti
 			}
 
 			// Start Threads + ASIO
-			extDB_info.max_threads = pConf->getInt("Main.Threads", 0);
+			ext_info.max_threads = pConf->getInt("Main.Threads", 0);
 			int detected_cpu_cores = boost::thread::hardware_concurrency();
-			if (extDB_info.max_threads <= 0)
+			if (ext_info.max_threads <= 0)
 			{
 				// Auto-Detect
 				if (detected_cpu_cores > 6)
@@ -277,7 +276,7 @@ Ext::Ext(std::string dll_path, std::unordered_map<std::string, std::string> opti
 						console->info("extDB2: Detected {0} Cores, Setting up {1} Worker Threads", detected_cpu_cores, 6);
 					#endif
 					logger->info("extDB2: Detected {0} Cores, Setting up {1} Worker Threads", detected_cpu_cores, 6);
-					extDB_info.max_threads = 6;
+					ext_info.max_threads = 6;
 				}
 				else if (detected_cpu_cores <= 2)
 				{
@@ -285,41 +284,41 @@ Ext::Ext(std::string dll_path, std::unordered_map<std::string, std::string> opti
 						console->info("extDB2: Detected {0} Cores, Setting up {1} Worker Threads", detected_cpu_cores, 2);
 					#endif
 					logger->info("extDB2: Detected {0} Cores, Setting up {1} Worker Threads", detected_cpu_cores, 2);
-					extDB_info.max_threads = 2;
+					ext_info.max_threads = 2;
 				}
 				else
 				{
-					extDB_info.max_threads = detected_cpu_cores;
+					ext_info.max_threads = detected_cpu_cores;
 					#ifdef DEBUG_TESTING
-						console->info("extDB2: Detected {0} Cores, Setting up {1} Worker Threads", detected_cpu_cores, extDB_info.max_threads);
+						console->info("extDB2: Detected {0} Cores, Setting up {1} Worker Threads", detected_cpu_cores, ext_info.max_threads);
 					#endif
-					logger->info("extDB2: Detected {0} Cores, Setting up {1} Worker Threads", detected_cpu_cores, extDB_info.max_threads);
+					logger->info("extDB2: Detected {0} Cores, Setting up {1} Worker Threads", detected_cpu_cores, ext_info.max_threads);
 				}
 			}
-			else if (extDB_info.max_threads > 8)  // Sanity Check
+			else if (ext_info.max_threads > 8)  // Sanity Check
 			{
 				// Manual Config
 				#ifdef DEBUG_TESTING
-					console->info("extDB2: Sanity Check, Setting up {0} Worker Threads (config settings {1})", 8, extDB_info.max_threads);
+					console->info("extDB2: Sanity Check, Setting up {0} Worker Threads (config settings {1})", 8, ext_info.max_threads);
 				#endif
-				logger->info("extDB2: Sanity Check, Setting up {0} Worker Threads (config settings {1})", 8, extDB_info.max_threads);
-				extDB_info.max_threads = 8;
+				logger->info("extDB2: Sanity Check, Setting up {0} Worker Threads (config settings {1})", 8, ext_info.max_threads);
+				ext_info.max_threads = 8;
 			}
 			else
 			{
 				// Manual Config
 				#ifdef DEBUG_TESTING
-					console->info("extDB2: Detected {0} Cores, Setting up {1} Worker Threads (config settings)", detected_cpu_cores, extDB_info.max_threads);
+					console->info("extDB2: Detected {0} Cores, Setting up {1} Worker Threads (config settings)", detected_cpu_cores, ext_info.max_threads);
 				#endif
-				logger->info("extDB2: Detected {0} Cores, Setting up {1} Worker Threads (config settings)", detected_cpu_cores, extDB_info.max_threads);
+				logger->info("extDB2: Detected {0} Cores, Setting up {1} Worker Threads (config settings)", detected_cpu_cores, ext_info.max_threads);
 			}
 
 			// Save -extDB_VAR value for retreiving later
-			extDB_info.var = "\"" + options["VAR"] + "\"";
+			ext_info.var = "\"" + options["VAR"] + "\"";
 
 			// Setup ASIO Worker Pool
 			io_work_ptr.reset(new boost::asio::io_service::work(io_service));
-			for (int i = 0; i < extDB_info.max_threads; ++i)
+			for (int i = 0; i < ext_info.max_threads; ++i)
 			{
 				threads.create_thread(boost::bind(&boost::asio::io_service::run, &io_service));
 			}
@@ -330,7 +329,7 @@ Ext::Ext(std::string dll_path, std::unordered_map<std::string, std::string> opti
 			remote_server.init(this);
 
 			// Initialize so have atomic setup correctly + Setup VAC Ban Logger
-			steam.init(this, extDB_info.path, current_dateTime);
+			steam.init(this, ext_info.path, current_dateTime);
 		}
 
 		logger->info();
@@ -363,27 +362,27 @@ void Ext::stop()
 	#endif
 	logger->info("extDB2: Stopping ...");
 	io_work_ptr.reset();
-	if (extDB_connectors_info.rcon)
+	if (ext_connectors_info.rcon)
 	{
 		rcon->disconnect();
 	}
 	threads.join_all();
 	io_service.stop();
-	if (extDB_connectors_info.mysql)
+	if (ext_connectors_info.mysql)
 	{
 		//Poco::Data::MySQL::Connector::unregisterConnector();
 	}
-	if (extDB_connectors_info.sqlite)
+	if (ext_connectors_info.sqlite)
 	{
 		//Poco::Data::SQLite::Connector::unregisterConnector();
 	}
 }
 
 #ifdef _WIN32
-	void Ext::search(boost::filesystem::path &extDB_config_path, bool &conf_found, bool &conf_randomized)
+	void Ext::search(boost::filesystem::path &config_path, bool &conf_found, bool &conf_randomized)
 	{
 		std::regex expression("extdb-conf.*ini");
-		for (boost::filesystem::directory_iterator it(extDB_config_path); it != boost::filesystem::directory_iterator(); ++it)
+		for (boost::filesystem::directory_iterator it(config_path); it != boost::filesystem::directory_iterator(); ++it)
 		{
 			if (boost::filesystem::is_regular_file(it->path()))
 			{
@@ -391,8 +390,8 @@ void Ext::stop()
 				{
 					conf_found = true;
 					conf_randomized = true;
-					extDB_config_path = boost::filesystem::path(it->path().string());
-					extDB_info.path = extDB_config_path.parent_path().string();
+					config_path = boost::filesystem::path(it->path().string());
+					ext_info.path = config_path.parent_path().string();
 					break;
 				}
 			}
@@ -446,10 +445,10 @@ void Ext::connectRemote(char *output, const int &output_size, const std::string 
 {
 	if (pConf->getBool(remote_conf + ".Enable", false))
 	{
-		if (!extDB_connectors_info.remote)
+		if (!ext_connectors_info.remote)
 		{
 			remote_server.setup(remote_conf);
-			extDB_connectors_info.remote = true;
+			ext_connectors_info.remote = true;
 			std::strcpy(output, ("[1]"));
 		}
 		else
@@ -467,7 +466,7 @@ void Ext::connectRemote(char *output, const int &output_size, const std::string 
 void Ext::connectRcon(char *output, const int &output_size, const std::string &rcon_conf, std::string player_info_returned)
 // Start RCon
 {
-	if (extDB_connectors_info.rcon)
+	if (ext_connectors_info.rcon)
 	{
 		std::strcpy(output, ("[0,\"Rcon is Already Running\"]"));
 	}
@@ -553,7 +552,7 @@ void Ext::connectRcon(char *output, const int &output_size, const std::string &r
 		
 		// Start Rcon
 		rcon->start(rcon_settings, bad_playername_settings, whitelist_settings, pConf);
-		extDB_connectors_info.rcon = true;
+		ext_connectors_info.rcon = true;
 		std::strcpy(output, "[1]");
 	}
 	else
@@ -596,7 +595,7 @@ void Ext::connectDatabase(char *output, const int &output_size, const std::strin
 {
 	if (!database_conf.empty())
 	{
-		DBConnectionInfo *database = &extDB_connectors_info.databases[database_id];
+		DBConnectionInfo *database = &ext_connectors_info.databases[database_id];
 
 		bool connected = true;
 
@@ -627,10 +626,10 @@ void Ext::connectDatabase(char *output, const int &output_size, const std::strin
 					if (boost::algorithm::iequals(database->type, std::string("MySQL")) == 1)
 					{
 						database->type = "MySQL";
-						if (!(extDB_connectors_info.mysql))
+						if (!(ext_connectors_info.mysql))
 						{
 							Poco::Data::MySQL::Connector::registerConnector();
-							extDB_connectors_info.mysql = true;
+							ext_connectors_info.mysql = true;
 						}
 						connection_str += "host=" + pConf->getString(database_conf + ".IP") + ";";
 						connection_str += "port=" + pConf->getString(database_conf + ".Port") + ";";
@@ -651,13 +650,13 @@ void Ext::connectDatabase(char *output, const int &output_size, const std::strin
 					else if (boost::algorithm::iequals(database->type, "SQLite") == 1)
 					{
 						database->type = "SQLite";
-						if (!(extDB_connectors_info.sqlite))
+						if (!(ext_connectors_info.sqlite))
 						{
 							Poco::Data::SQLite::Connector::registerConnector();
-							extDB_connectors_info.sqlite = true;
+							ext_connectors_info.sqlite = true;
 						}
 
-						boost::filesystem::path sqlite_path(extDB_info.path);
+						boost::filesystem::path sqlite_path(ext_info.path);
 						sqlite_path /= "extDB";
 						sqlite_path /= "sqlite";
 						sqlite_path /= pConf->getString(database_conf + ".Name");
@@ -666,7 +665,7 @@ void Ext::connectDatabase(char *output, const int &output_size, const std::strin
 					database->sql_pool.reset(new Poco::Data::SessionPool(database->type,
 																	 	connection_str,
 																	 	pConf->getInt(database_conf + ".minSessions", 1),
-																	 	pConf->getInt(database_conf + ".maxSessions", extDB_info.max_threads),
+																	 	pConf->getInt(database_conf + ".maxSessions", ext_info.max_threads),
 																	 	pConf->getInt(database_conf + ".idleTime", 600)));
 					if (database->sql_pool->get().isConnected())
 					{
@@ -736,7 +735,7 @@ void Ext::connectDatabase(char *output, const int &output_size, const std::strin
 
 		if (!connected)
 		{
-			extDB_connectors_info.databases.erase(database_id);
+			ext_connectors_info.databases.erase(database_id);
 		}
 	}
 	else
@@ -1149,7 +1148,7 @@ void Ext::callExtension(char *output, const int &output_size, const char *functi
 				case '9': // SYSTEM CALLS / SETUP
 				{
 					Poco::StringTokenizer tokens(input_str, ":");
-					if (extDB_info.extDB_lock)
+					if (ext_info.extDB_lock)
 					{
 						if (tokens.count() == 2)
 						{
@@ -1194,9 +1193,9 @@ void Ext::callExtension(char *output, const int &output_size, const char *functi
 								// VAC
 								if (tokens[1] == "START_VAC")
 								{
-									if (!extDB_connectors_info.steam)
+									if (!ext_connectors_info.steam)
 									{
-										extDB_connectors_info.steam = true;
+										ext_connectors_info.steam = true;
 										steam_thread.start(steam);
 										std::strcpy(output, "[1]");
 									}
@@ -1212,7 +1211,7 @@ void Ext::callExtension(char *output, const int &output_size, const char *functi
 								}
 								else if (tokens[1] == "LOCK")
 								{
-									extDB_info.extDB_lock = true;
+									ext_info.extDB_lock = true;
 									std::strcpy(output, ("[1]"));
 								}
 								else if (tokens[1] == "LOCK_STATUS")
@@ -1238,8 +1237,8 @@ void Ext::callExtension(char *output, const int &output_size, const char *functi
 								}
 								else if (tokens[1] == "VAR")
 								{
-									logger->info("Extension Output Size: {0}", extDB_info.var);
-									std::strcpy(output, extDB_info.var.c_str());
+									logger->info("Extension Output Size: {0}", ext_info.var);
+									std::strcpy(output, ext_info.var.c_str());
 								}
 								else
 								{

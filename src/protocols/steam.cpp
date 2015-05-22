@@ -35,7 +35,7 @@ bool STEAM::init(AbstractExt *extension, const std::string &database_id, const s
 {
 	bool status;
 	extension_ptr = extension;
-	if (extension_ptr->extDB_connectors_info.steam)
+	if (extension_ptr->ext_connectors_info.steam)
 	{
 		status = true;
 	}

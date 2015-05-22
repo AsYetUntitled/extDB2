@@ -4,10 +4,7 @@
 #include "ext.h"
 
 
-namespace
-{
-	Ext *extension;
-};
+Ext *extension;
 
 #ifdef __GNUC__
 	#include <dlfcn.h>
@@ -15,15 +12,10 @@ namespace
 	static void __attribute__((constructor))
 	extension_init(void)
 	{
-		bool status = true;
 		std::unordered_map<std::string, std::string> options;
 
 		FILE *fh = fopen ("/proc/self/cmdline", "r"); // /proc/self  :D
-		if (!fh)
-		{
-			status = false;
-		}
-		else
+		if (fh != NULL)
 		{
 			std::size_t found;
    			char *arg = 0;
@@ -55,7 +47,7 @@ namespace
 
 		Dl_info dl_info;
 		dladdr((void*)extension_init, &dl_info);
-		extension = new Ext(boost::filesystem::path (dl_info.dli_fname).string(), options, status);
+		extension = new Ext(boost::filesystem::path (dl_info.dli_fname).string(), options);
 	}
 
 	static void __attribute__((destructor))
@@ -91,16 +83,11 @@ namespace
 		{
 			case DLL_PROCESS_ATTACH:
 				{
-					bool status = true;
 					int nArgs;
 					LPWSTR *pszArgsW = CommandLineToArgvW(GetCommandLineW(), &nArgs);
 					std::unordered_map<std::string, std::string> options;
 
-					if (nArgs == NULL)
-					{
-						status = false;
-					}
-					else
+					if (nArgs != NULL)
 					{
 						std::size_t found;
 						std::string argument_str;
@@ -129,7 +116,7 @@ namespace
 
 					WCHAR path[MAX_PATH + 1];
 					GetModuleFileNameW((HINSTANCE)&__ImageBase, path, (MAX_PATH + 1));
-					extension = new Ext(boost::filesystem::path(path).string(), options, status);
+					extension = new Ext(boost::filesystem::path(path).string(), options);
 				}
 				break;
 			case DLL_PROCESS_DETACH:

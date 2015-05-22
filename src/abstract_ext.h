@@ -53,7 +53,7 @@ class AbstractExt
 		};
 
 		// extDB Connectors
-		struct extDBConnectors
+		struct extConnectors
 		{
 			std::unordered_map<std::string, DBConnectionInfo> databases;
 
@@ -64,10 +64,10 @@ class AbstractExt
 			bool rcon=false;
 			bool remote=false;
 		};
-		extDBConnectors extDB_connectors_info;
+		extConnectors ext_connectors_info;
 
-		// extDB Info
-		struct extDBInfo
+		// ext Info
+		struct extInfo
 		{
 			std::string var;
 			std::string path;
@@ -77,7 +77,7 @@ class AbstractExt
 			int max_threads;
 			bool extDB_lock=false;
 		};
-		extDBInfo extDB_info;
+		extInfo ext_info;
 
 		// RemoteAccess Info
 		struct remoteAccessInfo

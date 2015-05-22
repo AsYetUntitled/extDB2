@@ -1,5 +1,12 @@
 -------------------------------------------------------------------------------
 57 :
+	FIXED: RCon won't keep trying to reconnect if Battleye doesn't respond i.e is turned off.
+
+	MINOR: Changed Logging to simpler method, no rotating logfiles based on size. There is no need for it
+	
+
+-------------------------------------------------------------------------------
+57 :
 	IMPROVED: SQL_CUSTOM Return Last ID Option will no longer return -1 and should perf better
 	
 	FIXED: Player Whitelisting was counting non-whitelisted players instead of total players
@@ -16,7 +23,7 @@
 
 	FIXED: Multiple fixes for Rcon Player kicks
 
-	Minor: Code Improvement to 2: + 1: Calls
+	MINOR: Code Improvement to 2: + 1: Calls
 
 -------------------------------------------------------------------------------
 55 :

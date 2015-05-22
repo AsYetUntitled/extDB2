@@ -30,12 +30,11 @@ bool LOG::init(AbstractExt *extension, const std::string &database_id, const std
 	{
 		try
 		{
-			boost::filesystem::path customlog(extension_ptr->extDB_info.log_path);
+			boost::filesystem::path customlog(extension_ptr->ext_info.log_path);
 			customlog /= init_str;
-			if (customlog.parent_path().make_preferred().string() == extension_ptr->extDB_info.log_path)
+			if (customlog.parent_path().make_preferred().string() == extension_ptr->ext_info.log_path)
 			{
-				auto logger_temp = spdlog::rotating_logger_mt(init_str, customlog.make_preferred().string(), 1048576 * 100, 3, extension_ptr->extDB_info.logger_flush);
-				logger.swap(logger_temp);
+				logger.reset(new spdlog::logger(init_str, std::make_shared<spdlog::sinks::simple_file_sink_mt>(customlog.make_preferred().string(), extension_ptr->ext_info.logger_flush)));
 				status = true;
 			}
 		}
