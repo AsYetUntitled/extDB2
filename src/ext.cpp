@@ -1232,13 +1232,19 @@ void Ext::callExtension(char *output, const int &output_size, const char *functi
 								else if (tokens[1] == "OUTPUTSIZE")
 								{
 									std::string outputsize_str(Poco::NumberFormatter::format(output_size));
-									logger->info("Extension Output Size: {0}", outputsize_str);
 									std::strcpy(output, outputsize_str.c_str());
+									logger->info("extDB2: Output Size: {0}", outputsize_str);
 								}
 								else if (tokens[1] == "VAR")
 								{
-									logger->info("Extension Output Size: {0}", ext_info.var);
 									std::strcpy(output, ext_info.var.c_str());
+									logger->info("Extension Output Size: {0}", ext_info.var);
+								}
+								else if (tokens[1] == "SHUTDOWN")
+								{
+									std::strcpy(output, "[1]");
+									logger->info("extDB2: exit sent to armaserver");
+									std::exit(EXIT_SUCCESS);
 								}
 								else
 								{

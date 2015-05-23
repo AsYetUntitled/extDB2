@@ -1,5 +1,6 @@
 -------------------------------------------------------------------------------
 57 :
+	ADDED: 9:SHUTDOWN will cause armaserver to shutdown nicely. Only works before you lock extension i.e 9:LOCK
 	FIXED: RCon won't keep trying to reconnect if Battleye doesn't respond i.e is turned off.
 
 	IMPROVED: MISC getRandomString, will always return correct number of strings. Length of string might be larger than requested.
