@@ -147,11 +147,10 @@ void MISC::getRandomString(std::string &input_str, bool uniqueString, std::strin
 	}
 	else
 	{
-		int numberOfVariables;
-		int stringLength;
-		int numOfRetrys = 0;
+		int num_of_string;
+		int len_of_string;
 
-		if (!((Poco::NumberParser::tryParse(tokens[0], numberOfVariables)) && (Poco::NumberParser::tryParse(tokens[1], stringLength))))
+		if (!((Poco::NumberParser::tryParse(tokens[0], num_of_string)) && (Poco::NumberParser::tryParse(tokens[1], len_of_string))))
 		{
 			result = "[0,\"Error Invalid Number\"]";
 		}
@@ -163,54 +162,48 @@ void MISC::getRandomString(std::string &input_str, bool uniqueString, std::strin
 			}
 			else
 			{
-				std::lock_guard<std::mutex> lock(mutex_RandomString);
-				boost::random::uniform_int_distribution<> index_dist(0, random_chars.size() - 1);
+			    int i = 0;
+			    int num_of_retrys = 0;
+			    std::string random_string;
 
-				result = "[1,[";
+			    result = "[1,[";
 
-				for(int i = 0; i < numberOfVariables; ++i)
-				{
-					std::stringstream randomStringStream;
-					for(int x = 0; x < stringLength; ++x)
-					{
-						randomStringStream << random_chars[index_dist(random_chars_rng)];
-					}
+			    std::lock_guard<std::mutex> lock(mutex_RandomString);
+			    boost::random::uniform_int_distribution<> index_dist(0, random_chars.size() - 1);
 
-					std::string randomString = randomStringStream.str();
+			    while (i < num_of_strings)
+			    {
+			        std::stringstream random_stream;
+			        for(int x = 0; x < len_of_string; ++x)
+			        {
+			            random_stream << random_chars[index_dist(random_chars_rng)];
+			        }
+			        random_string = random_stream.str();
 
-					if (uniqueString)
-					{
-						if (std::find(uniqueRandomVarNames.begin(), uniqueRandomVarNames.end(), randomString)!=uniqueRandomVarNames.end())
+			        if (std::find(uniqueRandomVarNames.begin(), uniqueRandomVarNames.end(), random_string) != uniqueRandomVarNames.end())
+			        {
+			            ++num_of_retrys;
+			            if (num_of_retrys >= 10)
+			            {
+			                ++len_of_string; // Increase Random String Length if we tried 10 times + failed
+			                num_of_retrys = 0;
+			            }
+			        }
+			        else
+			        {
+			            ++i;
+						if (i != 0)
 						{
-							numberOfVariables = numberOfVariables - 1;
-							numOfRetrys = numOfRetrys + 1;
-							if (numOfRetrys > 11)
-							{
-								if (numberOfVariables == 0)
-								{
-									result = "[1,[";
-								}
-								// Break outof Loop if already tried 10 times
-								--i;
-								break;
-							}
+							result = result + "," + "\"" + random_string + "\"";
 						}
 						else
 						{
-							if (i != 0)
-							{
-								result = result + "," + "\"" + randomString + "\"";
-							}
-							else
-							{
-								result = result + "\"" + randomString + "\"";
-							}
-							uniqueRandomVarNames.push_back(randomString);
-							numOfRetrys = 0;
+							result = result + "\"" + random_string + "\"";
 						}
-					}
-				}
-				result =+ "]]";
+			            uniqueRandomVarNames.push_back(random_string);
+			        }
+			    }
+			    result =+ "]]";
 			}
 		}
 	}
