@@ -43,7 +43,6 @@ From Frank https://gist.github.com/Fank/11127158
 bool MISC::init(AbstractExt *extension, const std::string &database_id, const std::string &init_str)
 {
 	extension_ptr = extension;
-	random_chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
 	return true;
 }
 
@@ -138,7 +137,7 @@ void MISC::getBEGUID(std::string &input_str, std::string &result)
 }
 
 
-void MISC::getRandomString(std::string &input_str, bool uniqueString, std::string &result)
+void MISC::getRandomString(std::string &input_str, std::string &result)
 {
 	Poco::StringTokenizer tokens(input_str, ":");
 	if (tokens.count() != 2)
@@ -147,63 +146,22 @@ void MISC::getRandomString(std::string &input_str, bool uniqueString, std::strin
 	}
 	else
 	{
-		int num_of_string;
+		int num_of_strings;
 		int len_of_string;
 
-		if (!((Poco::NumberParser::tryParse(tokens[0], num_of_string)) && (Poco::NumberParser::tryParse(tokens[1], len_of_string))))
+		if (!((Poco::NumberParser::tryParse(tokens[0], num_of_strings)) && (Poco::NumberParser::tryParse(tokens[1], len_of_string))))
 		{
 			result = "[0,\"Error Invalid Number\"]";
 		}
 		else
 		{
-			if (numberOfVariables <= 0)
+			if (num_of_strings <= 0)
 			{
 				result = "[0,\"Error Number of Variable <= 0\"]";
 			}
 			else
 			{
-			    int i = 0;
-			    int num_of_retrys = 0;
-			    std::string random_string;
-
-			    result = "[1,[";
-
-			    std::lock_guard<std::mutex> lock(mutex_RandomString);
-			    boost::random::uniform_int_distribution<> index_dist(0, random_chars.size() - 1);
-
-			    while (i < num_of_strings)
-			    {
-			        std::stringstream random_stream;
-			        for(int x = 0; x < len_of_string; ++x)
-			        {
-			            random_stream << random_chars[index_dist(random_chars_rng)];
-			        }
-			        random_string = random_stream.str();
-
-			        if (std::find(uniqueRandomVarNames.begin(), uniqueRandomVarNames.end(), random_string) != uniqueRandomVarNames.end())
-			        {
-			            ++num_of_retrys;
-			            if (num_of_retrys >= 10)
-			            {
-			                ++len_of_string; // Increase Random String Length if we tried 10 times + failed
-			                num_of_retrys = 0;
-			            }
-			        }
-			        else
-			        {
-			            ++i;
-						if (i != 0)
-						{
-							result = result + "," + "\"" + random_string + "\"";
-						}
-						else
-						{
-							result = result + "\"" + random_string + "\"";
-						}
-			            uniqueRandomVarNames.push_back(random_string);
-			        }
-			    }
-			    result =+ "]]";
+				extension_ptr->getUniqueString(len_of_string, num_of_strings, result);
 			}
 		}
 	}
@@ -229,14 +187,7 @@ bool MISC::callProtocol(std::string input_str, std::string &result, const bool a
 	}
 	if (command == "TIME")
 	{
-		if (data.empty())
-		{
-			getDateTime(result);
-		}
-		else
-		{
-			getDateTime(Poco::NumberParser::parse(data), result); //TODO try catch or insert number checker function
-		}
+		extension_ptr->getDateTime(data, result);
 	}
 	else if (command == "BEGUID")
 	{
@@ -256,11 +207,7 @@ bool MISC::callProtocol(std::string input_str, std::string &result, const bool a
 	}
 	else if (command == "RANDOM_UNIQUE_STRING")
 	{
-		getRandomString(data, true, result);
-	}
-	else if (command == "RANDOM_STRING")
-	{
-		getRandomString(data, false, result);
+		getRandomString(data, result);
 	}
 	else if (command == "TEST")
 	{

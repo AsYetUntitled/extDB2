@@ -23,6 +23,8 @@ along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 #include <boost/asio.hpp>
 #include <boost/filesystem.hpp>
+#include <boost/random/random_device.hpp>
+#include <boost/random/uniform_int_distribution.hpp>
 #include <boost/thread/thread.hpp>
 
 #include <Poco/Data/SessionPool.h>
@@ -48,6 +50,9 @@ class Ext: public AbstractExt
 		void rconAddBan(std::string input_str);
 		void rconMissions(unsigned int unique_id);
 		void rconPlayers(unsigned int unique_id);
+
+		void getDateTime(const std::string &input_str, std::string &result);
+		void getUniqueString(int &len_of_string, int &num_of_string, std::string &result);
 
 	protected:
 		const unsigned int saveResult_mutexlock(const resultData &result_data);
@@ -79,6 +84,12 @@ class Ext: public AbstractExt
 		// Protocols
 		std::unordered_map< std::string, std::unique_ptr<AbstractProtocol> > unordered_map_protocol;
 		std::mutex mutex_unordered_map_protocol;
+
+		// Unique Random String
+		std::string random_chars;
+		boost::random::random_device random_chars_rng;
+		std::mutex mutex_RandomString;
+		std::vector < std::string > uniqueRandomVarNames;
 
 		// Unique ID
 		unsigned int unique_id_counter = 9816; // Can't be value 1

@@ -335,6 +335,9 @@ Ext::Ext(std::string shared_library_path, std::unordered_map<std::string, std::s
 		logger->info();
 		logger->info();
 		spdlog::set_pattern("[%H:%M:%S %z] [Thread %t] %v");
+
+		// Unique Random Strings Characters
+		random_chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
 	}
 	catch(const boost::filesystem::filesystem_error& e)
 	{
@@ -587,6 +590,71 @@ void Ext::rconPlayers(unsigned int unique_id)
 // Adds RCon Command to be sent to Server.
 {
 	rcon->getPlayers(unique_id);
+}
+
+
+void Ext::getDateTime(const std::string &input_str, std::string &result)
+{
+	int time_offset = 0;
+	if (!(input_str.empty()))
+	{
+		if (!(Poco::NumberParser::tryParse(input_str, time_offset)))
+		{
+			time_offset = 0;
+		}
+	}
+
+	Poco::DateTime newtime = Poco::DateTime() + Poco::Timespan(time_offset * Poco::Timespan::HOURS);
+	result = "[1,[" + Poco::DateTimeFormatter::format(newtime, "%Y, %n, %d, %H, %M") + "]]";
+}
+
+
+void Ext::getUniqueString(int &len_of_string, int &num_of_strings, std::string &result)
+{
+    int num_of_retrys = 0;
+    std::string random_string;
+
+    std::lock_guard<std::mutex> lock(mutex_RandomString);
+    boost::random::uniform_int_distribution<> index_dist(0, random_chars.size() - 1);
+
+    result = "[";
+    int i = 0;
+    while (i < num_of_strings)
+    {
+        std::stringstream random_stream;
+        for(int x = 0; x < len_of_string; ++x)
+        {
+            random_stream << random_chars[index_dist(random_chars_rng)];
+        }
+        random_string = random_stream.str();
+
+        if (std::find(uniqueRandomVarNames.begin(), uniqueRandomVarNames.end(), random_string) != uniqueRandomVarNames.end())
+        {
+            if (num_of_retrys >= 10)
+            {
+                num_of_retrys = 0;
+                ++len_of_string; // Increase Random String Length if we tried 10 times + failed
+            }
+            else
+        	{
+            	++num_of_retrys;
+        	}
+        }
+        else
+        {
+            if (i == 0)
+            {
+            	result =+ "\"" + random_string + "\"";
+        	}
+        	else
+    		{
+            	result =+ ",\"" + random_string + "\"";
+        	}
+            uniqueRandomVarNames.push_back(random_string);
+            ++i;
+        }
+    }
+    result =+ "]";
 }
 
 
@@ -1150,39 +1218,53 @@ void Ext::callExtension(char *output, const int &output_size, const char *functi
 					Poco::StringTokenizer tokens(input_str, ":");
 					if (ext_info.extDB_lock)
 					{
-						if (tokens.count() == 2)
+						switch (tokens.count())
 						{
-							if (tokens[1] == "VERSION")
-							{
-								std::strcpy(output, EXTDB_VERSION);
-							}
-							else if (tokens[1] == "LOCK_STATUS")
-							{
-								std::strcpy(output, "[1]");
-							}
-							else if (tokens[1] == "RCON_STATUS")
-							{
-								if (rcon->status())
+							case 2:
+								if (tokens[1] == "VERSION")
+								{
+									std::strcpy(output, EXTDB_VERSION);
+								}
+								else if (tokens[1] == "LOCK_STATUS")
 								{
 									std::strcpy(output, "[1]");
 								}
+								else if (tokens[1] == "RCON_STATUS")
+								{
+									if (rcon->status())
+									{
+										std::strcpy(output, "[1]");
+									}
+									else
+									{
+										std::strcpy(output, "[0]");
+									}
+								}
+								else if (tokens[1] == "TIME")
+								{
+									std::string result;
+									getDateTime(tokens[1], std::string());
+									std::strcpy(output, result.c_str());
+								}
 								else
 								{
-									std::strcpy(output, "[0]");
+									// Invalid Format
+									std::strcpy(output, "[0,\"Error Invalid Format\"]");
+									logger->error("extDB2: Invalid Format: {0}", input_str);
 								}
-							}
-							else
-							{
+								break;
+							case 3:
+								if (tokens[1] == "TIME")
+								{
+									std::string result;
+									getDateTime(tokens[1], result);
+									std::strcpy(output, result.c_str());
+								}
+								break;
+							default:
 								// Invalid Format
 								std::strcpy(output, "[0,\"Error Invalid Format\"]");
 								logger->error("extDB2: Invalid Format: {0}", input_str);
-							}
-						}
-						else
-						{
-							// Invalid Format
-							std::strcpy(output, "[0,\"Error Invalid Format\"]");
-							logger->error("extDB2: Invalid Format: {0}", input_str);
 						}
 					}
 					else

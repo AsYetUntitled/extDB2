@@ -106,4 +106,7 @@ class AbstractExt
 
 		virtual void steamQuery(const unsigned int &unique_id, bool queryFriends, bool queryVacBans, std::string &steamID, bool wakeup)=0;
 		virtual void steamQuery(const unsigned int &unique_id, bool queryFriends, bool queryVacBans, std::vector<std::string> &steamIDs, bool wakeup)=0;
+
+		virtual void getDateTime(const std::string &input_str, std::string &result)=0;
+		virtual void getUniqueString(int &len_of_string, int &num_of_string, std::string &result)=0;
 };

@@ -1,6 +1,8 @@
 -------------------------------------------------------------------------------
 57 :
+	ADDED: 9:TIME or 9:TIME:<offset> will return time. Only works before you lock extension i.e 9:LOCK  if you need it afterwards use MISC Protocol
 	ADDED: 9:SHUTDOWN will cause armaserver to shutdown nicely. Only works before you lock extension i.e 9:LOCK
+
 	FIXED: RCon won't keep trying to reconnect if Battleye doesn't respond i.e is turned off.
 
 	IMPROVED: MISC getRandomString, will always return correct number of strings. Length of string might be larger than requested.
