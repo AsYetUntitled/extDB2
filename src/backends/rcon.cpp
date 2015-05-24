@@ -1206,7 +1206,7 @@ void Rcon::checkDatabase(bool &status, bool &error)
 			("help", "Print help messages")
 			("config_file", boost::program_options::value<std::string>()->required(), "Rcon Config File")
 			("config_section", boost::program_options::value<std::string>()->required(), "Rcon Config Section to Use")
-			("run_file", boost::program_options::value<std::string>(), "File to run i.e rcon restart warnings");
+			("file", boost::program_options::value<std::string>(), "File to run i.e rcon restart warnings");
 		boost::program_options::variables_map options;
 
 		try 
@@ -1263,7 +1263,7 @@ void Rcon::checkDatabase(bool &status, bool &error)
 				Rcon::BadPlayernameSettings bad_playername_settings;
 				Rcon::WhitelistSettings whitelist_settings;
 
-				if (options.count("run_file") == 0)
+				if (options.count("file") == 0)
 				{
 					bad_playername_settings.enable = pConf->getBool((conf_section + ".Bad Playername Enable"), false);
 					if (bad_playername_settings.enable)
