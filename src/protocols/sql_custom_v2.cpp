@@ -134,9 +134,9 @@ bool SQL_CUSTOM_V2::init(AbstractExt *extension, const std::string &database_id,
 				else
 				{
 					#ifdef DEBUG_TESTING
-						extension_ptr->console->info("extDB2: SQL_CUSTOM: Loading Template Error: Not Regular File: {0}", custom_ini_file);
+						extension_ptr->console->info("extDB2: SQL_CUSTOM_V2: Loading Template Error: Not Regular File: {0}", custom_ini_file);
 					#endif
-					extension_ptr->logger->info("extDB2: SQL_CUSTOM: Loading Template Error: Not Regular File: {0}", custom_ini_file);
+					extension_ptr->logger->info("extDB2: SQL_CUSTOM_V2: Loading Template Error: Not Regular File: {0}", custom_ini_file);
 				}
 			}
 		}
@@ -509,7 +509,7 @@ void SQL_CUSTOM_V2::getResult(Custom_Call_UnorderedMap::const_iterator &custom_c
 		if (cols >= 1)
 		{
 			std::string temp_str;
-			temp_str.reserve(result.capacity()); // Default temp_str Size is same capacity of Result which is same size of outputsize for callExtension
+			temp_str.reserve(result.capacity());
 
 			bool more = rs.moveFirst();
 			if (more)
@@ -641,7 +641,7 @@ void SQL_CUSTOM_V2::getResult(Custom_Call_UnorderedMap::const_iterator &custom_c
 							{
 								if (!(Sqf::check(temp_str)))
 								{
-									extension_ptr->logger->warn("extDB2: SQL_CUSTOM: Sanitize Check Error: Value: {0}", temp_str);
+									extension_ptr->logger->warn("extDB2: SQL_CUSTOM_V2: Sanitize Check Error: Value: {0}", temp_str);
 									sanitize_value_check = false;
 									break;
 								}
