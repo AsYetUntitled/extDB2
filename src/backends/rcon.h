@@ -52,10 +52,13 @@ class Rcon
 	public:
 		struct RconSettings
 		{
-			std::string address;
+			bool return_full_player_info = false;
+			bool generate_unique_id = false;
+			
 			unsigned int port;
+
+			std::string address;
 			std::string password;
-			bool full_player_info_returned = false;
 		};
 		RconSettings rcon_settings;
 

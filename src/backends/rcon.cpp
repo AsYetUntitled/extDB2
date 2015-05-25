@@ -481,7 +481,7 @@ void Rcon::processMessagePlayers(Poco::StringTokenizer &tokens)
 	else
 	{
 		result_data.message = "[1,[";
-		if (rcon_settings.full_player_info_returned)
+		if (rcon_settings.return_full_player_info)
 		{
 			for(auto &info : info_vector)
 			{

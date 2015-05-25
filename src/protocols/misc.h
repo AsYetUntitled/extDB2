@@ -44,9 +44,6 @@ class MISC: public AbstractProtocol
 	    boost::crc_32_type crc32;
 		std::mutex mutex_crc32;
 
-		void getDateTime(std::string &result);
-		void getDateTime(int hours, std::string &result);
-
 		void getCrc32(std::string &input_str, std::string &result);
 		void getMD4(std::string &input_str, std::string &result);
 		void getMD5(std::string &input_str, std::string &result);

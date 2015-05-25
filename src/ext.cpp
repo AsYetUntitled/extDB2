@@ -466,7 +466,7 @@ void Ext::connectRemote(char *output, const int &output_size, const std::string 
 }
 
 
-void Ext::connectRcon(char *output, const int &output_size, const std::string &rcon_conf, std::string player_info_returned)
+void Ext::connectRcon(char *output, const int &output_size, const std::string &rcon_conf, std::vector<std::string> &extra_rcon_options)
 // Start RCon
 {
 	if (ext_connectors_info.rcon)
@@ -485,9 +485,17 @@ void Ext::connectRcon(char *output, const int &output_size, const std::string &r
 		rcon_settings.address = pConf->getString((rcon_conf + ".IP"), "127.0.0.1");
 		rcon_settings.port = pConf->getInt((rcon_conf + ".Port"), 2302);
 		rcon_settings.password = pConf->getString((rcon_conf + ".Password"), "password");
-		if (boost::algorithm::iequals(player_info_returned, "FULL") == 1)
+
+		for (auto &extra_rcon_option : extra_rcon_options)
 		{
-			rcon_settings.full_player_info_returned = true;
+			if (boost::algorithm::iequals(extra_rcon_option, "GENERATE_UNIQUE_ID") == 1)
+			{
+				rcon_settings.generate_unique_id = true;
+			}
+			else if (boost::algorithm::iequals(extra_rcon_option, "GET_FULL_PLAYER_INFO") == 1)
+			{
+				rcon_settings.return_full_player_info = true;
+			}
 		}
 
 		#ifdef DEBUG_TESTING
@@ -1335,18 +1343,20 @@ void Ext::callExtension(char *output, const int &output_size, const char *functi
 								}
 								break;
 							case 3:
-								// RCON
-								if (tokens[1] == "START_RCON")
+								// DATABASE
+								if (tokens[1] == "ADD_DATABASE")
 								{
-									connectRcon(output, output_size, tokens[2], std::string("PARTIAL"));
+									connectDatabase(output, output_size, tokens[2], tokens[2]);
+								}
+								// RCON
+								else if (tokens[1] == "START_RCON")
+								{
+									std::vector<std::string> extra_rcon_options;
+									connectRcon(output, output_size, tokens[2], extra_rcon_options);
 								}
 								else if (tokens[1] == "START_REMOTE")
 								{
 									connectRemote(output, output_size, tokens[2]);
-								}
-								else if (tokens[1] == "ADD_DATABASE")
-								{
-									connectDatabase(output, output_size, tokens[2], tokens[2]);
 								}
 								else
 								{
@@ -1367,7 +1377,9 @@ void Ext::callExtension(char *output, const int &output_size, const char *functi
 								}
 								else if (tokens[1] == "START_RCON")
 								{
-									connectRcon(output, output_size, tokens[2], tokens[3]);
+									std::vector<std::string> extra_rcon_options;
+									extra_rcon_options.push_back(tokens[3]);
+									connectRcon(output, output_size, tokens[2], extra_rcon_options);
 								}
 								else
 								{
@@ -1385,6 +1397,13 @@ void Ext::callExtension(char *output, const int &output_size, const char *functi
 								else if (tokens[1] == "ADD_DATABASE_PROTOCOL")
 								{
 									addProtocol(output, output_size, tokens[2], tokens[3], tokens[4], ""); // ADD Database Protocol + No Options
+								}
+								else if (tokens[1] == "START_RCON")
+								{
+									std::vector<std::string> extra_rcon_options;
+									extra_rcon_options.push_back(tokens[3]);
+									extra_rcon_options.push_back(tokens[4]);
+									connectRcon(output, output_size, tokens[2], extra_rcon_options);
 								}
 								else
 								{

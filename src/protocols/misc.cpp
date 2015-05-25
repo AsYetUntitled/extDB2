@@ -29,8 +29,6 @@ From Frank https://gist.github.com/Fank/11127158
 #include <boost/random/random_device.hpp>
 #include <boost/random/uniform_int_distribution.hpp>
 
-#include <Poco/DateTime.h>
-#include <Poco/DateTimeFormatter.h>
 #include <Poco/DigestEngine.h>
 #include <Poco/NumberFormatter.h>
 #include <Poco/NumberParser.h>
@@ -44,23 +42,6 @@ bool MISC::init(AbstractExt *extension, const std::string &database_id, const st
 {
 	extension_ptr = extension;
 	return true;
-}
-
-
-void MISC::getDateTime(std::string &result)
-{
-	Poco::DateTime now;
-	result = "[1,[" + Poco::DateTimeFormatter::format(now, "%Y, %n, %d, %H, %M") + "]]";
-}
-
-
-void MISC::getDateTime(int hours, std::string &result)
-{
-	Poco::DateTime now;
-	Poco::Timespan span(hours*Poco::Timespan::HOURS);
-	Poco::DateTime newtime = now + span;
-
-	result = "[1,[" + Poco::DateTimeFormatter::format(newtime, "%Y, %n, %d, %H, %M") + "]]";
 }
 
 
