@@ -35,7 +35,6 @@ From Frank https://gist.github.com/Fank/11127158
 #include <Poco/MD4Engine.h>
 #include <Poco/MD5Engine.h>
 #include <Poco/StringTokenizer.h>
-#include <Poco/Timespan.h>
 
 
 bool MISC::init(AbstractExt *extension, const std::string &database_id, const std::string &init_str)
