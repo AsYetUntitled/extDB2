@@ -1098,14 +1098,12 @@ bool SQL_CUSTOM_V2::callProtocol(std::string input_str, std::string &result, con
 						getBEGUID(temp_str, temp_str);
 						if (sql_input_option.return_player_key)
 						{
-							// TODO extension_ptr->getPlayerKey(temp_str, player_key);
+							extension_ptr->getPlayerKey_SteamID(temp_str, player_key);
 						}
 					}
 					else if (sql_input_option.return_player_key)
 					{
-						std::string player_guid;
-						getBEGUID(temp_str, player_guid);
-						// TODO extension_ptr->getPlayerKey(player_guid, player_key);
+						extension_ptr->getPlayerKey_BEGuid(temp_str, player_key);
 					}
 
 

@@ -485,7 +485,17 @@ void Ext::delPlayerKey_mutexlock(std::string player_beguid)
 }
 
 
-void Ext::getPlayerKey_SteamID(std::string &player_steam_id, std::string &result)
+void Ext::getPlayerKey_BEGuid(std::string &player_beguid, std::string &player_key)
+{
+	std::lock_guard<std::mutex> lock(player_unique_keys_mutex);
+	if (player_unique_keys.count(player_beguid))
+	{
+		player_key = player_unique_keys[player_beguid].back();
+	}
+}
+
+
+void Ext::getPlayerKey_SteamID(std::string &player_steam_id, std::string &player_key)
 {
 	Poco::Int64 steamID = Poco::NumberParser::parse64(player_steam_id);
 	Poco::Int8 i = 0;
@@ -513,17 +523,7 @@ void Ext::getPlayerKey_SteamID(std::string &player_steam_id, std::string &result
 	std::lock_guard<std::mutex> lock(player_unique_keys_mutex);
 	if (player_unique_keys.count(player_beguid))
 	{
-		result = player_unique_keys[player_beguid].back();
-	}
-}
-
-
-void Ext::getPlayerKey_BEGuid(std::string &player_beguid, std::string &result)
-{
-	std::lock_guard<std::mutex> lock(player_unique_keys_mutex);
-	if (player_unique_keys.count(player_beguid))
-	{
-		result = player_unique_keys[player_beguid].back();
+		player_key = player_unique_keys[player_beguid].back();
 	}
 }
 

@@ -59,8 +59,8 @@ class Ext: public AbstractExt
 		void delPlayerKey_delayed(std::string &player_beguid);
 		void delPlayerKey_mutexlock(std::string player_beguid);
 
-		void getPlayerKey_SteamID(std::string &player_steam_id, std::string &result);
-		void getPlayerKey_BEGuid(std::string &player_beguid, std::string &result);
+		void getPlayerKey_SteamID(std::string &player_steam_id, std::string &player_key);
+		void getPlayerKey_BEGuid(std::string &player_beguid, std::string &player_key);
 
 	protected:
 		const unsigned int saveResult_mutexlock(const resultData &result_data);
