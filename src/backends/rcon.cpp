@@ -453,7 +453,7 @@ void Rcon::processMessagePlayers(Poco::StringTokenizer &tokens)
 				player_data.lobby = "false";
 			}
 
-			logger->info("DEBUG players Player Number: {0}", player_data.number);
+			logger->info("DEBUG players Player Number: {0}.", player_data.number);
 			logger->info("DEBUG players Player Name: {0}.", player_data.player_name);
 			logger->info("DEBUG players Player GUID: {0}.", player_data.guid);
 
@@ -486,7 +486,7 @@ void Rcon::processMessagePlayers(Poco::StringTokenizer &tokens)
 		}
 		else
 		{
-			logger->info("Rcon: Error: Wrong RconPlayerInfo count: {0}",player_tokens.count());
+			logger->info("Rcon: Error: Wrong RconPlayerInfo count: {0}.",player_tokens.count());
 		}
 	}
 
@@ -673,9 +673,9 @@ void Rcon::chatMessage(std::size_t &bytes_received)
 			{
 				if (bad_playername_settings.enable)
 				{
-					result = result.substr(7);
+					result = result.substr(8);
 					const std::string::size_type found = result.find(" ");
-					std::string player_number = result.substr(0, (found - 1));
+					std::string player_number = result.substr(0, found);
 					const std::string::size_type found2 = result.find_last_of("(");
 					std::string player_name = result.substr(found+1, found2-(found+1));
 
@@ -691,7 +691,7 @@ void Rcon::chatMessage(std::size_t &bytes_received)
 				auto pos = result.find(" ", result.find("#"));
 				std::string player_name = result.substr(pos + 1, result.size() - (pos + 14));
 
-				logger->info("DEBUG Disconnected Player Name: {0}", player_name);
+				logger->info("DEBUG Disconnected Player Name: {0}.", player_name);
 
 				{
 					std::lock_guard<std::mutex> lock(reserved_slots_mutex);
