@@ -324,6 +324,7 @@ Ext::Ext(std::string shared_library_path, std::unordered_map<std::string, std::s
 			}
 
 			// Initialize so have atomic setup correctly
+			timer.reset(new boost::asio::deadline_timer(io_service));
 			rcon.reset(new Rcon(io_service, logger));
 			rcon->extInit(this);
 			remote_server.init(this);
@@ -462,16 +463,27 @@ void Ext::createPlayerKey_mutexlock(std::string &player_beguid, int len_of_key)
 	}
 }
 
-/*
-void Ext::getPlayerKey_mutexlock(std::string &player_beguid)
+
+void Ext::delPlayerKey_delayed(std::string &player_beguid)
 {
-	std::lock_guard<std::mutex> lock(player_unique_keys_mutex)
-	if player_unique_keys.has(beguid)
+	timer->expires_from_now(boost::posix_time::seconds(30)); // TODO Make Configureable ?
+	timer->async_wait(boost::bind(&Ext::delPlayerKey_mutexlock, this, player_beguid));
+}
+
+
+void Ext::delPlayerKey_mutexlock(std::string player_beguid)
+{
+	std::lock_guard<std::mutex> lock(player_unique_keys_mutex);
+	if (player_unique_keys.count(player_beguid))
 	{
-		return player_unique_keys[player_beguid];
+		player_unique_keys[player_beguid].pop_front();
+		if (player_unique_keys[player_beguid].empty())
+		{
+			player_unique_keys.erase(player_beguid);
+		}
 	}
 }
-*/
+
 
 
 void Ext::steamQuery(const unsigned int &unique_id, bool queryFriends, bool queryVacBans, std::string &steamID, bool wakeup)

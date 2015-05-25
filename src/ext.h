@@ -55,6 +55,8 @@ class Ext: public AbstractExt
 		void getUniqueString(int &len_of_string, int &num_of_string, std::string &result);
 
 		void createPlayerKey_mutexlock(std::string &player_beguid, int len_of_key);
+		void delPlayerKey_delayed(std::string &player_beguid);
+		void delPlayerKey_mutexlock(std::string player_beguid);
 
 	protected:
 		const unsigned int saveResult_mutexlock(const resultData &result_data);
@@ -82,6 +84,7 @@ class Ext: public AbstractExt
 		std::unique_ptr<boost::asio::io_service::work> io_work_ptr;
 		boost::asio::io_service io_service;
 		boost::thread_group threads;
+		std::unique_ptr<boost::asio::deadline_timer> timer;
 
 		// Protocols
 		std::unordered_map< std::string, std::unique_ptr<AbstractProtocol> > unordered_map_protocol;

@@ -5,6 +5,7 @@
 
 	FIXED: RCon won't keep trying to reconnect if Battleye doesn't respond i.e is turned off.
 	FIXED: SQL_CUSTOM / SQL_CUSTOM_V2 Error Reporting when occurs when getting a result
+	FIXED: Whitelisting wasn't removing players from count when they disconnected
 
 	IMPROVED: MISC getRandomString, will always return correct number of strings. Length of string might be larger than requested.
 

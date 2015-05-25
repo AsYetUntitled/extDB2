@@ -95,6 +95,10 @@ class Rcon
 
 		std::mutex reserved_slots_mutex;
 
+		// Player Name / BEGuid
+		std::unordered_map<std::string, std::string> players_name_beguid;
+		std::mutex players_name_beguid_mutex;
+
 		Rcon(boost::asio::io_service &io_service, std::shared_ptr<spdlog::logger> spdlog);
 		~Rcon();
 

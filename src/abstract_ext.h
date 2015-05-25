@@ -89,7 +89,7 @@ class AbstractExt
 		Poco::AutoPtr<Poco::Util::IniFileConfiguration> pConf;
 
 							// GUID     // Player Unique Key
-		std::unordered_map<std::string, std::vector<std::string> > player_unique_keys;
+		std::unordered_map<std::string, std::list<std::string> > player_unique_keys;
 		std::mutex player_unique_keys_mutex;
 
 		#ifdef DEBUG_TESTING
@@ -115,4 +115,5 @@ class AbstractExt
 		virtual void getUniqueString(int &len_of_string, int &num_of_string, std::string &result)=0;
 
 		virtual void createPlayerKey_mutexlock(std::string &player_beguid, int len_of_key)=0;
+		virtual void delPlayerKey_delayed(std::string &player_beguid)=0;
 };
