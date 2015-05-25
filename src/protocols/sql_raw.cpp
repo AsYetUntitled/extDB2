@@ -82,7 +82,7 @@ bool SQL_RAW::init(AbstractExt *extension, const std::string &database_id, const
 			#endif
 			extension_ptr->logger->info("extDB2: SQL_RAW: Initialized: ADD_QUOTES True");
 		}
-		else 
+		else
 		{
 			status = false;
 		}
@@ -126,7 +126,7 @@ bool SQL_RAW::callProtocol(std::string input_str, std::string &result, const boo
 					{
 						temp_str = rs[col].convert<std::string>();
 					}
-				
+
 					auto datatype = rs.columnType(col);
 					if ((datatype == Poco::Data::MetaColumn::FDT_DATE) || (datatype == Poco::Data::MetaColumn::FDT_TIME) || (datatype == Poco::Data::MetaColumn::FDT_TIMESTAMP))
 					{

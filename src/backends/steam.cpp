@@ -14,7 +14,7 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-Code to Convert SteamID -> BEGUID 
+Code to Convert SteamID -> BEGUID
 From Frank https://gist.github.com/Fank/11127158
 
 */
@@ -208,7 +208,7 @@ std::vector<std::string> Steam::generateSteamIDStrings(std::vector<std::string> 
 {
 	std::string steamIDs_str;
 	std::vector<std::string> steamIDs_list;
-	
+
 	int counter = 0;
 	for (auto &val: steamIDs)
 	{
@@ -217,7 +217,7 @@ std::vector<std::string> Steam::generateSteamIDStrings(std::vector<std::string> 
 			steamIDs_str.erase(steamIDs_str.begin());
 			steamIDs_str.pop_back();
 			steamIDs_list.push_back(steamIDs_str);
-		
+
 			steamIDs_str.clear();
 			counter = 0;
 		}
@@ -256,7 +256,7 @@ void Steam::updateSteamBans(std::vector<std::string> &steamIDs)
 	std::vector<std::string> steamIDStrings = generateSteamIDStrings(update_steamIDs);
 	for (auto &steamIDString: steamIDStrings)
 	{
-		std::string query = "/ISteamUser/GetPlayerBans/v1/?key=" + STEAM_api_key + "&format=json&steamids=" + steamIDString;	
+		std::string query = "/ISteamUser/GetPlayerBans/v1/?key=" + STEAM_api_key + "&format=json&steamids=" + steamIDString;
 
 		Poco::Dynamic::Var json;
 		steam_get.update(query, json);
@@ -398,7 +398,7 @@ void Steam::updateSteamFriends(std::vector<std::string> &steamIDs)
 	Poco::Thread steam_thread;
 	for (auto &steamID: update_steamIDs)
 	{
-		std::string query = "/ISteamUser/GetFriendList/v0001/?key=" + STEAM_api_key + "&relationship=friend&format=json&steamid=" + steamID;	
+		std::string query = "/ISteamUser/GetFriendList/v0001/?key=" + STEAM_api_key + "&relationship=friend&format=json&steamid=" + steamID;
 
 		Poco::Dynamic::Var json;
 		steam_get.update(query, json);

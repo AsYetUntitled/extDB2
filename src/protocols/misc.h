@@ -41,7 +41,7 @@ class MISC: public AbstractProtocol
 		Poco::MD4Engine md4;
 		std::mutex mutex_md4;
 
-	    boost::crc_32_type crc32;
+		boost::crc_32_type crc32;
 		std::mutex mutex_crc32;
 
 		void getCrc32(std::string &input_str, std::string &result);

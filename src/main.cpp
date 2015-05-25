@@ -18,12 +18,12 @@ Ext *extension;
 		if (fh != NULL)
 		{
 			std::size_t found;
-   			char *arg = 0;
-   			size_t size = 0;
-   			while(getdelim(&arg, &size, 0, fh) != -1)
-   			{
-      			std::string argument_str(arg);
-      			boost::erase_all(argument_str, "\"");
+			char *arg = 0;
+			size_t size = 0;
+			while(getdelim(&arg, &size, 0, fh) != -1)
+			{
+				std::string argument_str(arg);
+				boost::erase_all(argument_str, "\"");
 				if (argument_str.size() >= 12)
 				{
 					found = argument_str.find("-extDB2_VAR=");
@@ -40,8 +40,8 @@ Ext *extension;
 						}
 					}
 				}
-   			}
-   			free(arg);
+			}
+			free(arg);
 		};
 		fclose(fh);
 

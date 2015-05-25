@@ -54,6 +54,6 @@ void HTTP::putBack(std::unique_ptr<Poco::Net::HTTPClientSession> &session)
 	std::lock_guard<std::mutex> lock(mutex);
 	if (_idleSessions.size() > _maxSessions)
 	{
-		_idleSessions.push_front(std::move(session));		
+		_idleSessions.push_front(std::move(session));
 	}
 }

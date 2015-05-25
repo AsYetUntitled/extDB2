@@ -13,9 +13,9 @@ GNU General Public License for more details.
 
 You should have received a copy of the GNU General Public License
 along with this program. If not, see <http://www.gnu.org/licenses/>.
- 
+
 getGUID --
-Code to Convert SteamID -> BEGUID 
+Code to Convert SteamID -> BEGUID
 From Frank https://gist.github.com/Fank/11127158
 
 */
@@ -92,7 +92,7 @@ void MISC::getBEGUID(std::string &input_str, std::string &result)
 			}
 		}
 	}
-	
+
 	if (status)
 	{
 		Poco::Int64 steamID = Poco::NumberParser::parse64(input_str);

@@ -16,7 +16,7 @@ You should have received a copy of the GNU General Public License
 along with this program. If not, see <http://www.gnu.org/licenses/>.
 
  * Change Log
- * Changed Code to use Poco Net Library 
+ * Changed Code to use Poco Net Library
 */
 
 
@@ -54,7 +54,7 @@ class Rcon
 		{
 			bool return_full_player_info = false;
 			bool generate_unique_id = false;
-			
+
 			unsigned int port;
 
 			std::string address;
@@ -102,7 +102,7 @@ class Rcon
 		void Reconnect(const boost::system::error_code& error);
 
 		#ifndef RCON_APP
-			void extInit(AbstractExt *extension);	
+			void extInit(AbstractExt *extension);
 		#endif
 
 		void start(RconSettings &rcon, BadPlayernameSettings &bad_playername, WhitelistSettings &reserved_slots, Poco::AutoPtr<Poco::Util::IniFileConfiguration> pConf);
@@ -134,9 +134,9 @@ class Rcon
 		boost::asio::io_service *io_service_ptr;
 		std::shared_ptr<spdlog::logger> logger;
 
-		// Inputs are strings + Outputs are strings.  
+		// Inputs are strings + Outputs are strings.
 		// 		Info is not kept for long, so there no point converting to a different datatype just to convert back to a string for armaserver
-		struct RconPlayerInfo   
+		struct RconPlayerInfo
 		{
 			std::string number;
 			std::string ip;
@@ -214,6 +214,6 @@ class Rcon
 		void connectDatabase(Poco::AutoPtr<Poco::Util::IniFileConfiguration> pConf);
 		void checkDatabase(bool &status, bool &error);
 
-		void checkBadPlayerString(std::string &player_number, std::string &player_name);
-		void checkWhitelistedPlayer(std::string &player_number, std::string &player_name, std::string &player_guid);
+		void checkBadPlayerString(std::string &player_number, std::string &player_name, bool &kicked);
+		void checkWhitelistedPlayer(std::string &player_number, std::string &player_name, std::string &player_guid, bool &kicked);
 };

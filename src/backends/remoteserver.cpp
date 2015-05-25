@@ -65,7 +65,7 @@ bool RemoteConnection::login()
 
 	if  (remoteServer_ptr->blacklist_cache->has(remoteIP_str))
 	{
-		socket().shutdown();	
+		socket().shutdown();
 	}
 	else
 	{
@@ -174,7 +174,7 @@ void RemoteConnection::mainLoop()
 
 	std::string recv_str;
 	std::string send_str;
-	
+
 	bool store_receive = false;
 	std::string store_str;
 
@@ -194,7 +194,7 @@ void RemoteConnection::mainLoop()
 			}
 		}
 	}
-		
+
 	while (isOpen)
 	{
 		if (socket().poll(timeOut, Poco::Net::Socket::SELECT_READ) == false)

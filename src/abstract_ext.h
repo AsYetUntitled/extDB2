@@ -73,7 +73,7 @@ class AbstractExt
 			std::string path;
 			std::string log_path;
 			bool logger_flush=true;
-			
+
 			int max_threads;
 			bool extDB_lock=false;
 		};
@@ -89,19 +89,20 @@ class AbstractExt
 		Poco::AutoPtr<Poco::Util::IniFileConfiguration> pConf;
 
 							// GUID     // Player Unique Key
-		std::unordered_map<std::string, std::vector<std::string, std::string> > player_unique_keys;
+		std::unordered_map<std::string, std::vector<std::string> > player_unique_keys;
+		std::mutex player_unique_keys_mutex;
 
 		#ifdef DEBUG_TESTING
 			std::shared_ptr<spdlog::logger> console;
 		#endif
 		std::shared_ptr<spdlog::logger> logger;
 		std::shared_ptr<spdlog::logger> vacBans_logger;
-	
+
 		virtual void saveResult_mutexlock(const unsigned int &unique_id, const resultData &result_data)=0;
 
 		virtual Poco::Data::Session getDBSession_mutexlock(DBConnectionInfo &database)=0;
 		virtual Poco::Data::Session getDBSession_mutexlock(DBConnectionInfo &database, Poco::Data::SessionPool::SessionDataPtr &session_data_ptr)=0;
-		
+
 		virtual void rconCommand(std::string input_str)=0;
 		virtual void rconAddBan(std::string input_str) = 0;
 		virtual void rconPlayers(unsigned int unique_id)=0;
@@ -112,4 +113,6 @@ class AbstractExt
 
 		virtual void getDateTime(const std::string &input_str, std::string &result)=0;
 		virtual void getUniqueString(int &len_of_string, int &num_of_string, std::string &result)=0;
+
+		virtual void createPlayerKey_mutexlock(std::string &player_beguid, int len_of_key)=0;
 };

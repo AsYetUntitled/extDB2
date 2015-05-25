@@ -71,7 +71,7 @@ bool SQL_CUSTOM_V2::init(AbstractExt *extension, const std::string &database_id,
 	}
 
 	// Check if SQL_CUSTOM_V2 Template Filename Given
-	if (init_str.empty()) 
+	if (init_str.empty())
 	{
 		#ifdef DEBUG_TESTING
 			extension_ptr->console->warn("extDB2: SQL_CUSTOM_V2: Missing Init Parameter");
@@ -141,10 +141,10 @@ bool SQL_CUSTOM_V2::init(AbstractExt *extension, const std::string &database_id,
 			}
 		}
 	}
-	
+
 	// Read Template File
 	if (status)
-	{		
+	{
 		std::vector<std::string> custom_calls_list;
 		template_ini->keys(custom_calls_list);
 
@@ -240,7 +240,7 @@ bool SQL_CUSTOM_V2::init(AbstractExt *extension, const std::string &database_id,
 				{
 					custom_calls[call_name].strip_chars_action = default_strip_chars_action;
 				}
-				
+
 				custom_calls[call_name].strip = template_ini->getBool(call_name + ".Strip", default_strip);
 				custom_calls[call_name].strip_custom_input_chars = template_ini->getString(call_name + ".Strip Custom Chars", default_strip_custom_input_chars);
 				custom_calls[call_name].strip_chars = template_ini->getString(call_name + ".Strip Chars", default_strip_chars);
@@ -327,18 +327,18 @@ bool SQL_CUSTOM_V2::init(AbstractExt *extension, const std::string &database_id,
 						}
 						break;
 					}
-					
+
 					std::string sql_str;
 					sql_part_num = 0;
 					while (true)
 					{
 						++sql_part_num;
-						sql_part_num_str = Poco::NumberFormatter::format(sql_part_num);							
+						sql_part_num_str = Poco::NumberFormatter::format(sql_part_num);
 						if (!(template_ini->has(call_name + ".SQL" + sql_line_num_str + "_" + sql_part_num_str)))
 						{
 							break;
 						}
-						sql_str += (template_ini->getString(call_name + ".SQL" + sql_line_num_str + "_" + sql_part_num_str)) + " " ;		
+						sql_str += (template_ini->getString(call_name + ".SQL" + sql_line_num_str + "_" + sql_part_num_str)) + " " ;
 					}
 
 					if (sql_part_num > 1) // Remove trailing Whitespace
@@ -356,7 +356,7 @@ bool SQL_CUSTOM_V2::init(AbstractExt *extension, const std::string &database_id,
 						// Initialize Default Input Options
 						Value_Options inputs_options;
 						inputs_options.check =  template_ini->getBool(call_name + ".Sanitize Input Value Check", default_input_sanitize_value_check);
-						
+
 						Poco::StringTokenizer tokens_input_options(token_input, "-");
 						for (auto &sub_token_input : tokens_input_options)
 						{
@@ -477,13 +477,13 @@ void SQL_CUSTOM_V2::getBEGUID(std::string &input_str, std::string &result)
 		}
 		else
 		{
-			result = "Invalid SteamID";			
+			result = "Invalid SteamID";
 		}
 	}
 }
 
 
-void SQL_CUSTOM_V2::getResult(Custom_Call_UnorderedMap::const_iterator &custom_calls_itr, Poco::Data::Session &session, Poco::Data::Statement &sql_statement, std::string &result, bool &status)
+void SQL_CUSTOM_V2::getResult(Custom_Call_UnorderedMap::const_iterator &custom_calls_itr, Poco::Data::Session &session, Poco::Data::Statement &sql_statement, std::string &player_key, std::string &result, bool &status)
 {
 	try
 	{
@@ -529,8 +529,8 @@ void SQL_CUSTOM_V2::getResult(Custom_Call_UnorderedMap::const_iterator &custom_c
 						{
 							temp_str = rs[col].convert<std::string>();
 						}
-						
-						// NO OUTPUT OPTIONS 
+
+						// NO OUTPUT OPTIONS
 						if (col >= sql_output_options_size)
 						{
 							temp_str = rs[col].convert<std::string>();
@@ -820,7 +820,7 @@ void SQL_CUSTOM_V2::callPreparedStatement(std::string call_name, Custom_Call_Uno
 				}
 				else if (i == (statement_cache_itr->second.size() - 1))
 				{
-					getResult(custom_calls_itr, session, statement_cache_itr->second[i], result, status);
+					getResult(custom_calls_itr, session, statement_cache_itr->second[i], player_key, result, status);
 				}
 			}
 		}
@@ -847,7 +847,7 @@ void SQL_CUSTOM_V2::callPreparedStatement(std::string call_name, Custom_Call_Uno
 				}
 				else if ( it_sql_prepared_statements_vector+1 == custom_calls_itr->second.sql_prepared_statements.end() )
 				{
-					getResult(custom_calls_itr, session, sql_statement, result, status);
+					getResult(custom_calls_itr, session, sql_statement, player_key, result, status);
 				}
 				if (custom_calls_itr->second.preparedStatement_cache)
 				{
@@ -917,7 +917,7 @@ void SQL_CUSTOM_V2::callPreparedStatement(std::string call_name, Custom_Call_Uno
 			for (auto replace_str : custom_inputs)
 			{
 				++x;
-				boost::replace_all(sql_str, ("$CUSTOM_" + Poco::NumberFormatter::format(x) + "$"), replace_str); 
+				boost::replace_all(sql_str, ("$CUSTOM_" + Poco::NumberFormatter::format(x) + "$"), replace_str);
 			}
 			sql_statement << sql_str;
 
@@ -933,7 +933,7 @@ void SQL_CUSTOM_V2::callPreparedStatement(std::string call_name, Custom_Call_Uno
 			}
 			else if (it_sql_prepared_statements_vector + 1 == custom_calls_itr->second.sql_prepared_statements.end())
 			{
-				getResult(custom_calls_itr, session, sql_statement, result, status);
+				getResult(custom_calls_itr, session, sql_statement, player_key, result, status);
 				if (!status)
 				{
 					break;
@@ -1036,7 +1036,6 @@ bool SQL_CUSTOM_V2::callProtocol(std::string input_str, std::string &result, con
 				std::advance(itr, custom_calls_const_itr->second.number_of_inputs + 1);
 				inputs.insert(inputs.begin(), tokens.begin(), itr);
 
-				//std::advance(itr, 1);
 				custom_inputs.insert(custom_inputs.begin(), itr, tokens.end());
 
 				for (auto &custom_input : custom_inputs)
@@ -1047,7 +1046,7 @@ bool SQL_CUSTOM_V2::callProtocol(std::string input_str, std::string &result, con
 					}
 				}
 			}
-			
+
 			// Multiple INPUT Lines
 			std::vector<std::vector<std::string> > all_processed_inputs;
 			all_processed_inputs.reserve(custom_calls_const_itr->second.sql_inputs_options.size());
@@ -1093,7 +1092,7 @@ bool SQL_CUSTOM_V2::callProtocol(std::string input_str, std::string &result, con
 						// QUERY STEAM
 						extension_ptr->steamQuery(-1, false, true, temp_str, true);
 					}
-					if (sql_input_option.beguid)				
+					if (sql_input_option.beguid)
 					{
 						// GENERATE BEGUID
 						getBEGUID(temp_str, temp_str);
@@ -1124,7 +1123,6 @@ bool SQL_CUSTOM_V2::callProtocol(std::string input_str, std::string &result, con
 							temp_str = "\"" + temp_str + "\"";
 						}
 					}
-
 					else if (sql_input_option.string_escape_quotes)
 					{
 						if (temp_str.empty())
@@ -1138,7 +1136,6 @@ bool SQL_CUSTOM_V2::callProtocol(std::string input_str, std::string &result, con
 							temp_str = "\"" + temp_str + "\"";
 						}
 					}
-
 					// BOOL
 					else if (sql_input_option.boolean)
 					{

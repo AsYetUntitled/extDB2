@@ -28,7 +28,7 @@ along with this program. If not, see <http://www.gnu.org/licenses/>.
 #include "abstract_protocol.h"
 
 #define EXTDB_SQL_CUSTOM_V2_REQUIRED_VERSION 8
-#define EXTDB_SQL_CUSTOM_V2_LATEST_VERSION 10
+#define EXTDB_SQL_CUSTOM_V2_LATEST_VERSION 11
 
 
 class SQL_CUSTOM_V2: public AbstractProtocol
@@ -36,8 +36,8 @@ class SQL_CUSTOM_V2: public AbstractProtocol
 	public:
 		bool init(AbstractExt *extension, const std::string &database_id, const std::string &init_str);
 		bool callProtocol(std::string input_str, std::string &result, const bool async_method, const unsigned int unique_id=1);
-		
-	private:	
+
+	private:
 		Poco::MD5Engine md5;
 		std::mutex mutex_md5;
 
@@ -62,7 +62,7 @@ class SQL_CUSTOM_V2: public AbstractProtocol
 			bool strip = false;
 			bool return_player_key = false;
 		};
-		
+
 		struct customCall
 		{
 			bool strip;
@@ -72,7 +72,7 @@ class SQL_CUSTOM_V2: public AbstractProtocol
 
 			int number_of_inputs;
 			int number_of_custom_inputs;
-			
+
 			int strip_chars_action;
 			std::string strip_chars;
 			std::string strip_custom_input_chars;
@@ -93,5 +93,5 @@ class SQL_CUSTOM_V2: public AbstractProtocol
 		void executeSQL(Poco::Data::Statement &sql_statement, std::string &result, bool &status);
 
 		void getBEGUID(std::string &input_str, std::string &result);
-		void getResult(std::unordered_map<std::string, customCall>::const_iterator &custom_protocol_itr, Poco::Data::Session &session, Poco::Data::Statement &sql_statement, std::string &result, bool &status);
+		void getResult(std::unordered_map<std::string, customCall>::const_iterator &custom_protocol_itr, Poco::Data::Session &session, Poco::Data::Statement &sql_statement, std::string &player_key, std::string &result, bool &status);
 };

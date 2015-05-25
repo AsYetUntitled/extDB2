@@ -18,7 +18,7 @@ along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 #pragma once
 
-#include <memory> 
+#include <memory>
 #include <mutex>
 #include <list>
 
@@ -31,7 +31,7 @@ class HTTP
 
 		HTTP(std::string host, int port, int maxSessions);
 		~HTTP();
-			
+
 		std::unique_ptr<Poco::Net::HTTPClientSession> get();
 		void putBack(std::unique_ptr<Poco::Net::HTTPClientSession> &session);
 

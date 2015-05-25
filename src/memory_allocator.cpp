@@ -21,7 +21,7 @@ void* operator new (size_t size)
 	{
 		throw std::bad_alloc();
 	}
-	return ptr;	
+	return ptr;
 }
 
 void* operator new[] (size_t size)
@@ -31,11 +31,11 @@ void* operator new[] (size_t size)
 	{
 		throw std::bad_alloc();
 	}
-	return ptr;	
+	return ptr;
 }
 
 void* operator new (size_t size, const std::nothrow_t&)
-{	
+{
 	if (size == 0) size = 1;
 	void* ptr = scalable_malloc(size);
 	if (ptr == NULL)

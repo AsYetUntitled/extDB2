@@ -77,7 +77,7 @@ class Steam: public Poco::Runnable
 
 	private:
 		AbstractExt *extension_ptr;
-		
+
 		struct SteamVACBans
 		{
 			int NumberOfVACBans;
@@ -93,7 +93,7 @@ class Steam: public Poco::Runnable
 			std::string steamID;
 			std::vector<std::string> friends;
 		};
-		
+
 		struct SteamQuery
 		{
 			unsigned long unique_id;
@@ -114,7 +114,7 @@ class Steam: public Poco::Runnable
 
 		std::vector<SteamQuery> query_queue;
 		std::mutex mutex_query_queue;
-		
+
 		std::string STEAM_api_key;
 		RConBan rconBanSettings;
 		std::unique_ptr<Poco::ExpireCache<std::string, SteamVACBans> > SteamVacBans_Cache; // 1 Hour (3600000)

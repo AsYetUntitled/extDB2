@@ -135,7 +135,7 @@ void Rcon::start(RconSettings &rcon, BadPlayernameSettings &bad_playername, Whit
 			connectDatabase(pConf);
 		}
 	}
-	
+
 	boost::asio::ip::udp::endpoint endpoint(boost::asio::ip::address::from_string(rcon_settings.address), rcon_settings.port);
 	rcon_socket.socket->async_connect(endpoint, boost::bind(&Rcon::connectionHandler, this, boost::asio::placeholders::error));
 
@@ -281,17 +281,17 @@ void Rcon::serverResponse(std::size_t &bytes_received)
 		// Rcon Multi-Part Message Recieved
 		int numPackets = rcon_socket.recv_buffer[10];
 		int packetNum = rcon_socket.recv_buffer[11];
-			
+
 		std::string partial_msg;
 		extractData(bytes_received, 12, partial_msg);
-				
+
 		if (!(rcon_socket.rcon_msg_cache->has(sequenceNum)))
 		{
 			// Doesn't have sequenceNum in Buffer
 			RconMultiPartMsg rcon_mp_msg;
 			rcon_mp_msg.first = 1;
 			rcon_socket.rcon_msg_cache->add(sequenceNum, rcon_mp_msg);
-				
+
 			Poco::SharedPtr<RconMultiPartMsg> ptrElem = rcon_socket.rcon_msg_cache->get(sequenceNum);
 			ptrElem->second[packetNum] = partial_msg;
 		}
@@ -301,7 +301,7 @@ void Rcon::serverResponse(std::size_t &bytes_received)
 			Poco::SharedPtr<RconMultiPartMsg> ptrElem = rcon_socket.rcon_msg_cache->get(sequenceNum);
 			ptrElem->first = ptrElem->first + 1;
 			ptrElem->second[packetNum] = partial_msg;
-					
+
 			if (ptrElem->first == numPackets)
 			{
 				// All packets Received, re-construct message
@@ -334,7 +334,7 @@ void Rcon::processMessage(unsigned char &sequence_number, std::string &message)
 		}
 		else if (tokens[0] == "Players on server:")
 		{
-			processMessagePlayers(tokens);	
+			processMessagePlayers(tokens);
 		}
 		else
 		{
@@ -455,17 +455,25 @@ void Rcon::processMessagePlayers(Poco::StringTokenizer &tokens)
 			logger->info("DEBUG players Player Name: {0}.", player_data.player_name);
 			logger->info("DEBUG players Player GUID: {0}.", player_data.guid);
 
+			bool kicked = false;
 			if (bad_playername_settings.enable)
 			{
-				checkBadPlayerString(player_data.number, player_data.player_name);
+				checkBadPlayerString(player_data.number, player_data.player_name, kicked);
 			}
 
 			if (whitelist_settings.enable && (whitelist_settings.open_slots == 0))
 			{
-				checkWhitelistedPlayer(player_data.number, player_data.player_name, player_data.guid);
+				if (!kicked)
+				{
+					checkWhitelistedPlayer(player_data.number, player_data.player_name, player_data.guid, kicked);
+				}
 			}
 
-			// TODO Add player Unique Key if missing i.e if player has joined server before rcon connected
+			if ((!kicked) && rcon_settings.generate_unique_id)
+			{
+				// We only bother to generate a key if player has not been kicked
+				extension_ptr->createPlayerKey_mutexlock(player_data.guid, 10);
+			}
 
 			info_vector.push_back(std::move(player_data));
 		}
@@ -540,9 +548,8 @@ void Rcon::processMessagePlayers(Poco::StringTokenizer &tokens)
 }
 
 
-void Rcon::checkBadPlayerString(std::string &player_number, std::string &player_name)
+void Rcon::checkBadPlayerString(std::string &player_number, std::string &player_name, bool &kicked)
 {
-	bool kicked = false;
 	for (auto &bad_string : bad_playername_settings.bad_strings)
 	{
 		if (!(boost::algorithm::ifind_first(player_name, bad_string).empty()))
@@ -570,7 +577,7 @@ void Rcon::checkBadPlayerString(std::string &player_number, std::string &player_
 }
 
 
-void Rcon::checkWhitelistedPlayer(std::string &player_number, std::string &player_name, std::string &player_guid)
+void Rcon::checkWhitelistedPlayer(std::string &player_number, std::string &player_name, std::string &player_guid, bool &kicked)
 {
 	bool whitelisted_player = false;
 	{
@@ -593,7 +600,7 @@ void Rcon::checkWhitelistedPlayer(std::string &player_number, std::string &playe
 			*whitelist_statement.get(), Poco::Data::Keywords::use(player_guid);
 			whitelist_statement->bindFixup();
 			checkDatabase(status, error);
-			
+
 			if (error)
 			{
 				// Whitelisted Player - DB, error occured during Database Check
@@ -601,6 +608,7 @@ void Rcon::checkWhitelistedPlayer(std::string &player_number, std::string &playe
 				{
 					logger->info("RCon: Database Player Check error occurred, kicking player");
 					sendCommand("kick " + player_number + " " + whitelist_settings.kick_message);
+					kicked = true;
 				}
 				else
 				{
@@ -628,6 +636,7 @@ void Rcon::checkWhitelistedPlayer(std::string &player_number, std::string &playe
 			{
 				logger->info("RCon: Kicked Playername: {0} GUID: {1}  Not Whitelisted", player_name, player_guid);
 				sendCommand("kick " + player_number + " " + whitelist_settings.kick_message);
+				kicked = true;
 			}
 		}
 	}
@@ -641,7 +650,7 @@ void Rcon::chatMessage(std::size_t &bytes_received)
 	std::string result;
 	extractData(bytes_received, 9, result);
 	logger->info("CHAT: {0}", result);
-	
+
 	// Respond to Server Msgs i.e chat messages, to prevent timeout
 	RconPacket rcon_packet;
 	rcon_packet.packetCode = 0x02;
@@ -665,8 +674,8 @@ void Rcon::chatMessage(std::size_t &bytes_received)
 
 					logger->info("DEBUG Connected Player Number: {0}.", player_number);
 					logger->info("DEBUG Connected Player Name: {0}.", player_name);
-					// TODO ADD
-					checkBadPlayerString(player_number, player_name);
+					bool kicked = false;
+					checkBadPlayerString(player_number, player_name, kicked);
 				}
 			}
 			else if (whitelist_settings.enable && boost::algorithm::ends_with(result, "disconnected"))
@@ -699,7 +708,14 @@ void Rcon::chatMessage(std::size_t &bytes_received)
 			logger->info("DEBUG Verified Player Name: {0}.", player_name);
 			logger->info("DEBUG Verified Player GUID: {0}.", player_guid);
 
-			checkWhitelistedPlayer(player_number, player_name, player_guid);
+			bool kicked = false;
+			checkWhitelistedPlayer(player_number, player_name, player_guid, kicked);
+
+			if ((!kicked) && rcon_settings.generate_unique_id)
+			{
+				// We only bother to generate a key if player has not been kicked
+				extension_ptr->createPlayerKey_mutexlock(player_guid, 10); // TODO Make this configureable
+			}
 		}
 	}
 	startReceive();
@@ -782,7 +798,7 @@ void Rcon::sendPacket(RconPacket &rcon_packet)
 	std::ostringstream cmdStream;
 	cmdStream.put(0xFFu);
 	cmdStream.put(rcon_packet.packetCode);
-	
+
 	if (rcon_packet.packetCode == 0x01) //Everything else
 	{
 		//cmdStream.put(getSequenceNum(rcon_socket));
@@ -846,7 +862,7 @@ void Rcon::sendBanPacket(RconPacket &rcon_packet)
 	std::ostringstream cmdStream;
 	cmdStream.put(0xFFu);
 	cmdStream.put(rcon_packet.packetCode);
-	
+
 	if (rcon_packet.packetCode == 0x01) //Everything else
 	{
 		//cmdStream.put(getSequenceNum(rcon_socket));
@@ -947,7 +963,7 @@ void Rcon::sendCommand(std::string command)
 	rcon_packet.packetCode = 0x01;
 
 	sendPacket(rcon_packet);
-	delete []rcon_packet.cmd;		
+	delete []rcon_packet.cmd;
 }
 
 
@@ -1057,7 +1073,7 @@ void Rcon::connectDatabase(Poco::AutoPtr<Poco::Util::IniFileConfiguration> pConf
 					#ifdef RCON_APP
 						if (!(DB_connectors_info.sqlite))
 						{
-							Poco::Data::SQLite::Connector::registerConnector();	
+							Poco::Data::SQLite::Connector::registerConnector();
 							DB_connectors_info.sqlite = true;
 						}
 						boost::filesystem::path sqlite_path(boost::filesystem::current_path());
@@ -1213,7 +1229,7 @@ void Rcon::checkDatabase(bool &status, bool &error)
 			("file", boost::program_options::value<std::string>(), "File to run i.e rcon restart warnings");
 		boost::program_options::variables_map options;
 
-		try 
+		try
 		{
 			boost::program_options::store(boost::program_options::parse_command_line(nNumberofArgs, pszArgs, desc), options);
 			if (options.count("help") )
@@ -1300,7 +1316,7 @@ void Rcon::checkDatabase(bool &status, bool &error)
 						}
 					}
 
-					// Reserved Slots	
+					// Reserved Slots
 					whitelist_settings.enable = pConf->getBool((conf_section + ".Whitelist Enable"), false);
 					if (whitelist_settings.enable)
 					{
@@ -1332,7 +1348,7 @@ void Rcon::checkDatabase(bool &status, bool &error)
 					{
 						console->info("File is OK");
 					}
-					
+
 					std::string line;
 					while (std::getline(fin, line))
 					{
@@ -1375,19 +1391,19 @@ void Rcon::checkDatabase(bool &status, bool &error)
 						}
 						else if (boost::algorithm::istarts_with(input_str,"players"))
 						{
-							rcon.getPlayers(unique_id);	
+							rcon.getPlayers(unique_id);
 						}
 						else if (boost::algorithm::istarts_with(input_str,"missions"))
 						{
-							rcon.getMissions(unique_id);	
+							rcon.getMissions(unique_id);
 						}
 						else if (boost::algorithm::istarts_with(input_str,"addban"))
 						{
-							rcon.addBan(input_str);	
+							rcon.addBan(input_str);
 						}
 						else if (boost::algorithm::istarts_with(input_str,"ban"))
 						{
-							rcon.addBan(input_str);	
+							rcon.addBan(input_str);
 						}
 						else
 						{

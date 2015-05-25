@@ -55,7 +55,7 @@ bool HTTP_RAW::init(AbstractExt *extension, const std::string &database_id, cons
 				http_basic_credentials.setUsername(extension_ptr->pConf->getString(database_id + ".Username", ""));
 				http_basic_credentials.setPassword(extension_ptr->pConf->getString(database_id + ".Password", ""));
 				auth = true;
-			}			
+			}
 		 	if (boost::algorithm::iequals(init_str, std::string("FULL_RETURN")))
 			{
 				http_return = 1;

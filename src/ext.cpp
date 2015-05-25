@@ -81,7 +81,7 @@ Ext::Ext(std::string shared_library_path, std::unordered_map<std::string, std::s
 		#ifdef _WIN32
 			bool conf_randomized = false;
 		#endif
-		
+
 		boost::filesystem::path config_path;
 
 		if (options.count("WORK") > 0)
@@ -124,7 +124,7 @@ Ext::Ext(std::string shared_library_path, std::unordered_map<std::string, std::s
 			else
 			{
 				#ifdef _WIN32	// Windows Only, Linux Arma2 Doesn't have extension Support
-					// Search for Randomize Config File -- Legacy Security Support For Arma2Servers		
+					// Search for Randomize Config File -- Legacy Security Support For Arma2Servers
 
 					config_path = config_path.parent_path();
 					// CHECK DLL PATH FOR CONFIG)
@@ -222,7 +222,7 @@ Ext::Ext(std::string shared_library_path, std::unordered_map<std::string, std::s
 		#endif
 
 		#ifdef TEST_APP
-			console->info("Welcome to extDB Test Application");
+			console->info("Welcome to extDB2 Test Application");
 			console->info("OutputSize is set to 80 for Test Application, just so it is readable");
 			console->info("OutputSize for Arma3 is more like 10k in size ");
 			console->info();
@@ -323,9 +323,9 @@ Ext::Ext(std::string shared_library_path, std::unordered_map<std::string, std::s
 				threads.create_thread(boost::bind(&boost::asio::io_service::run, &io_service));
 			}
 
- 			// Initialize so have atomic setup correctly
- 			rcon.reset(new Rcon(io_service, logger));
- 			rcon->extInit(this);
+			// Initialize so have atomic setup correctly
+			rcon.reset(new Rcon(io_service, logger));
+			rcon->extInit(this);
 			remote_server.init(this);
 
 			// Initialize so have atomic setup correctly + Setup VAC Ban Logger
@@ -417,6 +417,61 @@ Poco::Data::Session Ext::getDBSession_mutexlock(AbstractExt::DBConnectionInfo &d
 	std::lock_guard<std::mutex> lock(database.mutex_sql_pool);
 	return database.sql_pool->get(session_data_ptr);
 }
+
+
+void Ext::createPlayerKey_mutexlock(std::string &player_beguid, int len_of_key)
+{
+	std::string player_unique_key;
+	int num_of_retrys = 0;
+	int i = 0;
+	{
+		std::lock_guard<std::mutex> lock(mutex_RandomString);
+		boost::random::uniform_int_distribution<> index_dist(0, random_chars.size() - 1);
+
+		while (true)
+		{
+			std::stringstream random_stream;
+			for (int x = 0; x < len_of_key; ++x)
+			{
+				random_stream << random_chars[index_dist(random_chars_rng)];
+			}
+			player_unique_key = random_stream.str();
+
+			if (std::find(uniqueRandomVarNames.begin(), uniqueRandomVarNames.end(), player_unique_key) != uniqueRandomVarNames.end())
+			{
+				if (num_of_retrys >= 10)
+				{
+					num_of_retrys = 0;
+					++len_of_key; // Increase Random String Length if we failed 10 times
+				}
+				else
+				{
+					++num_of_retrys;
+				}
+			}
+			else
+			{
+				uniqueRandomVarNames.push_back(player_unique_key);
+				break;
+			}
+		}
+	}
+	{
+		std::lock_guard<std::mutex> lock(player_unique_keys_mutex);
+		player_unique_keys[player_beguid].push_back(std::move(player_unique_key));
+	}
+}
+
+/*
+void Ext::getPlayerKey_mutexlock(std::string &player_beguid)
+{
+	std::lock_guard<std::mutex> lock(player_unique_keys_mutex)
+	if player_unique_keys.has(beguid)
+	{
+		return player_unique_keys[player_beguid];
+	}
+}
+*/
 
 
 void Ext::steamQuery(const unsigned int &unique_id, bool queryFriends, bool queryVacBans, std::string &steamID, bool wakeup)
@@ -542,7 +597,7 @@ void Ext::connectRcon(char *output, const int &output_size, const std::string &r
 			}
 		}
 
-		// Reserved Slots	
+		// Reserved Slots
 		Rcon::WhitelistSettings whitelist_settings;
 		whitelist_settings.enable = pConf->getBool((rcon_conf + ".Whitelist Enable"), false);
 		if (whitelist_settings.enable)
@@ -560,7 +615,7 @@ void Ext::connectRcon(char *output, const int &output_size, const std::string &r
 				whitelist_settings.whitelisted_guids.push_back(token);
 			}
 		}
-		
+
 		// Start Rcon
 		rcon->start(rcon_settings, bad_playername_settings, whitelist_settings, pConf);
 		ext_connectors_info.rcon = true;
@@ -619,50 +674,50 @@ void Ext::getDateTime(const std::string &input_str, std::string &result)
 
 void Ext::getUniqueString(int &len_of_string, int &num_of_strings, std::string &result)
 {
-    int num_of_retrys = 0;
-    std::string random_string;
+	int num_of_retrys = 0;
+	std::string random_string;
 
-    std::lock_guard<std::mutex> lock(mutex_RandomString);
-    boost::random::uniform_int_distribution<> index_dist(0, random_chars.size() - 1);
+	std::lock_guard<std::mutex> lock(mutex_RandomString);
+	boost::random::uniform_int_distribution<> index_dist(0, random_chars.size() - 1);
 
-    result = "[";
-    int i = 0;
-    while (i < num_of_strings)
-    {
-        std::stringstream random_stream;
-        for(int x = 0; x < len_of_string; ++x)
-        {
-            random_stream << random_chars[index_dist(random_chars_rng)];
-        }
-        random_string = random_stream.str();
+	result = "[";
+	int i = 0;
+	while (i < num_of_strings)
+	{
+		std::stringstream random_stream;
+		for(int x = 0; x < len_of_string; ++x)
+		{
+			random_stream << random_chars[index_dist(random_chars_rng)];
+		}
+		random_string = random_stream.str();
 
-        if (std::find(uniqueRandomVarNames.begin(), uniqueRandomVarNames.end(), random_string) != uniqueRandomVarNames.end())
-        {
-            if (num_of_retrys >= 10)
-            {
-                num_of_retrys = 0;
-                ++len_of_string; // Increase Random String Length if we tried 10 times + failed
-            }
-            else
-        	{
-            	++num_of_retrys;
-        	}
-        }
-        else
-        {
-            if (i == 0)
-            {
-            	result =+ "\"" + random_string + "\"";
-        	}
-        	else
-    		{
-            	result =+ ",\"" + random_string + "\"";
-        	}
-            uniqueRandomVarNames.push_back(random_string);
-            ++i;
-        }
-    }
-    result =+ "]";
+		if (std::find(uniqueRandomVarNames.begin(), uniqueRandomVarNames.end(), random_string) != uniqueRandomVarNames.end())
+		{
+			if (num_of_retrys >= 10)
+			{
+				num_of_retrys = 0;
+				++len_of_string; // Increase Random String Length if we tried 10 times + failed
+			}
+			else
+			{
+				++num_of_retrys;
+			}
+		}
+		else
+		{
+			if (i == 0)
+			{
+				result =+ "\"" + random_string + "\"";
+			}
+			else
+			{
+				result =+ ",\"" + random_string + "\"";
+			}
+			uniqueRandomVarNames.push_back(random_string);
+			++i;
+		}
+	}
+	result =+ "]";
 }
 
 
@@ -739,10 +794,10 @@ void Ext::connectDatabase(char *output, const int &output_size, const std::strin
 						connection_str = sqlite_path.make_preferred().string();
 					}
 					database->sql_pool.reset(new Poco::Data::SessionPool(database->type,
-																	 	connection_str,
-																	 	pConf->getInt(database_conf + ".minSessions", 1),
-																	 	pConf->getInt(database_conf + ".maxSessions", ext_info.max_threads),
-																	 	pConf->getInt(database_conf + ".idleTime", 600)));
+																		connection_str,
+																		pConf->getInt(database_conf + ".minSessions", 1),
+																		pConf->getInt(database_conf + ".maxSessions", ext_info.max_threads),
+																		pConf->getInt(database_conf + ".idleTime", 600)));
 					if (database->sql_pool->get().isConnected())
 					{
 						#ifdef DEBUG_TESTING
@@ -1470,7 +1525,7 @@ void Ext::callExtension(char *output, const int &output_size, const char *functi
 		char result[81] = {0};
 		std::string input_str;
 
-		
+
 		boost::program_options::options_description desc("Options");
 		desc.add_options()
 			("extDB2_VAR", boost::program_options::value<std::string>(), "extDB2 Variable")
@@ -1489,7 +1544,7 @@ void Ext::callExtension(char *output, const int &output_size, const char *functi
 		{
 			options["VAR"] = bpo_options["extDB2_VAR"].as<std::string>();
 		}
-		
+
 		Ext *extension;
 		extension = new Ext(std::string(""), options, true);
 
@@ -1501,7 +1556,7 @@ void Ext::callExtension(char *output, const int &output_size, const char *functi
 			std::getline(std::cin, input_str);
 			if (boost::algorithm::iequals(input_str, "Quit") == 1)
 			{
-			    break;
+				break;
 			}
 			else if (boost::algorithm::iequals(input_str, "Test") == 1)
 			{

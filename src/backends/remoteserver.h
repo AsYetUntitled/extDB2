@@ -55,7 +55,7 @@ public:
 
 	std::vector<std::string> inputs;
 	std::mutex inputs_mutex;
-	
+
 	std::atomic<bool> *inputs_flag;
 
 	std::unique_ptr<Poco::ExpireCache<std::string, bool> > blacklist_cache;
@@ -82,7 +82,7 @@ class RemoteConnection: public Poco::Net::TCPServerConnection
 		void run();
 		bool login();
 		void mainLoop();
-		
+
 	private:
 		AbstractExt *extension_ptr;
 		RemoteServer *remoteServer_ptr;
@@ -98,7 +98,7 @@ class RemoteConnectionFactory: public Poco::Net::TCPServerConnectionFactory
 			remoteServer_ptr(remoteServer)
 		{
 		}
-		
+
 		Poco::Net::TCPServerConnection* createConnection(const Poco::Net::StreamSocket& socket)
 		{
 			return new RemoteConnection(socket, remoteServer_ptr);

@@ -43,7 +43,7 @@ class Ext: public AbstractExt
 	public:
 		Ext(std::string shared_libary_path, std::unordered_map<std::string, std::string> &options);
 		~Ext();
-		void stop();	
+		void stop();
 		void callExtension(char *output, const int &output_size, const char *function);
 		void rconCommand(std::string input_str);
 
@@ -53,6 +53,8 @@ class Ext: public AbstractExt
 
 		void getDateTime(const std::string &input_str, std::string &result);
 		void getUniqueString(int &len_of_string, int &num_of_string, std::string &result);
+
+		void createPlayerKey_mutexlock(std::string &player_beguid, int len_of_key);
 
 	protected:
 		const unsigned int saveResult_mutexlock(const resultData &result_data);
@@ -108,14 +110,14 @@ class Ext: public AbstractExt
 
 		// Remote
 		void connectRemote(char *output, const int &output_size, const std::string &remote_conf);
-		
+
 		// Database
 		void connectDatabase(char *output, const int &output_size, const std::string &database_conf, const std::string &database_id);
 
 		// Results
 		void getSinglePartResult_mutexlock(char *output, const int &output_size, const unsigned int &unique_id);
 		void getMultiPartResult_mutexlock(char *output, const int &output_size, const unsigned int &unique_id);
-		
+
 		void getTCPRemote_mutexlock(char *output, const int &output_size);
 		void sendTCPRemote_mutexlock(std::string &input_str);
 
