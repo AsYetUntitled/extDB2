@@ -485,6 +485,48 @@ void Ext::delPlayerKey_mutexlock(std::string player_beguid)
 }
 
 
+void Ext::getPlayerKey_SteamID(std::string &player_steam_id, std::string &result)
+{
+	Poco::Int64 steamID = Poco::NumberParser::parse64(player_steam_id);
+	Poco::Int8 i = 0;
+	Poco::Int8 parts[8] = { 0 };
+
+	do
+	{
+		parts[i++] = steamID & 0xFFu;
+	} while (steamID >>= 8);
+
+	std::stringstream bestring;
+	bestring << "BE";
+	for (auto &part: parts)
+	{
+		bestring << char(part);
+	}
+
+	std::string player_beguid;
+	{
+		std::lock_guard<std::mutex> lock(mutex_md5);
+		md5.update(bestring.str());
+		player_beguid = Poco::DigestEngine::digestToHex(md5.digest());
+	}
+
+	std::lock_guard<std::mutex> lock(player_unique_keys_mutex);
+	if (player_unique_keys.count(player_beguid))
+	{
+		result = player_unique_keys[player_beguid].back();
+	}
+}
+
+
+void Ext::getPlayerKey_BEGuid(std::string &player_beguid, std::string &result)
+{
+	std::lock_guard<std::mutex> lock(player_unique_keys_mutex);
+	if (player_unique_keys.count(player_beguid))
+	{
+		result = player_unique_keys[player_beguid].back();
+	}
+}
+
 
 void Ext::steamQuery(const unsigned int &unique_id, bool queryFriends, bool queryVacBans, std::string &steamID, bool wakeup)
 // Adds Query to Steam Protocol, wakeup option is to wakeup steam thread. Note: Steam thread periodically checks every minute anyway.

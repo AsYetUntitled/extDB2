@@ -965,6 +965,7 @@ void Rcon::handleBanSent(std::shared_ptr<std::string> packet, const boost::syste
 	}
 }
 
+
 void Rcon::handleSent(std::shared_ptr<std::string> packet, const boost::system::error_code& error, std::size_t bytes_transferred)
 {
 	if (error)

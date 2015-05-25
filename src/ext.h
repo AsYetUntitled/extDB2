@@ -55,8 +55,12 @@ class Ext: public AbstractExt
 		void getUniqueString(int &len_of_string, int &num_of_string, std::string &result);
 
 		void createPlayerKey_mutexlock(std::string &player_beguid, int len_of_key);
+
 		void delPlayerKey_delayed(std::string &player_beguid);
 		void delPlayerKey_mutexlock(std::string player_beguid);
+
+		void getPlayerKey_SteamID(std::string &player_steam_id, std::string &result);
+		void getPlayerKey_BEGuid(std::string &player_beguid, std::string &result);
 
 	protected:
 		const unsigned int saveResult_mutexlock(const resultData &result_data);
@@ -102,6 +106,10 @@ class Ext: public AbstractExt
 		// Results
 		std::unordered_map<unsigned int, resultData> stored_results;
 		std::mutex mutex_results;  // Using Same Lock for Unique ID aswell
+
+		// Player Key
+		Poco::MD5Engine md5;
+		std::mutex mutex_md5;
 
 		#ifdef _WIN32
 			// Search for randomized config file
