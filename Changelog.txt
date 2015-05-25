@@ -12,6 +12,14 @@
 
 	MINOR: Changed Logging to simpler method, no rotating logfiles based on size. There is no need for it
 
+	IMPORTANT: SQL_CUSTOM now marked as deprecated will be removed in a month time.
+					The only difference between SQL_CUSTOM_V2 + SQL_CUSTOM is
+						SQL_CUSTOM    returns [1,[[]]] for empty SQL result
+						SQL_CUSTOM_V2 returns [1,[]]   for empty SQL result
+
+					Normal SQL Results with actual results are the exact same
+
+
 
 -------------------------------------------------------------------------------
 57 :
