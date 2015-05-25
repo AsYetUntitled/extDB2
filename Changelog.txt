@@ -1,5 +1,6 @@
 -------------------------------------------------------------------------------
-57 :
+58 : Upcoming Release
+
 	ADDED: 9:TIME or 9:TIME:<offset> will return time. Only works before you lock extension i.e 9:LOCK  if you need it afterwards use MISC Protocol
 	ADDED: 9:SHUTDOWN will cause armaserver to shutdown nicely. Only works before you lock extension i.e 9:LOCK
 
@@ -10,15 +11,15 @@
 	IMPROVED: MISC getRandomString, will always return correct number of strings. Length of string might be larger than requested.
 
 	MINOR: Changed Logging to simpler method, no rotating logfiles based on size. There is no need for it
-	
+
 
 -------------------------------------------------------------------------------
 57 :
 	IMPROVED: SQL_CUSTOM Return Last ID Option will no longer return -1 and should perf better
-	
+
 	FIXED: Player Whitelisting was counting non-whitelisted players instead of total players
 
-	FIXED: SQL_CUSTOM / SQL_CUSTOM_V2 issue 
+	FIXED: SQL_CUSTOM / SQL_CUSTOM_V2 issue
 			Where non-cached prepared statements that constain multiple sql prepared statements.
 			It would continue to run next statement if it encountered an error,
 			instead of reporting error + stop running the next statements in the callname.
@@ -172,21 +173,21 @@
 	FIXED: More SQL_CUSTOM Fixes for Database Exception Handling
 
 -------------------------------------------------------------------------------
-38: 
+38:
 	UPDATED: No Longer Creating VAC Ban Logs when Auto Ban is disable
-	
+
 	FIXED: Bug in Results Fetching when SQL Command is INSERT etc...
 
 -------------------------------------------------------------------------------
-37: 
+37:
 	UPDATED: Linux Builds now use same version of MySQL as Windows Builds
-	
+
 	FIXED: MySQL Bug when Connection fails between prepare + fetch.
 	FIXED: Exception Handling for Database Connection Failed
 	FIXED: Prepared Statement Cache, now cleared when there is an error
 
 -------------------------------------------------------------------------------
-36: 
+36:
 	UPDATED: Overhaul of extDB2 Code, https://github.com/Torndeco/extDB2/wiki/Changes-from-extDB
-	
+
 	FIXED: Exceptions Handling for Database Connection Lost
