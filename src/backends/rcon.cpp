@@ -138,19 +138,16 @@ void Rcon::start(RconSettings &rcon, BadPlayernameSettings &bad_playername, Whit
 		}
 	}
 
-	boost::asio::ip::udp::endpoint endpoint(boost::asio::ip::address::from_string(rcon_settings.address), rcon_settings.port);
-	rcon_socket.socket->async_connect(endpoint, boost::bind(&Rcon::connectionHandler, this, boost::asio::placeholders::error));
-
 	#ifndef RCON_APP
 		// Disable Auto Reconnects for extension i.e if Rcon Settings are wrong
 		auto_reconnect = false;
 	#endif
-}
 
+	boost::asio::ip::udp::endpoint endpoint(boost::asio::ip::address::from_string(rcon_settings.address), rcon_settings.port);
 
-void Rcon::connectionHandler(const boost::system::error_code& error)
-{
-	if (!error)
+	boost::system::error_code ec;
+	rcon_socket.socket->connect(endpoint, ec);
+	if (!ec)
 	{
 		#ifndef RCON_APP
 			auto_reconnect = true;  // Re-enable Auto Reconnects for extension i.e if Rcon Settings are good
@@ -160,6 +157,23 @@ void Rcon::connectionHandler(const boost::system::error_code& error)
 	}
 	else
 	{
+		logger->info("Rcon: UDP Socket Connection Error");
+		timerKeepAlive(0);
+		rcon_socket.socket->close();
+	}
+}
+
+
+void Rcon::connectionHandler(const boost::system::error_code& error)
+{
+	if (!error)
+	{
+		startReceive();
+		connect();
+	}
+	else
+	{
+
 		logger->info("Rcon: UDP Socket Connection Error");
 		timerKeepAlive(0);
 		rcon_socket.socket->close();
