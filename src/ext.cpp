@@ -488,7 +488,7 @@ void Ext::connectRcon(char *output, const int &output_size, const std::string &r
 
 		for (auto &extra_rcon_option : extra_rcon_options)
 		{
-			if (boost::algorithm::iequals(extra_rcon_option, "GENERATE_UNIQUE_ID") == 1)
+			if (boost::algorithm::iequals(extra_rcon_option, "RCON_GENERATE_UNIQUE_PLAYER_KEY") == 1)
 			{
 				rcon_settings.generate_unique_id = true;
 			}

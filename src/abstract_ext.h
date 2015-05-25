@@ -88,6 +88,9 @@ class AbstractExt
 
 		Poco::AutoPtr<Poco::Util::IniFileConfiguration> pConf;
 
+							// GUID     // Player Unique Key
+		std::unordered_map<std::string, std::vector<std::string, std::string> > player_unique_keys;
+
 		#ifdef DEBUG_TESTING
 			std::shared_ptr<spdlog::logger> console;
 		#endif

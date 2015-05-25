@@ -465,6 +465,8 @@ void Rcon::processMessagePlayers(Poco::StringTokenizer &tokens)
 				checkWhitelistedPlayer(player_data.number, player_data.player_name, player_data.guid);
 			}
 
+			// TODO Add player Unique Key if missing i.e if player has joined server before rcon connected
+
 			info_vector.push_back(std::move(player_data));
 		}
 		else
@@ -663,6 +665,7 @@ void Rcon::chatMessage(std::size_t &bytes_received)
 
 					logger->info("DEBUG Connected Player Number: {0}.", player_number);
 					logger->info("DEBUG Connected Player Name: {0}.", player_name);
+					// TODO ADD
 					checkBadPlayerString(player_number, player_name);
 				}
 			}
@@ -672,6 +675,7 @@ void Rcon::chatMessage(std::size_t &bytes_received)
 				std::string player_name = result.substr(pos + 1, result.size() - (pos + 14));
 
 				logger->info("DEBUG Disconnected Player Name: {0}", player_name);
+				// TODO REMOVE
 				{
 					std::lock_guard<std::mutex> lock(reserved_slots_mutex);
 					whitelist_settings.players_whitelisted.erase(player_name);

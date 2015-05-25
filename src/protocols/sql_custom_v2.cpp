@@ -161,6 +161,7 @@ bool SQL_CUSTOM_V2::init(AbstractExt *extension, const std::string &database_id,
 			bool default_output_sanitize_value_check = template_ini->getBool("Default.Sanitize Output Value Check", true);
 			bool default_preparedStatement_cache = template_ini->getBool("Default.Prepared Statement Cache", true);
 			bool default_returnInsertID = template_ini->getBool("Default.Return InsertID", false);
+			bool default_returnPlayerKey = template_ini->getBool("Default.Return PlayerKey", false);
 
 
 			bool default_strip = template_ini->getBool("Default.Strip", false);
@@ -205,6 +206,7 @@ bool SQL_CUSTOM_V2::init(AbstractExt *extension, const std::string &database_id,
 				custom_calls[call_name].number_of_custom_inputs = template_ini->getInt(call_name + ".Number of Custom Inputs", default_number_of_custom_inputs);
 				custom_calls[call_name].preparedStatement_cache = template_ini->getBool(call_name + ".Prepared Statement Cache", default_preparedStatement_cache);
 				custom_calls[call_name].returnInsertID = template_ini->getBool(call_name + ".Return InsertID", default_returnInsertID);
+				custom_calls[call_name].returnPlayerKey = template_ini->getBool(call_name + ".Return PlayerKey", default_returnInsertID);
 
 				if (template_ini->has(call_name + ".Strip Chars Action"))
 				{
@@ -409,6 +411,10 @@ bool SQL_CUSTOM_V2::init(AbstractExt *extension, const std::string &database_id,
 								{
 									inputs_options.vac_steamID = true;
 								}
+								else if (boost::algorithm::iequals(sub_token_input, std::string("Player_Key")) == 1)
+								{
+									inputs_options.return_player_key = true;
+								}
 								else
 								{
 									status = false;
@@ -477,7 +483,7 @@ void SQL_CUSTOM_V2::getBEGUID(std::string &input_str, std::string &result)
 }
 
 
-void SQL_CUSTOM_V2::getResult(std::string &input_str, Custom_Call_UnorderedMap::const_iterator &custom_calls_itr, Poco::Data::Session &session, Poco::Data::Statement &sql_statement, std::string &result, bool &status)
+void SQL_CUSTOM_V2::getResult(Custom_Call_UnorderedMap::const_iterator &custom_calls_itr, Poco::Data::Session &session, Poco::Data::Statement &sql_statement, std::string &result, bool &status)
 {
 	try
 	{
@@ -490,6 +496,10 @@ void SQL_CUSTOM_V2::getResult(std::string &input_str, Custom_Call_UnorderedMap::
 		else
 		{
 			result = "[1,[";
+		}
+		if (custom_calls_itr->second.returnPlayerKey)
+		{
+			result += "\"" + player_key + "\",[";
 		}
 
 		bool sanitize_value_check = true;
@@ -631,7 +641,6 @@ void SQL_CUSTOM_V2::getResult(std::string &input_str, Custom_Call_UnorderedMap::
 							{
 								if (!(Sqf::check(temp_str)))
 								{
-									extension_ptr->logger->warn("extDB2: SQL_CUSTOM: Sanitize Check Error: Input: {0}", input_str);
 									extension_ptr->logger->warn("extDB2: SQL_CUSTOM: Sanitize Check Error: Value: {0}", temp_str);
 									sanitize_value_check = false;
 									break;
@@ -656,17 +665,20 @@ void SQL_CUSTOM_V2::getResult(std::string &input_str, Custom_Call_UnorderedMap::
 		}
 		if (!(sanitize_value_check))
 		{
+			status = false;
 			result = "[0,\"Error Value Failed Sanitize Check\"]";
 		}
 		else
 		{
+			result += "]]";
+
 			if (custom_calls_itr->second.returnInsertID)
 			{
-				result += "]]]";
+				result += "]";
 			}
-			else
+			if (custom_calls_itr->second.returnPlayerKey)
 			{
-				result += "]]";
+				result += "]";
 			}
 		}
 	}
@@ -677,6 +689,7 @@ void SQL_CUSTOM_V2::getResult(std::string &input_str, Custom_Call_UnorderedMap::
 		#endif
 		extension_ptr->logger->error("extDB2: SQL_CUSTOM_V2: Error NotImplementedException: {0}", e.displayText());
 		result = "[0,\"Error NotImplemented Exception\"]";
+		status = false;
 	}
 	catch (Poco::Exception& e)
 	{
@@ -685,6 +698,7 @@ void SQL_CUSTOM_V2::getResult(std::string &input_str, Custom_Call_UnorderedMap::
 		#endif
 		extension_ptr->logger->error("extDB2: SQL_CUSTOM_V2: Error Exception: {0}", e.displayText());
 		result = "[0,\"Error Exception\"]";
+		status = false;
 	}
 }
 
@@ -779,7 +793,7 @@ void SQL_CUSTOM_V2::executeSQL(Poco::Data::Statement &sql_statement, std::string
 }
 
 
-void SQL_CUSTOM_V2::callPreparedStatement(std::string &input_str, std::string call_name, Custom_Call_UnorderedMap::const_iterator custom_calls_itr, std::vector< std::vector< std::string > > &all_processed_inputs, bool &status, std::string &result)
+void SQL_CUSTOM_V2::callPreparedStatement(std::string call_name, Custom_Call_UnorderedMap::const_iterator custom_calls_itr, std::vector< std::vector< std::string > > &all_processed_inputs, std::string &player_key, bool &status, std::string &result)
 {
 	Poco::Data::SessionPool::SessionDataPtr session_data_ptr;
 	try
@@ -806,7 +820,7 @@ void SQL_CUSTOM_V2::callPreparedStatement(std::string &input_str, std::string ca
 				}
 				else if (i == (statement_cache_itr->second.size() - 1))
 				{
-					getResult(input_str, custom_calls_itr, session, statement_cache_itr->second[i], result, status);
+					getResult(custom_calls_itr, session, statement_cache_itr->second[i], result, status);
 				}
 			}
 		}
@@ -831,26 +845,27 @@ void SQL_CUSTOM_V2::callPreparedStatement(std::string &input_str, std::string ca
 				{
 					break;
 				}
-				else
+				else if ( it_sql_prepared_statements_vector+1 == custom_calls_itr->second.sql_prepared_statements.end() )
 				{
-					if ( it_sql_prepared_statements_vector+1 == custom_calls_itr->second.sql_prepared_statements.end() )
-					{
-						getResult(input_str, custom_calls_itr, session, sql_statement, result, status);
-					}
-					if (custom_calls_itr->second.preparedStatement_cache)
-					{
-						session_data_ptr->statements_map[call_name].push_back(std::move(sql_statement));
-					}
+					getResult(custom_calls_itr, session, sql_statement, result, status);
+				}
+				if (custom_calls_itr->second.preparedStatement_cache)
+				{
+					session_data_ptr->statements_map[call_name].push_back(std::move(sql_statement));
 				}
 			}
 		}
 		if (!status)
 		{
-			#ifdef DEBUG_TESTING
-				extension_ptr->console->error("extDB2: SQL_CUSTOM_V2: Wiping Statements + Session");
-			#endif
-			extension_ptr->logger->error("extDB2: SQL_CUSTOM_V2: Wiping Statements + Session");
-			session_data_ptr->statements_map.clear();
+			// Don't need to wipe cached session if error caused by sanitize check
+			if (result != "[0,\"Error Value Failed Sanitize Check\"]")
+			{
+				#ifdef DEBUG_TESTING
+					extension_ptr->console->error("extDB2: SQL_CUSTOM_V2: Wiping Statements + Session");
+				#endif
+				extension_ptr->logger->error("extDB2: SQL_CUSTOM_V2: Wiping Statements + Session");
+				session_data_ptr->statements_map.clear();
+			}
 		}
 	}
 	catch (Poco::Data::MySQL::ConnectionException& e)
@@ -883,7 +898,7 @@ void SQL_CUSTOM_V2::callPreparedStatement(std::string &input_str, std::string ca
 }
 
 
-void SQL_CUSTOM_V2::callPreparedStatement(std::string &input_str, std::string call_name, Custom_Call_UnorderedMap::const_iterator custom_calls_itr, std::vector< std::vector<std::string> > &all_processed_inputs, std::vector<std::string> &custom_inputs, bool &status, std::string &result)
+void SQL_CUSTOM_V2::callPreparedStatement(std::string call_name, Custom_Call_UnorderedMap::const_iterator custom_calls_itr, std::vector< std::vector<std::string> > &all_processed_inputs, std::vector<std::string> &custom_inputs, std::string &player_key, bool &status, std::string &result)
 {
 	Poco::Data::SessionPool::SessionDataPtr session_data_ptr;
 	try
@@ -918,16 +933,24 @@ void SQL_CUSTOM_V2::callPreparedStatement(std::string &input_str, std::string ca
 			}
 			else if (it_sql_prepared_statements_vector + 1 == custom_calls_itr->second.sql_prepared_statements.end())
 			{
-				getResult(input_str, custom_calls_itr, session, sql_statement, result, status);
+				getResult(custom_calls_itr, session, sql_statement, result, status);
+				if (!status)
+				{
+					break;
+				}
 			}
 		}
 		if (!status)
 		{
-			#ifdef DEBUG_TESTING
-				extension_ptr->console->error("extDB2: SQL_CUSTOM_V2: Clearing Any Cached Statements");
-			#endif
-			extension_ptr->logger->error("extDB2: SQL_CUSTOM_V2: Clearing Any Cached Statements");
-			session_data_ptr->statements_map.clear();
+			// Don't need to wipe cached session if error caused by sanitize check
+			if (result != "[0,\"Error Value Failed Sanitize Check\"]")
+			{
+				#ifdef DEBUG_TESTING
+					extension_ptr->console->error("extDB2: SQL_CUSTOM_V2: Wiping Statements + Session");
+				#endif
+				extension_ptr->logger->error("extDB2: SQL_CUSTOM_V2: Wiping Statements + Session");
+				session_data_ptr->statements_map.clear();
+			}
 		}
 	}
 	catch (Poco::Data::MySQL::ConnectionException& e)
@@ -1031,6 +1054,7 @@ bool SQL_CUSTOM_V2::callProtocol(std::string input_str, std::string &result, con
 
 			std::string sanitize_str;
 
+			std::string player_key;
 			for(auto &sql_inputs_options : custom_calls_const_itr->second.sql_inputs_options)
 			{
 				std::vector< std::string > processed_inputs;
@@ -1073,7 +1097,18 @@ bool SQL_CUSTOM_V2::callProtocol(std::string input_str, std::string &result, con
 					{
 						// GENERATE BEGUID
 						getBEGUID(temp_str, temp_str);
+						if (sql_input_option.return_player_key)
+						{
+							// TODO extension_ptr->getPlayerKey(temp_str, player_key);
+						}
 					}
+					else if (sql_input_option.return_player_key)
+					{
+						std::string player_guid;
+						getBEGUID(temp_str, player_guid);
+						// TODO extension_ptr->getPlayerKey(player_guid, player_key);
+					}
+
 
 					// STRING
 					if (sql_input_option.string)
@@ -1145,30 +1180,24 @@ bool SQL_CUSTOM_V2::callProtocol(std::string input_str, std::string &result, con
 				all_processed_inputs.push_back(std::move(processed_inputs));
 			}
 
-
 			if (status)
 			{
-				if (custom_calls_const_itr->second.number_of_custom_inputs == 0)
-				{
-					callPreparedStatement(input_str, tokens[0], custom_calls_const_itr, all_processed_inputs, status, result);
-				}
-				else
-				{
-					callPreparedStatement(input_str, tokens[0], custom_calls_const_itr, all_processed_inputs, custom_inputs, status, result);
-				}
-				if (status)
-				{
-					#ifdef DEBUG_TESTING
-						extension_ptr->console->info("extDB2: SQL_CUSTOM_V2: Trace: UniqueID: {0} Result: {1}", unique_id, result);
-					#endif
-					#ifdef DEBUG_LOGGING
-						extension_ptr->logger->info("extDB2: SQL_CUSTOM_V2: Trace: UniqueID: {0} Result: {1}", unique_id, result);
-					#endif
-				}
+				callPreparedStatement(tokens[0], custom_calls_const_itr, all_processed_inputs, custom_inputs, player_key, status, result);
+				#if defined(DEBUG_TESTING) || defined(DEBUG_LOGGING)
+					if (status)
+					{
+						#ifdef DEBUG_TESTING
+							extension_ptr->console->info("extDB2: SQL_CUSTOM_V2: Trace: UniqueID: {0} Result: {1}", unique_id, result);
+						#endif
+						#ifdef DEBUG_LOGGING
+							extension_ptr->logger->info("extDB2: SQL_CUSTOM_V2: Trace: UniqueID: {0} Result: {1}", unique_id, result);
+						#endif
+					}
+				#endif
 			}
 			if (!status)
 			{
-				extension_ptr->logger->warn("extDB2: SQL_CUSTOM_V2: Error Exception: UniqueID: {0} SQL: {1}", unique_id, input_str);
+				extension_ptr->logger->warn("extDB2: SQL_CUSTOM_V2: Error: UniqueID: {0} Input String: {1}", unique_id, input_str);
 			}
 		}
 	}

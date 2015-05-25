@@ -47,6 +47,11 @@ void BELogScanner::init(std::string &be_path, boost::asio::io_service &io_servic
     io_service_ptr = &io_service;
     logger = spdlog;
 
+    // TODO BELogscanner.wiped
+        // If can't find BELogscanner.cleared  output warning
+        // Move Battleye Logs + rename to -not-checked.
+
+        // This way can kick/ban players if they try to PV to server using player unique key, without worry about parsing old log file
     // ------------------------------
     Poco::DateTime current_dateTime;
     be_custom_log_path = boost::filesystem::path(be_path);
@@ -111,6 +116,7 @@ void BELogScanner::stop()
 	{
 		filters_directory_watcher->suspendEvents();
 	}
+    // TODO BELogscanner.wiped
 }
 
 
