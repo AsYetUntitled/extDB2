@@ -1360,7 +1360,7 @@ void Ext::callExtension(char *output, const int &output_size, const char *functi
 								else if (tokens[1] == "TIME")
 								{
 									std::string result;
-									getDateTime(tokens[1], std::string());
+									getDateTime(std::string(), result);
 									std::strcpy(output, result.c_str());
 								}
 								else
