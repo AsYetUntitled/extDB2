@@ -28,7 +28,7 @@ along with this program. If not, see <http://www.gnu.org/licenses/>.
 #include "abstract_protocol.h"
 
 #define EXTDB_SQL_CUSTOM_REQUIRED_VERSION 8
-#define EXTDB_SQL_CUSTOM_LATEST_VERSION 10
+#define EXTDB_SQL_CUSTOM_LATEST_VERSION 11
 
 
 class SQL_CUSTOM: public AbstractProtocol
@@ -60,14 +60,15 @@ class SQL_CUSTOM: public AbstractProtocol
 			bool datetime_iso8601 = false;
 
 			bool strip = false;
+			bool return_player_key = false;
 		};
 
 		struct customCall
 		{
 			bool strip;
-
 			bool preparedStatement_cache;
 			bool returnInsertID;
+			bool returnPlayerKey;
 
 			int number_of_inputs;
 			int number_of_custom_inputs;
@@ -86,10 +87,11 @@ class SQL_CUSTOM: public AbstractProtocol
 
 		Custom_Call_UnorderedMap custom_calls;
 
-		void callPreparedStatement(std::string &input_str, std::string &call_name, std::unordered_map<std::string, customCall>::const_iterator custom_protocol_itr, std::vector< std::vector< std::string > > &all_processed_inputs, bool &status, std::string &result);
-		void callPreparedStatement(std::string &input_str, std::string &call_name, std::unordered_map<std::string, customCall>::const_iterator custom_protocol_itr, std::vector< std::vector< std::string > > &all_processed_inputs, std::vector<std::string> &custom_inputs, bool &status, std::string &result);
+		void callPreparedStatement(std::string call_name, Custom_Call_UnorderedMap::const_iterator custom_calls_itr, std::vector< std::vector<std::string> > &all_processed_inputs, std::string &player_key, bool &status, std::string &result);
+		void callPreparedStatement(std::string call_name, Custom_Call_UnorderedMap::const_iterator custom_calls_itr, std::vector< std::vector<std::string> > &all_processed_inputs, std::vector<std::string> &custom_inputs, std::string &player_key, bool &status, std::string &result);
+
 		void executeSQL(Poco::Data::Statement &sql_statement, std::string &result, bool &status);
 
 		void getBEGUID(std::string &input_str, std::string &result);
-		void getResult(std::string &input_str, std::unordered_map<std::string, customCall>::const_iterator &custom_protocol_itr, Poco::Data::Session &session, Poco::Data::Statement &sql_statement, std::string &result, bool &status);
+		void getResult(std::unordered_map<std::string, customCall>::const_iterator &custom_protocol_itr, Poco::Data::Session &session, Poco::Data::Statement &sql_statement, std::string &player_key, std::string &result, bool &status);
 };
