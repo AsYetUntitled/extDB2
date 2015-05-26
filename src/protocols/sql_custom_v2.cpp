@@ -108,9 +108,9 @@ bool SQL_CUSTOM_V2::init(AbstractExt *extension, const std::string &database_id,
 		else
 		{
 			#ifdef DEBUG_TESTING
-				extension_ptr->console->info("extDB2: SQL_CUSTOM: Loading Template Error: Not Regular File: {0}", custom_ini_file);
+				extension_ptr->console->info("extDB2: SQL_CUSTOM_V2: Loading Template Error: Not Regular File: {0}", custom_ini_file);
 			#endif
-			extension_ptr->logger->info("extDB2: SQL_CUSTOM: Loading Template Error: Not Regular File: {0}", custom_ini_file);
+			extension_ptr->logger->info("extDB2: SQL_CUSTOM_V2: Loading Template Error: Not Regular File: {0}", custom_ini_file);
 		}
 	}
 	else
@@ -150,7 +150,7 @@ bool SQL_CUSTOM_V2::init(AbstractExt *extension, const std::string &database_id,
 
 		if ((template_ini->getInt("Default.Version", 1)) <= EXTDB_SQL_CUSTOM_V2_LATEST_VERSION)
 		{
-			extension_ptr->logger->info("extDB2: SQL_CUSTOM: Version {0} Detected, Latest Version {1} Available", (template_ini->getInt("Default.Version", 1), EXTDB_SQL_CUSTOM_V2_LATEST_VERSION));
+			extension_ptr->logger->info("extDB2: SQL_CUSTOM_V2: Version {0} Detected, Latest Version {1} Available", (template_ini->getInt("Default.Version", 1), EXTDB_SQL_CUSTOM_V2_LATEST_VERSION));
 		}
 		if ((template_ini->getInt("Default.Version", 1)) >= EXTDB_SQL_CUSTOM_V2_REQUIRED_VERSION)
 		{
@@ -487,15 +487,12 @@ void SQL_CUSTOM_V2::getResult(Custom_Call_UnorderedMap::const_iterator &custom_c
 {
 	try
 	{
+		result = "[1,[";
 		if (custom_calls_itr->second.returnInsertID)
 		{
 			Poco::UInt64 insertID;
 			insertID = Poco::AnyCast<Poco::UInt64>((session.impl())->getInsertId());
-			result = "[1,[" + Poco::NumberFormatter::format(insertID) + ",[";
-		}
-		else
-		{
-			result = "[1,[";
+			result += Poco::NumberFormatter::format(insertID) + ",[";
 		}
 		if (custom_calls_itr->second.returnPlayerKey)
 		{
@@ -557,7 +554,6 @@ void SQL_CUSTOM_V2::getResult(Custom_Call_UnorderedMap::const_iterator &custom_c
 								// GENERATE BEGUID
 								getBEGUID(temp_str, temp_str);
 							}
-
 							// STRING
 							if (custom_calls_itr->second.sql_outputs_options[col].string)
 							{
@@ -604,7 +600,6 @@ void SQL_CUSTOM_V2::getResult(Custom_Call_UnorderedMap::const_iterator &custom_c
 										+ Poco::NumberFormatter::format(dt.second()) + "]";
 								}
 							}
-
 							// BOOL
 							else if (custom_calls_itr->second.sql_outputs_options[col].boolean)
 							{
@@ -612,23 +607,20 @@ void SQL_CUSTOM_V2::getResult(Custom_Call_UnorderedMap::const_iterator &custom_c
 								{
 									temp_str = "false";
 								}
-								else
+								else if (rs[col].isInteger())
 								{
-									if (rs[col].isInteger())
+									if (rs[col].convert<int>() > 0)
 									{
-										if (rs[col].convert<int>() > 0)
-										{
-											temp_str = "true";
-										}
-										else
-										{
-											temp_str = "false";
-										}
+										temp_str = "true";
 									}
 									else
 									{
 										temp_str = "false";
 									}
+								}
+								else
+								{
+									temp_str = "false";
 								}
 							}
 							else if (temp_str.empty())
@@ -671,7 +663,6 @@ void SQL_CUSTOM_V2::getResult(Custom_Call_UnorderedMap::const_iterator &custom_c
 		else
 		{
 			result += "]]";
-
 			if (custom_calls_itr->second.returnInsertID)
 			{
 				result += "]";
@@ -1165,8 +1156,8 @@ bool SQL_CUSTOM_V2::callProtocol(std::string input_str, std::string &result, con
 						if (!(Sqf::check(sanitize_str)))
 						{
 							status = false;
-							extension_ptr->logger->warn("extDB2: SQL_CUSTOM: Sanitize Check Error: Input: {0}", input_str);
-							extension_ptr->logger->warn("extDB2: SQL_CUSTOM: Sanitize Check Error: Value: {0}", sanitize_str);
+							extension_ptr->logger->warn("extDB2: SQL_CUSTOM_V2: Sanitize Check Error: Input: {0}", input_str);
+							extension_ptr->logger->warn("extDB2: SQL_CUSTOM_V2: Sanitize Check Error: Value: {0}", sanitize_str);
 							result = "[0,\"Error Input Value is not sanitized\"]";
 						}
 					}
