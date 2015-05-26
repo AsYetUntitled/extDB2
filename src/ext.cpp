@@ -84,6 +84,9 @@ Ext::Ext(std::string shared_library_path, std::unordered_map<std::string, std::s
 
 		boost::filesystem::path config_path;
 
+		ext_info.be_path = options["BEPATH"];
+		ext_info.var = "\"" + options["VAR"] + "\"";
+
 		if (options.count("WORK") > 0)
 		{
 			// Override extDB2 Location
@@ -312,9 +315,6 @@ Ext::Ext(std::string shared_library_path, std::unordered_map<std::string, std::s
 				#endif
 				logger->info("extDB2: Detected {0} Cores, Setting up {1} Worker Threads (config settings)", detected_cpu_cores, ext_info.max_threads);
 			}
-
-			// Save -extDB_VAR value for retreiving later
-			ext_info.var = "\"" + options["VAR"] + "\"";
 
 			// Setup ASIO Worker Pool
 			io_work_ptr.reset(new boost::asio::io_service::work(io_service));
@@ -568,9 +568,8 @@ void Ext::startBELogscanner(char *output, const int &output_size, const std::str
 	{
 		if (!ext_connectors_info.belog_scanner)
 		{
-			//remote_server.setup(conf);
-			//void start(std::string &bepath, boost::asio::io_service &io_service, std::shared_ptr<spdlog::logger> spdlog);
-			ext_connectors_info.remote = true;
+			belog_scanner.start(ext_info.be_path, io_service, logger);
+			ext_connectors_info.belog_scanner = true;
 			std::strcpy(output, ("[1]"));
 		}
 		else
@@ -1620,6 +1619,7 @@ void Ext::callExtension(char *output, const int &output_size, const char *functi
 
 		boost::program_options::options_description desc("Options");
 		desc.add_options()
+			("bepath", boost::program_options::value<std::string>(), "Battleye Path")
 			("extDB2_VAR", boost::program_options::value<std::string>(), "extDB2 Variable")
 			("extDB2_WORK", boost::program_options::value<std::string>(), "extDB2 Work Directory");
 
@@ -1628,6 +1628,10 @@ void Ext::callExtension(char *output, const int &output_size, const char *functi
 
 		std::unordered_map<std::string, std::string> options;
 
+		if (bpo_options.count("bepath") > 0)
+		{
+			options["BEPATH"] = bpo_options["bepath"].as<std::string>();
+		}
 		if (bpo_options.count("extDB2_WORK") > 0)
 		{
 			options["WORK"] = bpo_options["extDB2_WORK"].as<std::string>();

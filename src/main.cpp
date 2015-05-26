@@ -17,28 +17,23 @@ Ext *extension;
 		FILE *fh = fopen ("/proc/self/cmdline", "r"); // /proc/self  :D
 		if (fh != NULL)
 		{
-			std::size_t found;
 			char *arg = 0;
 			size_t size = 0;
 			while(getdelim(&arg, &size, 0, fh) != -1)
 			{
 				std::string argument_str(arg);
 				boost::erase_all(argument_str, "\"");
-				if (argument_str.size() >= 12)
+				if (boost::algorithm::istarts_with(argument_str, "-extDB2_VAR="))
 				{
-					found = argument_str.find("-extDB2_VAR=");
-					if (found == 0)
-					{
-						options["VAR"] = argument_str.substr(12);
-					}
-					else
-					{
-						found = argument_str.find("-extDB2_WORK=");
-						if (found == 0)
-						{
-							options["WORK"] = argument_str.substr(13);
-						}
-					}
+					options["VAR"] = argument_str.substr(argument_str.find("="));
+				}
+				else if (boost::algorithm::istarts_with(argument_str, "-extDB2_WORK="))
+				{
+					options["WORK"] = argument_str.substr(argument_str.find("="));
+				}
+				else if (boost::algorithm::istarts_with(argument_str, "-bepath="))
+				{
+					options["BEPATH"] = argument_str.substr(argument_str.find("="));
 				}
 			}
 			free(arg);
@@ -89,27 +84,22 @@ Ext *extension;
 
 					if (nArgs != NULL)
 					{
-						std::size_t found;
 						std::string argument_str;
 						for (int i = 0; i < nArgs; i++)
 						{
 							argument_str = CW2A(pszArgsW[i]);
 							boost::erase_all(argument_str, "\"");
-							if (argument_str.size() >= 12)
+							if (boost::algorithm::istarts_with(argument_str, "-extDB2_VAR="))
 							{
-								found = argument_str.find("-extDB2_VAR=");
-								if (found == 0)
-								{
-									options["VAR"] = argument_str.substr(12);
-								}
-								else
-								{
-									found = argument_str.find("-extDB2_WORK=");
-									if (found == 0)
-									{
-										options["WORK"] = argument_str.substr(13);
-									}
-								}
+								options["VAR"] = argument_str.substr(argument_str.find("="));
+							}
+							else if (boost::algorithm::istarts_with(argument_str, "-extDB2_WORK="))
+							{
+								options["WORK"] = argument_str.substr(argument_str.find("="));
+							}
+							else if (boost::algorithm::istarts_with(argument_str, "-bepath="))
+							{
+								options["BEPATH"] = argument_str.substr(argument_str.find("="));
 							}
 						}
 					}
