@@ -46,6 +46,10 @@ class BELogScanner
 	protected:
 
 	private:
+		std::string be_path;
+
+		Poco::DateTime current_dateTime;
+
 		boost::filesystem::path be_custom_log_path;
 		boost::filesystem::path filters_path;
 

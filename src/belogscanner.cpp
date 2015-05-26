@@ -42,28 +42,81 @@ BELogScanner::~BELogScanner(void)
 }
 
 
-void BELogScanner::start(std::string &be_path, boost::asio::io_service &io_service, std::shared_ptr<spdlog::logger> spdlog)
+void BELogScanner::start(std::string &bepath, boost::asio::io_service &io_service, std::shared_ptr<spdlog::logger> spdlog)
 {
 	io_service_ptr = &io_service;
 	logger = spdlog;
+	be_path = bepath;
 
-	// TODO BELogscanner.wiped
-		// If can't find BELogscanner.cleared  output warning
-		// Move Battleye Logs + rename to -not-checked.
+	current_dateTime = Poco::DateTime();
 
-		// This way can kick/ban players if they try to PV to server using player unique key, without worry about parsing old log file
-	// ------------------------------
-	Poco::DateTime current_dateTime;
+	boost::filesystem::path belog_wipe_path(be_path);
+	belog_wipe_path /= "belogscanner.shutdown";
+
+	bool clean_shutdown = false;
+	if (boost::filesystem::exists(belog_wipe_path))
+	{
+		clean_shutdown = true;
+		std::time_t last_shutdown_timestamp = boost::filesystem::last_write_time(belog_wipe_path);
+
+		boost::filesystem::directory_iterator iter(be_path);
+		boost::filesystem::directory_iterator iter_end;
+
+		for (; iter != iter_end; ++iter)
+		{
+			if (boost::filesystem::is_regular_file(iter->path()))
+			{
+				if (iter->path().extension().string() == "log")  // TODO Make case insensitive
+				{
+					if (boost::filesystem::last_write_time(iter->path()) > last_shutdown_timestamp)
+					{
+						clean_shutdown = false;
+						break;
+					}
+				}
+			}
+		}
+	}
+
+	if (!clean_shutdown)
+	{
+		logger->warn("BELogscanner: Bad Shutdown Detected");
+
+		boost::filesystem::directory_iterator iter(be_path);
+		boost::filesystem::directory_iterator iter_end;
+
+		for (; iter != iter_end; ++iter)
+		{
+			if (boost::filesystem::is_regular_file(iter->path()))
+			{
+				if (iter->path().extension().string() == "log")  // TODO Make case insensitive
+				{
+					boost::filesystem::path dest_file(be_path);
+					dest_file /= "BELogscanner";
+					dest_file /= "logs";
+					dest_file /= Poco::DateTimeFormatter::format(current_dateTime, "%Y");
+					dest_file /= Poco::DateTimeFormatter::format(current_dateTime, "%n");
+					dest_file /= Poco::DateTimeFormatter::format(current_dateTime, "%d");
+					dest_file /= "bad_shutdown";
+					dest_file /= iter->path().filename();
+					boost::filesystem::copy_file(iter->path(), dest_file);
+				}
+			}
+		}
+	}
+	boost::filesystem::remove(belog_wipe_path);
+
+
 	be_custom_log_path = boost::filesystem::path(be_path);
-	be_custom_log_path /= "extBESscanner";
-	be_custom_log_path /= "battleye_logs";
+	be_custom_log_path /= "BELogscanner";
+	be_custom_log_path /= "logs";
 	be_custom_log_path /= Poco::DateTimeFormatter::format(current_dateTime, "%Y");
 	be_custom_log_path /= Poco::DateTimeFormatter::format(current_dateTime, "%n");
 	be_custom_log_path /= Poco::DateTimeFormatter::format(current_dateTime, "%d");
 	boost::filesystem::create_directories(be_custom_log_path);
 
 	filters_path = boost::filesystem::path(be_path);
-	filters_path /= "extBESscanner";
+	filters_path /= "BELogscanner";
 	filters_path /= "filters";
 	boost::filesystem::create_directories(filters_path);
 	loadFilters();
@@ -110,13 +163,40 @@ void BELogScanner::stop()
 {
 	if (be_directory_watcher)
 	{
-		be_directory_watcher->suspendEvents();
+		be_directory_watcher.release();
 	}
 	if (filters_directory_watcher)
 	{
-		filters_directory_watcher->suspendEvents();
+		filters_directory_watcher.release();
 	}
-	// TODO BELogscanner.wiped
+
+
+	boost::filesystem::directory_iterator iter(be_path);
+	boost::filesystem::directory_iterator iter_end;
+
+	for (; iter != iter_end; ++iter)
+	{
+		if (boost::filesystem::is_regular_file(iter->path()))
+		{
+			if (iter->path().extension().string() == "log")  // TODO Make case insensitive
+			{
+				boost::filesystem::path dest_file(be_path);
+				dest_file /= "BELogscanner";
+				dest_file /= "logs";
+				dest_file /= Poco::DateTimeFormatter::format(current_dateTime, "%Y");
+				dest_file /= Poco::DateTimeFormatter::format(current_dateTime, "%n");
+				dest_file /= Poco::DateTimeFormatter::format(current_dateTime, "%d");
+				dest_file /= iter->path().filename();
+				boost::filesystem::copy_file(iter->path(), dest_file);
+			}
+		}
+	}
+
+	boost::filesystem::path belog_wipe_path(be_path);
+	belog_wipe_path /= "belogscanner.shutdown";
+	FILE *shutdown_file;
+	shutdown_file = std::fopen(belog_wipe_path.make_preferred().string().c_str(), "w");
+	std::fclose(shutdown_file);
 }
 
 
