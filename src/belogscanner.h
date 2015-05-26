@@ -37,11 +37,11 @@ class BELogScanner
 		BELogScanner();
 		~BELogScanner();
 
-		void init(std::string &bepath, boost::asio::io_service &io_service, std::shared_ptr<spdlog::logger> spdlog);
+		void start(std::string &bepath, boost::asio::io_service &io_service, std::shared_ptr<spdlog::logger> spdlog);
+		void stop();
+
 		void updateAdd(std::string &steam_id, std::string &value);
 		void updateRemove(std::string &steam_id, std::string &value);
-
-		void stop();
 
 	protected:
 

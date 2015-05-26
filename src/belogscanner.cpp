@@ -42,7 +42,7 @@ BELogScanner::~BELogScanner(void)
 }
 
 
-void BELogScanner::init(std::string &be_path, boost::asio::io_service &io_service, std::shared_ptr<spdlog::logger> spdlog)
+void BELogScanner::start(std::string &be_path, boost::asio::io_service &io_service, std::shared_ptr<spdlog::logger> spdlog)
 {
 	io_service_ptr = &io_service;
 	logger = spdlog;

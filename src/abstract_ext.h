@@ -57,12 +57,13 @@ class AbstractExt
 		{
 			std::unordered_map<std::string, DBConnectionInfo> databases;
 
-			bool mysql=false;
-			bool sqlite=false;
+			bool mysql = false;
+			bool sqlite = false;
 
+			bool belog_scanner = false;
+			bool rcon = false;
+			bool remote = false;
 			bool steam=false;
-			bool rcon=false;
-			bool remote=false;
 		};
 		extConnectors ext_connectors_info;
 
@@ -72,10 +73,10 @@ class AbstractExt
 			std::string var;
 			std::string path;
 			std::string log_path;
-			bool logger_flush=true;
+			bool logger_flush = true;
 
 			int max_threads;
-			bool extDB_lock=false;
+			bool extDB_lock = false;
 		};
 		extInfo ext_info;
 

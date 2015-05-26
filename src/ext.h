@@ -30,6 +30,7 @@ along with this program. If not, see <http://www.gnu.org/licenses/>.
 #include <Poco/Data/SessionPool.h>
 
 #include "abstract_ext.h"
+#include "belogscanner.h"
 #include "backends/http.h"
 #include "backends/rcon.h"
 #include "backends/remoteserver.h"
@@ -75,11 +76,14 @@ class Ext: public AbstractExt
 		void steamQuery(const unsigned int &unique_id, bool queryFriends, bool queryVacBans, std::vector<std::string> &steamIDs, bool wakeup);
 
 	private:
-		// RCon
+		// Rcon
 		std::unique_ptr<Rcon> rcon;
 
 		/// Remote Server
 		RemoteServer remote_server;
+
+		// BELogScanner
+		BELogScanner belog_scanner;
 
 		// Steam
 		Steam steam;
@@ -116,19 +120,19 @@ class Ext: public AbstractExt
 			void search(boost::filesystem::path &extDB_config_path, bool &conf_found, bool &conf_randomized);
 		#endif
 
-		// RCon
-		void connectRcon(char *output, const int &output_size, const std::string &rcon_conf, std::vector<std::string> &extra_rcon_options);
-
-		// Remote
-		void connectRemote(char *output, const int &output_size, const std::string &remote_conf);
+		// BELogScanner
+		void startBELogscanner(char *output, const int &output_size, const std::string &conf);
 
 		// Database
 		void connectDatabase(char *output, const int &output_size, const std::string &database_conf, const std::string &database_id);
-
-		// Results
 		void getSinglePartResult_mutexlock(char *output, const int &output_size, const unsigned int &unique_id);
 		void getMultiPartResult_mutexlock(char *output, const int &output_size, const unsigned int &unique_id);
 
+		// RCon
+		void startRcon(char *output, const int &output_size, const std::string &conf, std::vector<std::string> &extra_rcon_options);
+
+		// Remote
+		void startRemote(char *output, const int &output_size, const std::string &conf);
 		void getTCPRemote_mutexlock(char *output, const int &output_size);
 		void sendTCPRemote_mutexlock(std::string &input_str);
 
