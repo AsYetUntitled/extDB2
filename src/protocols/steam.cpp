@@ -47,6 +47,12 @@ bool STEAM::init(AbstractExt *extension, const std::string &database_id, const s
 		extension_ptr->logger->warn("extDB2: STEAM: Error VAC Not Started");
 		status = false;
 	}
+	if (status)
+	{
+		extension_ptr->logger->info("extDB2: STEAM: Is now deprecated will be removed in a month, update to STEAM_V2");
+		extension_ptr->logger->info("extDB2: STEAM: Is now deprecated will be removed in a month, update to STEAM_V2");
+		extension_ptr->logger->info("extDB2: STEAM: Is now deprecated will be removed in a month, update to STEAM_V2");
+	}
 	return status;
 }
 

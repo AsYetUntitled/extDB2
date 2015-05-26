@@ -87,6 +87,12 @@ bool SQL_RAW::init(AbstractExt *extension, const std::string &database_id, const
 			status = false;
 		}
 	}
+	if (status)
+	{
+		extension_ptr->logger->info("extDB2: SQL_RAW: Is now deprecated will be removed in a month, update to SQL_RAW_V2");
+		extension_ptr->logger->info("extDB2: SQL_RAW: Is now deprecated will be removed in a month, update to SQL_RAW_V2");
+		extension_ptr->logger->info("extDB2: SQL_RAW: Is now deprecated will be removed in a month, update to SQL_RAW_V2");
+	}
 	return status;
 }
 
