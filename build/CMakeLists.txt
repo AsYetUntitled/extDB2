@@ -32,8 +32,9 @@ endif()
 
 SET(SOURCES
 	../src/memory_allocator.cpp
-	../src/ext.cpp
 	../src/sanitize.cpp
+	../src/ext.cpp
+	../src/belogscanner.cpp
 	../src/backends/http.cpp
 	../src/backends/rcon.cpp
 	../src/backends/remoteserver.cpp
