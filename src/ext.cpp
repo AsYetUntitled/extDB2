@@ -370,11 +370,16 @@ void Ext::stop()
 		console->info("extDB2: Stopping ...");
 	#endif
 	logger->info("extDB2: Stopping ...");
-	io_work_ptr.reset();
+	//io_work_ptr.reset();
+	if (ext_connectors_info.belog_scanner)
+	{
+		belog_scanner.stop();
+	}
 	if (ext_connectors_info.rcon)
 	{
 		rcon->disconnect();
 	}
+	io_work_ptr.reset();
 	threads.join_all();
 	io_service.stop();
 	if (ext_connectors_info.mysql)
@@ -557,14 +562,37 @@ void Ext::steamQuery(const unsigned int &unique_id, bool queryFriends, bool quer
 }
 
 
-void Ext::connectRemote(char *output, const int &output_size, const std::string &remote_conf)
+void Ext::startBELogscanner(char *output, const int &output_size, const std::string &conf)
+{
+	if (pConf->getBool(conf + ".Enable", false))
+	{
+		if (!ext_connectors_info.belog_scanner)
+		{
+			//remote_server.setup(conf);
+			//void start(std::string &bepath, boost::asio::io_service &io_service, std::shared_ptr<spdlog::logger> spdlog);
+			ext_connectors_info.remote = true;
+			std::strcpy(output, ("[1]"));
+		}
+		else
+		{
+			std::strcpy(output, ("[0,\"BELogscanner Already Started\"]"));
+		}
+	}
+	else
+	{
+		std::strcpy(output, ("[0,\"BELogscanner Disabled in Config\"]"));
+	}
+}
+
+
+void Ext::startRemote(char *output, const int &output_size, const std::string &conf)
 // Start RCon
 {
-	if (pConf->getBool(remote_conf + ".Enable", false))
+	if (pConf->getBool(conf + ".Enable", false))
 	{
 		if (!ext_connectors_info.remote)
 		{
-			remote_server.setup(remote_conf);
+			remote_server.setup(conf);
 			ext_connectors_info.remote = true;
 			std::strcpy(output, ("[1]"));
 		}
@@ -580,14 +608,14 @@ void Ext::connectRemote(char *output, const int &output_size, const std::string 
 }
 
 
-void Ext::connectRcon(char *output, const int &output_size, const std::string &rcon_conf, std::vector<std::string> &extra_rcon_options)
+void Ext::startRcon(char *output, const int &output_size, const std::string &conf, std::vector<std::string> &extra_rcon_options)
 // Start RCon
 {
 	if (ext_connectors_info.rcon)
 	{
 		std::strcpy(output, ("[0,\"Rcon is Already Running\"]"));
 	}
-	else if (pConf->hasOption(rcon_conf + ".password"))
+	else if (pConf->hasOption(conf + ".password"))
 	{
 		#ifdef DEBUG_TESTING
 			console->info("extDB2: Loading Rcon Config");
@@ -596,9 +624,9 @@ void Ext::connectRcon(char *output, const int &output_size, const std::string &r
 
 		// Rcon Settings
 		Rcon::RconSettings rcon_settings;
-		rcon_settings.address = pConf->getString((rcon_conf + ".IP"), "127.0.0.1");
-		rcon_settings.port = pConf->getInt((rcon_conf + ".Port"), 2302);
-		rcon_settings.password = pConf->getString((rcon_conf + ".Password"), "password");
+		rcon_settings.address = pConf->getString((conf + ".IP"), "127.0.0.1");
+		rcon_settings.port = pConf->getInt((conf + ".Port"), 2302);
+		rcon_settings.password = pConf->getString((conf + ".Password"), "password");
 
 		for (auto &extra_rcon_option : extra_rcon_options)
 		{
@@ -619,7 +647,7 @@ void Ext::connectRcon(char *output, const int &output_size, const std::string &r
 
 		// Bad Player Name
 		Rcon::BadPlayernameSettings bad_playername_settings;
-		bad_playername_settings.enable = pConf->getBool((rcon_conf + ".Bad Playername Enable"), false);
+		bad_playername_settings.enable = pConf->getBool((conf + ".Bad Playername Enable"), false);
 
 		if (bad_playername_settings.enable)
 		{
@@ -628,10 +656,10 @@ void Ext::connectRcon(char *output, const int &output_size, const std::string &r
 			#endif
 			logger->info("extDB2: RCon Bad Playername Enabled");
 
-			bad_playername_settings.kick_message = pConf->getString(((rcon_conf) + ".Bad Playername Kick Message"), "");
+			bad_playername_settings.kick_message = pConf->getString(((conf) + ".Bad Playername Kick Message"), "");
 
 			bad_playername_settings.bad_strings.push_back(":");
-			Poco::StringTokenizer tokens(pConf->getString(((rcon_conf) + ".Bad Playername Strings"), ""), ":");
+			Poco::StringTokenizer tokens(pConf->getString(((conf) + ".Bad Playername Strings"), ""), ":");
 			for (auto &token : tokens)
 			{
 				bad_playername_settings.bad_strings.push_back(token);
@@ -642,7 +670,7 @@ void Ext::connectRcon(char *output, const int &output_size, const std::string &r
 			while (true)
 			{
 				++regrex_rule_num;
-				regex_rule_num_str = rcon_conf + ".Bad Playername Regex_" + Poco::NumberFormatter::format(regrex_rule_num);
+				regex_rule_num_str = conf + ".Bad Playername Regex_" + Poco::NumberFormatter::format(regrex_rule_num);
 				if (!(pConf->has(regex_rule_num_str)))
 				{
 					logger->info("extDB2: Missing {0}", regex_rule_num_str);
@@ -658,17 +686,17 @@ void Ext::connectRcon(char *output, const int &output_size, const std::string &r
 
 		// Reserved Slots
 		Rcon::WhitelistSettings whitelist_settings;
-		whitelist_settings.enable = pConf->getBool((rcon_conf + ".Whitelist Enable"), false);
+		whitelist_settings.enable = pConf->getBool((conf + ".Whitelist Enable"), false);
 		if (whitelist_settings.enable)
 		{
-			whitelist_settings.open_slots = pConf->getInt((rcon_conf + ".Whitelist Public Slots"), 0);
-			whitelist_settings.kick_message = pConf->getString(((rcon_conf) + ".Whitelist Kick Message"), "");
+			whitelist_settings.open_slots = pConf->getInt((conf + ".Whitelist Public Slots"), 0);
+			whitelist_settings.kick_message = pConf->getString((conf + ".Whitelist Kick Message"), "");
 
-			whitelist_settings.database = pConf->getString((rcon_conf + ".Whitelist Database"), "");
-			whitelist_settings.sql_statement = pConf->getString((rcon_conf + ".Whitelist SQL Prepared Statement"), "");
-			whitelist_settings.kick_on_failed_sql_query = pConf->getBool((rcon_conf + ".Whitelist Kick on SQL Query Failed"), false);
+			whitelist_settings.database = pConf->getString((conf + ".Whitelist Database"), "");
+			whitelist_settings.sql_statement = pConf->getString((conf + ".Whitelist SQL Prepared Statement"), "");
+			whitelist_settings.kick_on_failed_sql_query = pConf->getBool((conf + ".Whitelist Kick on SQL Query Failed"), false);
 
-			Poco::StringTokenizer tokens(pConf->getString((rcon_conf + ".Whitelist BEGuids"), ""), ":", Poco::StringTokenizer::TOK_TRIM);
+			Poco::StringTokenizer tokens(pConf->getString((conf + ".Whitelist BEGuids"), ""), ":", Poco::StringTokenizer::TOK_TRIM);
 			for (auto &token : tokens)
 			{
 				whitelist_settings.whitelisted_guids.push_back(token);
@@ -1462,15 +1490,20 @@ void Ext::callExtension(char *output, const int &output_size, const char *functi
 								{
 									connectDatabase(output, output_size, tokens[2], tokens[2]);
 								}
+								// BELOGSCANNER
+								else if (tokens[1] == "START_BELOGSCANNER")
+								{
+									startBELogscanner(output, output_size, tokens[2]);
+								}
 								// RCON
 								else if (tokens[1] == "START_RCON")
 								{
 									std::vector<std::string> extra_rcon_options;
-									connectRcon(output, output_size, tokens[2], extra_rcon_options);
+									startRcon(output, output_size, tokens[2], extra_rcon_options);
 								}
 								else if (tokens[1] == "START_REMOTE")
 								{
-									connectRemote(output, output_size, tokens[2]);
+									startRemote(output, output_size, tokens[2]);
 								}
 								else
 								{
@@ -1493,7 +1526,7 @@ void Ext::callExtension(char *output, const int &output_size, const char *functi
 								{
 									std::vector<std::string> extra_rcon_options;
 									extra_rcon_options.push_back(tokens[3]);
-									connectRcon(output, output_size, tokens[2], extra_rcon_options);
+									startRcon(output, output_size, tokens[2], extra_rcon_options);
 								}
 								else
 								{
@@ -1517,7 +1550,7 @@ void Ext::callExtension(char *output, const int &output_size, const char *functi
 									std::vector<std::string> extra_rcon_options;
 									extra_rcon_options.push_back(tokens[3]);
 									extra_rcon_options.push_back(tokens[4]);
-									connectRcon(output, output_size, tokens[2], extra_rcon_options);
+									startRcon(output, output_size, tokens[2], extra_rcon_options);
 								}
 								else
 								{
