@@ -4,13 +4,13 @@
 	ADDED: 9:TIME or 9:TIME:<offset> will return time. Only works before you lock extension i.e 9:LOCK  if you need it afterwards use MISC Protocol
 	ADDED: 9:SHUTDOWN will cause armaserver to shutdown nicely. Only works before you lock extension i.e 9:LOCK
 
-	FIXED: RCon won't keep trying to reconnect if Battleye doesn't respond i.e is turned off.
 	FIXED: SQL_CUSTOM / SQL_CUSTOM_V2 Error Reporting when getting a result
-	FIXED: Whitelisting wasn't removing players from count when they disconnected from server
+	FIXED: MISC getRandomString, will always return correct number of strings. Length of string might be larger than requested.
 
-	IMPROVED: MISC getRandomString, will always return correct number of strings. Length of string might be larger than requested.
-
-	MINOR: Changed Logging to simpler method, no rotating logfiles based on size. There is no need for it
+	FIXED: Rcon won't keep trying to reconnect if Battleye doesn't respond i.e is turned off.
+	FIXED: Rcon Kicking for Bad Playernames when player connects to server.
+	FIXED: Rcon Whitelisting wasn't removing players from count when they disconnected from server
+	IMPROVED: Rcon inital connection to server is faster.
 
 	IMPORTANT: SQL_CUSTOM now marked as deprecated will be removed in a month time.
 					The only difference between SQL_CUSTOM_V2 + SQL_CUSTOM is

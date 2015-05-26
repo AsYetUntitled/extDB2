@@ -34,7 +34,7 @@ bool LOG::init(AbstractExt *extension, const std::string &database_id, const std
 			customlog /= init_str;
 			if (customlog.parent_path().make_preferred().string() == extension_ptr->ext_info.log_path)
 			{
-				logger.reset(new spdlog::logger(init_str, std::make_shared<spdlog::sinks::simple_file_sink_mt>(customlog.make_preferred().string(), extension_ptr->ext_info.logger_flush)));
+				logger = spdlog::rotating_logger_mt(init_str, customlog.make_preferred().string(), 1048576 * 100, 3, extension_ptr->ext_info.logger_flush);
 				status = true;
 			}
 		}

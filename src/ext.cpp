@@ -196,7 +196,7 @@ Ext::Ext(std::string shared_library_path, std::unordered_map<std::string, std::s
 
 		log_relative_path /= Poco::DateTimeFormatter::format(current_dateTime, "%H-%M-%S");
 
-		logger.reset(new spdlog::logger("extDB2 File Logger", std::make_shared<spdlog::sinks::simple_file_sink_mt>(log_relative_path.make_preferred().string(), ext_info.logger_flush)));
+		logger = spdlog::rotating_logger_mt("extDB2 File Logger", log_relative_path.make_preferred().string(), 1048576 * 100, 3, ext_info.logger_flush);
 
 		spdlog::set_level(spdlog::level::info);
 		spdlog::set_pattern("%v");
@@ -335,7 +335,12 @@ Ext::Ext(std::string shared_library_path, std::unordered_map<std::string, std::s
 
 		logger->info();
 		logger->info();
-		spdlog::set_pattern("[%H:%M:%S %z] [Thread %t] %v");
+
+		#ifdef _WIN32
+			spdlog::set_pattern("[%H:%M:%S:%e %z] [Thread %t] %v");
+		#else
+			spdlog::set_pattern("[%H:%M:%S %z] [Thread %t] %v");
+		#endif
 
 		// Unique Random Strings Characters
 		random_chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
