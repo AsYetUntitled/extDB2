@@ -490,15 +490,12 @@ void SQL_CUSTOM::getResult(Custom_Call_UnorderedMap::const_iterator &custom_call
 {
 	try
 	{
+		result = "[1,[";
 		if (custom_calls_itr->second.returnInsertID)
 		{
 			Poco::UInt64 insertID;
 			insertID = Poco::AnyCast<Poco::UInt64>((session.impl())->getInsertId());
-			result = "[1,[" + Poco::NumberFormatter::format(insertID) + ",[";
-		}
-		else
-		{
-			result = "[1,[";
+			result += Poco::NumberFormatter::format(insertID) + ",[";
 		}
 		if (custom_calls_itr->second.returnPlayerKey)
 		{
@@ -557,7 +554,6 @@ void SQL_CUSTOM::getResult(Custom_Call_UnorderedMap::const_iterator &custom_call
 							// GENERATE BEGUID
 							getBEGUID(temp_str, temp_str);
 						}
-
 						// STRING
 						if (custom_calls_itr->second.sql_outputs_options[col].string)
 						{
@@ -604,7 +600,6 @@ void SQL_CUSTOM::getResult(Custom_Call_UnorderedMap::const_iterator &custom_call
 									+ Poco::NumberFormatter::format(dt.second()) + "]";
 							}
 						}
-
 						// BOOL
 						else if (custom_calls_itr->second.sql_outputs_options[col].boolean)
 						{
@@ -612,23 +607,20 @@ void SQL_CUSTOM::getResult(Custom_Call_UnorderedMap::const_iterator &custom_call
 							{
 								temp_str = "false";
 							}
-							else
+							else if (rs[col].isInteger())
 							{
-								if (rs[col].isInteger())
+								if (rs[col].convert<int>() > 0)
 								{
-									if (rs[col].convert<int>() > 0)
-									{
-										temp_str = "true";
-									}
-									else
-									{
-										temp_str = "false";
-									}
+									temp_str = "true";
 								}
 								else
 								{
 									temp_str = "false";
 								}
+							}
+							else
+							{
+								temp_str = "false";
 							}
 						}
 						else if (temp_str.empty())
@@ -670,7 +662,6 @@ void SQL_CUSTOM::getResult(Custom_Call_UnorderedMap::const_iterator &custom_call
 		else
 		{
 			result += "]]";
-
 			if (custom_calls_itr->second.returnInsertID)
 			{
 				result += "]";
@@ -860,9 +851,9 @@ void SQL_CUSTOM::callPreparedStatement(std::string call_name, Custom_Call_Unorde
 			if (result != "[0,\"Error Value Failed Sanitize Check\"]")
 			{
 				#ifdef DEBUG_TESTING
-					extension_ptr->console->error("extDB2: SQL_CUSTOM_V2: Wiping Statements + Session");
+					extension_ptr->console->error("extDB2: SQL_CUSTOM: Wiping Statements + Session");
 				#endif
-				extension_ptr->logger->error("extDB2: SQL_CUSTOM_V2: Wiping Statements + Session");
+				extension_ptr->logger->error("extDB2: SQL_CUSTOM: Wiping Statements + Session");
 				session_data_ptr->statements_map.clear();
 			}
 		}
