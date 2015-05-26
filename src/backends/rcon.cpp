@@ -467,9 +467,11 @@ void Rcon::processMessagePlayers(Poco::StringTokenizer &tokens)
 				player_data.lobby = "false";
 			}
 
-			logger->info("DEBUG players Player Number: {0}.", player_data.number);
-			logger->info("DEBUG players Player Name: {0}.", player_data.player_name);
-			logger->info("DEBUG players Player GUID: {0}.", player_data.guid);
+			#if defined(RCON_APP) || (DEBUG_TESTING)
+				logger->info("DEBUG players Player Number: {0}.", player_data.number);
+				logger->info("DEBUG players Player Name: {0}.", player_data.player_name);
+				logger->info("DEBUG players Player GUID: {0}.", player_data.guid);
+			#endif
 
 			{
 				std::mutex players_name_beguid_mutex;
@@ -500,7 +502,7 @@ void Rcon::processMessagePlayers(Poco::StringTokenizer &tokens)
 		}
 		else
 		{
-			logger->info("Rcon: Error: Wrong RconPlayerInfo count: {0}.",player_tokens.count());
+			logger->info("Rcon: Error: Wrong RconPlayerInfo count: {0}.", player_tokens.count());
 		}
 	}
 
@@ -693,8 +695,10 @@ void Rcon::chatMessage(std::size_t &bytes_received)
 					const std::string::size_type found2 = result.find_last_of("(");
 					std::string player_name = result.substr(found+1, found2-(found+1));
 
-					logger->info("DEBUG Connected Player Number: {0}.", player_number);
-					logger->info("DEBUG Connected Player Name: {0}.", player_name);
+					#if defined(RCON_APP) || (DEBUG_TESTING)
+						logger->info("DEBUG Connected Player Number: {0}.", player_number);
+						logger->info("DEBUG Connected Player Name: {0}.", player_name);
+					#endif
 
 					bool kicked = false;
 					checkBadPlayerString(player_number, player_name, kicked);
@@ -705,7 +709,9 @@ void Rcon::chatMessage(std::size_t &bytes_received)
 				auto pos = result.find(" ", result.find("#"));
 				std::string player_name = result.substr(pos + 1, result.size() - (pos + 14));
 
-				logger->info("DEBUG Disconnected Player Name: {0}.", player_name);
+				#if defined(RCON_APP) || (DEBUG_TESTING)
+					logger->info("DEBUG Disconnected Player Name: {0}.", player_name);
+				#endif
 
 				{
 					std::lock_guard<std::mutex> lock(reserved_slots_mutex);
@@ -736,9 +742,11 @@ void Rcon::chatMessage(std::size_t &bytes_received)
 			std::string player_number = result.substr((pos_1 + 1), (pos_2 - (pos_1 + 1)));
 			std::string player_name = result.substr(pos_2);
 
-			logger->info("DEBUG Verified Player Number: {0}.", player_number);
-			logger->info("DEBUG Verified Player Name: {0}.", player_name);
-			logger->info("DEBUG Verified Player GUID: {0}.", player_guid);
+			#if defined(RCON_APP) || (DEBUG_TESTING)
+				logger->info("DEBUG Verified Player Number: {0}.", player_number);
+				logger->info("DEBUG Verified Player Name: {0}.", player_name);
+				logger->info("DEBUG Verified Player GUID: {0}.", player_guid);
+			#endif
 
 			{
 				std::mutex players_name_beguid_mutex;
