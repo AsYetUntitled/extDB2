@@ -209,7 +209,7 @@ bool SQL_CUSTOM::init(AbstractExt *extension, const std::string &database_id, co
 				custom_calls[call_name].number_of_custom_inputs = template_ini->getInt(call_name + ".Number of Custom Inputs", default_number_of_custom_inputs);
 				custom_calls[call_name].preparedStatement_cache = template_ini->getBool(call_name + ".Prepared Statement Cache", default_preparedStatement_cache);
 				custom_calls[call_name].returnInsertID = template_ini->getBool(call_name + ".Return InsertID", default_returnInsertID);
-				custom_calls[call_name].returnPlayerKey = template_ini->getBool(call_name + ".Return PlayerKey", default_returnInsertID);
+				custom_calls[call_name].returnPlayerKey = template_ini->getBool(call_name + ".Return PlayerKey", default_returnPlayerKey);
 
 				if (template_ini->has(call_name + ".Strip Chars Action"))
 				{
@@ -1088,12 +1088,12 @@ bool SQL_CUSTOM::callProtocol(std::string input_str, std::string &result, const 
 						getBEGUID(temp_str, temp_str);
 						if (sql_input_option.return_player_key)
 						{
-							extension_ptr->getPlayerKey_SteamID(temp_str, player_key);
+							extension_ptr->getPlayerKey_BEGuid(temp_str, player_key);
 						}
 					}
 					else if (sql_input_option.return_player_key)
 					{
-						extension_ptr->getPlayerKey_BEGuid(temp_str, player_key);
+						extension_ptr->getPlayerKey_SteamID(temp_str, player_key);
 					}
 
 
