@@ -662,11 +662,11 @@ void Ext::startRcon(char *output, const int &output_size, const std::string &con
 
 		for (auto &extra_rcon_option : extra_rcon_options)
 		{
-			if (boost::algorithm::iequals(extra_rcon_option, "RCON_GENERATE_UNIQUE_PLAYER_KEY") == 1)
+			if (boost::algorithm::iequals(extra_rcon_option, "PLAYERKEY") == 1)
 			{
 				rcon_settings.generate_unique_id = true;
 			}
-			else if (boost::algorithm::iequals(extra_rcon_option, "GET_FULL_PLAYER_INFO") == 1)
+			else if (boost::algorithm::iequals(extra_rcon_option, "FULL_PLAYER_INFO") == 1)
 			{
 				rcon_settings.return_full_player_info = true;
 			}

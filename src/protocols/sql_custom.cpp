@@ -414,7 +414,7 @@ bool SQL_CUSTOM::init(AbstractExt *extension, const std::string &database_id, co
 								{
 									inputs_options.vac_steamID = true;
 								}
-								else if (boost::algorithm::iequals(sub_token_input, std::string("Player_Key")) == 1)
+								else if (boost::algorithm::iequals(sub_token_input, std::string("PlayerKey")) == 1)
 								{
 									inputs_options.return_player_key = true;
 								}
