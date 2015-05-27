@@ -235,7 +235,7 @@ Ext::Ext(std::string shared_library_path, std::unordered_map<std::string, std::s
 			console->info("Type 'quit' to exit");
 		#else
 			logger->info("Message: All development for extDB2 is done on a Linux Dedicated Server");
-			logger->info("Message: If you would like to Donate to extDB2 Develeopment");
+			logger->info("Message: If you would like to Donate to extDB2 Development");
 			logger->info("Message: https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=2SUEFTGABTAM2");
 			logger->info("Message: Also leave a message if there is any particular feature you would like to see added.");
 			logger->info("Message: Thanks for all the people that have donated.");
@@ -323,7 +323,6 @@ Ext::Ext(std::string shared_library_path, std::unordered_map<std::string, std::s
 			}
 
 			// Initialize so have atomic setup correctly
-			timer.reset(new boost::asio::deadline_timer(io_service));
 			rcon.reset(new Rcon(io_service, logger));
 			rcon->extInit(this);
 			remote_server.init(this);
@@ -381,13 +380,18 @@ void Ext::stop()
 	io_work_ptr.reset();
 	threads.join_all();
 	io_service.stop();
+
+	for (auto &database : ext_connectors_info.databases)
+	{
+		database.second.sql_pool->shutdown();
+	}
 	if (ext_connectors_info.mysql)
 	{
-		//Poco::Data::MySQL::Connector::unregisterConnector();
+		Poco::Data::MySQL::Connector::unregisterConnector();
 	}
 	if (ext_connectors_info.sqlite)
 	{
-		//Poco::Data::SQLite::Connector::unregisterConnector();
+		Poco::Data::SQLite::Connector::unregisterConnector();
 	}
 }
 
@@ -466,6 +470,7 @@ void Ext::createPlayerKey_mutexlock(std::string &player_beguid, int len_of_key)
 			}
 		}
 	}
+	logger->info("Player Unique ID: {0}", player_unique_key);
 	{
 		std::lock_guard<std::mutex> lock(player_unique_keys_mutex);
 		player_unique_keys[player_beguid].keys.push_back(std::move(player_unique_key));
@@ -487,6 +492,7 @@ void Ext::createPlayerKey_mutexlock(std::string &player_beguid, int len_of_key)
 
 void Ext::delPlayerKey_delayed(std::string &player_beguid)
 {
+	logger->info("Removed Player Timer for BEGUID: {0}", player_beguid);
 	timer->expires_from_now(boost::posix_time::seconds(30)); // TODO Make Configureable ?
 	timer->async_wait(boost::bind(&Ext::delPlayerKey_mutexlock, this, player_beguid));
 }
@@ -494,6 +500,7 @@ void Ext::delPlayerKey_delayed(std::string &player_beguid)
 
 void Ext::delPlayerKey_mutexlock(std::string player_beguid)
 {
+	logger->info("Removed Player Unique ID for BEGUID: {0}", player_beguid);
 	std::lock_guard<std::mutex> lock(player_unique_keys_mutex);
 	if (player_unique_keys.count(player_beguid))
 	{
@@ -503,6 +510,7 @@ void Ext::delPlayerKey_mutexlock(std::string player_beguid)
 			player_unique_keys.erase(player_beguid);
 		}
 	}
+	logger->info("Removed Player Unique ID for BEGUID 2: {0}", player_beguid);
 }
 
 
@@ -728,6 +736,7 @@ void Ext::startRcon(char *output, const int &output_size, const std::string &con
 		}
 
 		// Start Rcon
+		timer.reset(new boost::asio::deadline_timer(io_service));
 		rcon->start(rcon_settings, bad_playername_settings, whitelist_settings, pConf);
 		ext_connectors_info.rcon = true;
 		std::strcpy(output, "[1]");

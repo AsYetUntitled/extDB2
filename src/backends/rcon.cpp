@@ -475,7 +475,7 @@ void Rcon::processMessagePlayers(Poco::StringTokenizer &tokens)
 
 			{
 				std::mutex players_name_beguid_mutex;
-				players_name_beguid[player_data.number] = player_data.guid;
+				players_name_beguid[player_data.player_name] = player_data.guid;
 			}
 
 			bool kicked = false;
