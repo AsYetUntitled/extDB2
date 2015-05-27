@@ -30,7 +30,7 @@ along with this program. If not, see <http://www.gnu.org/licenses/>.
 #include <Poco/Data/SessionPool.h>
 
 #include "abstract_ext.h"
-#include "belogscanner.h"
+#include "backends/belogscanner.h"
 #include "backends/http.h"
 #include "backends/rcon.h"
 #include "backends/remoteserver.h"
@@ -62,6 +62,7 @@ class Ext: public AbstractExt
 
 		void getPlayerKey_SteamID(std::string &player_steam_id, std::string &player_key);
 		void getPlayerKey_BEGuid(std::string &player_beguid, std::string &player_key);
+		std::string getPlayerRegex_BEGuid(std::string &player_beguid);
 
 	protected:
 		const unsigned int saveResult_mutexlock(const resultData &result_data);
@@ -76,6 +77,14 @@ class Ext: public AbstractExt
 		void steamQuery(const unsigned int &unique_id, bool queryFriends, bool queryVacBans, std::vector<std::string> &steamIDs, bool wakeup);
 
 	private:
+		struct PlayerKeys
+		{
+			std::list<std::string> keys;
+			std::string regex_rule;
+		};
+		std::unordered_map<std::string, PlayerKeys> player_unique_keys;
+		std::mutex player_unique_keys_mutex;
+
 		// Rcon
 		std::unique_ptr<Rcon> rcon;
 

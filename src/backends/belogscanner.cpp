@@ -42,15 +42,14 @@ BELogScanner::~BELogScanner(void)
 }
 
 
-void BELogScanner::start(std::string &bepath, boost::asio::io_service &io_service, std::shared_ptr<spdlog::logger> spdlog)
+void BELogScanner::start(AbstractExt *extension, boost::asio::io_service &io_service)
 {
+	extension_ptr = extension;
 	io_service_ptr = &io_service;
-	logger = spdlog;
-	be_path = bepath;
 
 	current_dateTime = Poco::DateTime();
 
-	boost::filesystem::path belog_wipe_path(be_path);
+	boost::filesystem::path belog_wipe_path(extension_ptr->ext_info.be_path);
 	belog_wipe_path /= "belogscanner.shutdown";
 
 	bool clean_shutdown = false;
@@ -59,14 +58,14 @@ void BELogScanner::start(std::string &bepath, boost::asio::io_service &io_servic
 		clean_shutdown = true;
 		std::time_t last_shutdown_timestamp = boost::filesystem::last_write_time(belog_wipe_path);
 
-		boost::filesystem::directory_iterator iter(be_path);
+		boost::filesystem::directory_iterator iter(extension_ptr->ext_info.be_path);
 		boost::filesystem::directory_iterator iter_end;
 
 		for (; iter != iter_end; ++iter)
 		{
 			if (boost::filesystem::is_regular_file(iter->path()))
 			{
-				if (iter->path().extension().string() == "log")  // TODO Make case insensitive
+				if ((boost::algorithm::iequals(iter->path().extension().string(), "log") == 1))
 				{
 					if (boost::filesystem::last_write_time(iter->path()) > last_shutdown_timestamp)
 					{
@@ -80,18 +79,18 @@ void BELogScanner::start(std::string &bepath, boost::asio::io_service &io_servic
 
 	if (!clean_shutdown)
 	{
-		logger->warn("BELogscanner: Bad Shutdown Detected");
+		extension_ptr->logger->warn("BELogscanner: Bad Shutdown Detected");
 
-		boost::filesystem::directory_iterator iter(be_path);
+		boost::filesystem::directory_iterator iter(extension_ptr->ext_info.be_path);
 		boost::filesystem::directory_iterator iter_end;
 
 		for (; iter != iter_end; ++iter)
 		{
 			if (boost::filesystem::is_regular_file(iter->path()))
 			{
-				if (iter->path().extension().string() == "log")  // TODO Make case insensitive
+				if ((boost::algorithm::iequals(iter->path().extension().string(), "log") == 1))
 				{
-					boost::filesystem::path dest_file(be_path);
+					boost::filesystem::path dest_file(extension_ptr->ext_info.be_path);
 					dest_file /= "BELogscanner";
 					dest_file /= "logs";
 					dest_file /= Poco::DateTimeFormatter::format(current_dateTime, "%Y");
@@ -107,7 +106,7 @@ void BELogScanner::start(std::string &bepath, boost::asio::io_service &io_servic
 	boost::filesystem::remove(belog_wipe_path);
 
 
-	be_custom_log_path = boost::filesystem::path(be_path);
+	be_custom_log_path = boost::filesystem::path(extension_ptr->ext_info.be_path);
 	be_custom_log_path /= "BELogscanner";
 	be_custom_log_path /= "logs";
 	be_custom_log_path /= Poco::DateTimeFormatter::format(current_dateTime, "%Y");
@@ -115,7 +114,7 @@ void BELogScanner::start(std::string &bepath, boost::asio::io_service &io_servic
 	be_custom_log_path /= Poco::DateTimeFormatter::format(current_dateTime, "%d");
 	boost::filesystem::create_directories(be_custom_log_path);
 
-	filters_path = boost::filesystem::path(be_path);
+	filters_path = boost::filesystem::path(extension_ptr->ext_info.be_path);
 	filters_path /= "BELogscanner";
 	filters_path /= "filters";
 	boost::filesystem::create_directories(filters_path);
@@ -128,7 +127,7 @@ void BELogScanner::start(std::string &bepath, boost::asio::io_service &io_servic
 	filters_directory_watcher->itemMovedFrom += Poco::delegate(this, &BELogScanner::reloadFilters);
 	filters_directory_watcher->itemMovedTo += Poco::delegate(this, &BELogScanner::reloadFilters);
 
-	be_directory_watcher.reset(new Poco::DirectoryWatcher(be_path, Poco::DirectoryWatcher::DW_FILTER_ENABLE_ALL, 5));
+	be_directory_watcher.reset(new Poco::DirectoryWatcher(extension_ptr->ext_info.be_path, Poco::DirectoryWatcher::DW_FILTER_ENABLE_ALL, 5));
 	be_directory_watcher->itemAdded += Poco::delegate(this, &BELogScanner::onFileAdded);
 	be_directory_watcher->itemRemoved += Poco::delegate(this, &BELogScanner::onFileRemoved);
 	be_directory_watcher->itemModified += Poco::delegate(this, &BELogScanner::onFileModified);
@@ -171,16 +170,16 @@ void BELogScanner::stop()
 	}
 
 
-	boost::filesystem::directory_iterator iter(be_path);
+	boost::filesystem::directory_iterator iter(extension_ptr->ext_info.be_path);
 	boost::filesystem::directory_iterator iter_end;
 
 	for (; iter != iter_end; ++iter)
 	{
 		if (boost::filesystem::is_regular_file(iter->path()))
 		{
-			if (iter->path().extension().string() == "log")  // TODO Make case insensitive
+			if ((boost::algorithm::iequals(iter->path().extension().string(), "log") == 1))
 			{
-				boost::filesystem::path dest_file(be_path);
+				boost::filesystem::path dest_file(extension_ptr->ext_info.be_path);
 				dest_file /= "BELogscanner";
 				dest_file /= "logs";
 				dest_file /= Poco::DateTimeFormatter::format(current_dateTime, "%Y");
@@ -192,7 +191,7 @@ void BELogScanner::stop()
 		}
 	}
 
-	boost::filesystem::path belog_wipe_path(be_path);
+	boost::filesystem::path belog_wipe_path(extension_ptr->ext_info.be_path);
 	belog_wipe_path /= "belogscanner.shutdown";
 	FILE *shutdown_file;
 	shutdown_file = std::fopen(belog_wipe_path.make_preferred().string().c_str(), "w");
@@ -349,7 +348,7 @@ void BELogScanner::loadSpamFile(std::string &path_str, std::vector<BELogScanner:
 		}
 		else
 		{
-			logger->warn("ERROR: Incomplete Rule: {0}", regex_str);
+			extension_ptr->logger->warn("ERROR: Incomplete Rule: {0}", regex_str);
 		}
 	}
 }
@@ -360,6 +359,7 @@ void BELogScanner::launchProcess()
 	std::string command;
 	std::vector<std::string> args;
 	std::string initialDirectory;
+
 
 	Poco::Process::launch(command, args, initialDirectory);
 }
@@ -378,12 +378,12 @@ void BELogScanner::checkLogData(std::string &filename)
 		if (whitelist.dynamic_regex)
 		{
 			std::string temp_str = whitelist.regex_str;
-			//boost::algorithm::ireplace_all(temp_str, "[:player_key:]", player_key[log_data.player_guid]);
+			boost::algorithm::ireplace_all(temp_str, "[:player_key:]", extension_ptr->getPlayerRegex_BEGuid(log_data.player_guid));
 			//boost::algorithm::ireplace_all(temp_str, "[:server_key:]", server_key);
 			std::regex regex(temp_str, std::regex_constants::ECMAScript | std::regex_constants::icase);
 			if (std::regex_search(log_data.logged_line, regex))
 			{
-				logger->info("WHITELIST: FILE: {0}, PLAYER: {2}, GUID: {3}, IP: {4}, PORT: {5}, LINE: {6}", filename, log_data.player_name, log_data.player_guid, log_data.player_ip, log_data.player_port, log_data.logged_line);
+				extension_ptr->logger->info("WHITELIST: FILE: {0}, PLAYER: {2}, GUID: {3}, IP: {4}, PORT: {5}, LINE: {6}", filename, log_data.player_name, log_data.player_guid, log_data.player_ip, log_data.player_port, log_data.logged_line);
 				found = true;
 				break;
 			}
@@ -392,7 +392,7 @@ void BELogScanner::checkLogData(std::string &filename)
 		{
 			if (std::regex_search(log_data.logged_line, whitelist.regex))
 			{
-				logger->info("WHITELIST: FILE: {0}, PLAYER: {2}, GUID: {3}, IP: {4}, PORT: {5}, LINE: {6}", filename, log_data.player_name, log_data.player_guid, log_data.player_ip, log_data.player_port, log_data.logged_line);
+				extension_ptr->logger->info("WHITELIST: FILE: {0}, PLAYER: {2}, GUID: {3}, IP: {4}, PORT: {5}, LINE: {6}", filename, log_data.player_name, log_data.player_guid, log_data.player_ip, log_data.player_port, log_data.logged_line);
 				found = true;
 				break;
 			}
@@ -400,8 +400,8 @@ void BELogScanner::checkLogData(std::string &filename)
 	}
 	if (found)
 	{
-		logger->info("WHITELISTED");
-		logger->info("");
+		extension_ptr->logger->info("WHITELISTED");
+		extension_ptr->logger->info("");
 		return;
 	}
 
@@ -411,12 +411,12 @@ void BELogScanner::checkLogData(std::string &filename)
 		if (kicklist.dynamic_regex)
 		{
 			std::string temp_str = kicklist.regex_str;
-			//boost::algorithm::ireplace_all(temp_str, "[:player_key:]", player_key[log_data.player_guid]);
+			boost::algorithm::ireplace_all(temp_str, "[:player_key:]", extension_ptr->getPlayerRegex_BEGuid(log_data.player_guid));
 			//boost::algorithm::ireplace_all(temp_str, "[:server_key:]", server_key);
 			std::regex regex(temp_str, std::regex_constants::ECMAScript | std::regex_constants::icase);
 			if (std::regex_search(log_data.logged_line, regex))
 			{
-				logger->info("KICKLIST: FILE: {0}, PLAYER: {2}, GUID: {3}, IP: {4}, PORT: {5}, LINE: {6}", filename, log_data.player_name, log_data.player_guid, log_data.player_ip, log_data.player_port, log_data.logged_line);
+				extension_ptr->logger->info("KICKLIST: FILE: {0}, PLAYER: {2}, GUID: {3}, IP: {4}, PORT: {5}, LINE: {6}", filename, log_data.player_name, log_data.player_guid, log_data.player_ip, log_data.player_port, log_data.logged_line);
 				found = true;
 
 				if (!(belogs[filename].kick_logger))
@@ -433,7 +433,7 @@ void BELogScanner::checkLogData(std::string &filename)
 		{
 			if (std::regex_search(log_data.logged_line, kicklist.regex))
 			{
-				logger->info("KICKLIST: FILE: {0}, PLAYER: {2}, GUID: {3}, IP: {4}, PORT: {5}, LINE: {6}", filename, log_data.player_name, log_data.player_guid, log_data.player_ip, log_data.player_port, log_data.logged_line);
+				extension_ptr->logger->info("KICKLIST: FILE: {0}, PLAYER: {2}, GUID: {3}, IP: {4}, PORT: {5}, LINE: {6}", filename, log_data.player_name, log_data.player_guid, log_data.player_ip, log_data.player_port, log_data.logged_line);
 				found = true;
 
 				if (!(belogs[filename].kick_logger))
@@ -449,8 +449,8 @@ void BELogScanner::checkLogData(std::string &filename)
 	}
 	if (found)
 	{
-		logger->info("KICK");
-		logger->info("");
+		extension_ptr->logger->info("KICK");
+		extension_ptr->logger->info("");
 		return;
 	}
 
@@ -460,12 +460,12 @@ void BELogScanner::checkLogData(std::string &filename)
 		if (banlist.dynamic_regex)
 		{
 			std::string temp_str = banlist.regex_str;
-			//boost::algorithm::ireplace_all(temp_str, "[:player_key:]", player_key[log_data.player_guid]);
+			boost::algorithm::ireplace_all(temp_str, "[:player_key:]", extension_ptr->getPlayerRegex_BEGuid(log_data.player_guid));
 			//boost::algorithm::ireplace_all(temp_str, "[:server_key:]", server_key);
 			std::regex regex(temp_str, std::regex_constants::ECMAScript | std::regex_constants::icase);
 			if (std::regex_search(log_data.logged_line, regex))
 			{
-				logger->info("BANLIST: FILE: {0}, PLAYER: {2}, GUID: {3}, IP: {4}, PORT: {5}, LINE: {6}", filename, log_data.player_name, log_data.player_guid, log_data.player_ip, log_data.player_port, log_data.logged_line);
+				extension_ptr->logger->info("BANLIST: FILE: {0}, PLAYER: {2}, GUID: {3}, IP: {4}, PORT: {5}, LINE: {6}", filename, log_data.player_name, log_data.player_guid, log_data.player_ip, log_data.player_port, log_data.logged_line);
 				found = true;
 
 				if (!(belogs[filename].ban_logger))
@@ -482,7 +482,7 @@ void BELogScanner::checkLogData(std::string &filename)
 		{
 			if (std::regex_search(log_data.logged_line, banlist.regex))
 			{
-				logger->info("BANLIST: FILE: {0}, PLAYER: {2}, GUID: {3}, IP: {4}, PORT: {5}, LINE: {6}", filename, log_data.player_name, log_data.player_guid, log_data.player_ip, log_data.player_port, log_data.logged_line);
+				extension_ptr->logger->info("BANLIST: FILE: {0}, PLAYER: {2}, GUID: {3}, IP: {4}, PORT: {5}, LINE: {6}", filename, log_data.player_name, log_data.player_guid, log_data.player_ip, log_data.player_port, log_data.logged_line);
 				found = true;
 
 				if (!(belogs[filename].ban_logger))
@@ -498,8 +498,8 @@ void BELogScanner::checkLogData(std::string &filename)
 	}
 	if (found)
 	{
-		logger->info("BAN");
-		logger->info("");
+		extension_ptr->logger->info("BAN");
+		extension_ptr->logger->info("");
 		return;
 	}
 
@@ -511,8 +511,8 @@ void BELogScanner::checkLogData(std::string &filename)
 	}
 	if (found)
 	{
-		logger->info("SPAM ACTION");
-		logger->info("");
+		extension_ptr->logger->info("SPAM ACTION");
+		extension_ptr->logger->info("");
 		return;
 	}
 

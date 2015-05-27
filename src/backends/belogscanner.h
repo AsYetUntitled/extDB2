@@ -28,7 +28,7 @@ along with this program. If not, see <http://www.gnu.org/licenses/>.
 #include <Poco/ExpireCache.h>
 #include <Poco/MD5Engine.h>
 
-#include "spdlog/spdlog.h"
+#include "../abstract_ext.h"
 
 
 class BELogScanner
@@ -37,7 +37,7 @@ class BELogScanner
 		BELogScanner();
 		~BELogScanner();
 
-		void start(std::string &bepath, boost::asio::io_service &io_service, std::shared_ptr<spdlog::logger> spdlog);
+		void start(AbstractExt *extension, boost::asio::io_service &io_service);
 		void stop();
 
 		void updateAdd(std::string &steam_id, std::string &value);
@@ -46,7 +46,7 @@ class BELogScanner
 	protected:
 
 	private:
-		std::string be_path;
+		AbstractExt *extension_ptr;
 
 		Poco::DateTime current_dateTime;
 
@@ -54,7 +54,6 @@ class BELogScanner
 		boost::filesystem::path filters_path;
 
 		boost::asio::io_service *io_service_ptr;
-		std::shared_ptr<spdlog::logger> logger;
 
 		std::unique_ptr<Poco::DirectoryWatcher> be_directory_watcher;
 		std::unique_ptr<Poco::DirectoryWatcher> filters_directory_watcher;

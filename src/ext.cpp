@@ -18,7 +18,6 @@ along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 #include "ext.h"
 
-#include <condition_variable>
 #include <cstdlib>
 #include <cstring>
 #include <iostream>
@@ -469,7 +468,19 @@ void Ext::createPlayerKey_mutexlock(std::string &player_beguid, int len_of_key)
 	}
 	{
 		std::lock_guard<std::mutex> lock(player_unique_keys_mutex);
-		player_unique_keys[player_beguid].push_back(std::move(player_unique_key));
+		player_unique_keys[player_beguid].keys.push_back(std::move(player_unique_key));
+
+		// Create Regex Rule
+		player_unique_keys[player_beguid].regex_rule.clear();
+		for (auto &key : player_unique_keys[player_beguid].keys)
+		{
+			player_unique_keys[player_beguid].regex_rule += key + "|";
+		}
+		if (!(player_unique_keys[player_beguid].regex_rule.empty()))
+		{
+			player_unique_keys[player_beguid].regex_rule.pop_back();
+		}
+		player_unique_keys[player_beguid].regex_rule = "(" + player_unique_keys[player_beguid].regex_rule + ")";
 	}
 }
 
@@ -486,8 +497,8 @@ void Ext::delPlayerKey_mutexlock(std::string player_beguid)
 	std::lock_guard<std::mutex> lock(player_unique_keys_mutex);
 	if (player_unique_keys.count(player_beguid))
 	{
-		player_unique_keys[player_beguid].pop_front();
-		if (player_unique_keys[player_beguid].empty())
+		player_unique_keys[player_beguid].keys.pop_front();
+		if (player_unique_keys[player_beguid].keys.empty())
 		{
 			player_unique_keys.erase(player_beguid);
 		}
@@ -500,7 +511,21 @@ void Ext::getPlayerKey_BEGuid(std::string &player_beguid, std::string &player_ke
 	std::lock_guard<std::mutex> lock(player_unique_keys_mutex);
 	if (player_unique_keys.count(player_beguid))
 	{
-		player_key = player_unique_keys[player_beguid].back();
+		player_key = player_unique_keys[player_beguid].keys.back();
+	}
+}
+
+
+std::string Ext::getPlayerRegex_BEGuid(std::string &player_beguid)
+{
+	std::lock_guard<std::mutex> lock(player_unique_keys_mutex);
+	if (player_unique_keys.count(player_beguid))
+	{
+		return player_unique_keys[player_beguid].regex_rule;
+	}
+	else
+	{
+		return "";
 	}
 }
 
@@ -533,7 +558,7 @@ void Ext::getPlayerKey_SteamID(std::string &player_steam_id, std::string &player
 	std::lock_guard<std::mutex> lock(player_unique_keys_mutex);
 	if (player_unique_keys.count(player_beguid))
 	{
-		player_key = player_unique_keys[player_beguid].back();
+		player_key = player_unique_keys[player_beguid].keys.back();
 	}
 }
 
@@ -568,7 +593,7 @@ void Ext::startBELogscanner(char *output, const int &output_size, const std::str
 	{
 		if (!ext_connectors_info.belog_scanner)
 		{
-			belog_scanner.start(ext_info.be_path, io_service, logger);
+			belog_scanner.start(this, io_service);
 			ext_connectors_info.belog_scanner = true;
 			std::strcpy(output, ("[1]"));
 		}

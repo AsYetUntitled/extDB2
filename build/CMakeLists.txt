@@ -34,21 +34,21 @@ SET(SOURCES
 	../src/memory_allocator.cpp
 	../src/sanitize.cpp
 	../src/ext.cpp
-	../src/belogscanner.cpp
+	../src/backends/belogscanner.cpp
 	../src/backends/http.cpp
 	../src/backends/rcon.cpp
 	../src/backends/remoteserver.cpp
 	../src/backends/steam.cpp
 	../src/protocols/http_raw.cpp
-	../src/protocols/sql_custom.cpp
-	../src/protocols/sql_custom_v2.cpp
-	../src/protocols/sql_raw.cpp
-	../src/protocols/sql_raw_v2.cpp
 	../src/protocols/log.cpp
 	../src/protocols/misc.cpp
 	../src/protocols/rcon.cpp
 	../src/protocols/steam.cpp
 	../src/protocols/steam_v2.cpp
+	../src/protocols/sql_custom.cpp
+	../src/protocols/sql_custom_v2.cpp
+	../src/protocols/sql_raw.cpp
+	../src/protocols/sql_raw_v2.cpp
 )
 
 SET(COMPILE_EXTENSION TRUE CACHE BOOL "Compile extDB2")

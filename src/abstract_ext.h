@@ -91,10 +91,6 @@ class AbstractExt
 
 		Poco::AutoPtr<Poco::Util::IniFileConfiguration> pConf;
 
-							// GUID     // Player Unique Key
-		std::unordered_map<std::string, std::list<std::string> > player_unique_keys;
-		std::mutex player_unique_keys_mutex;
-
 		#ifdef DEBUG_TESTING
 			std::shared_ptr<spdlog::logger> console;
 		#endif
@@ -122,4 +118,5 @@ class AbstractExt
 
 		virtual void getPlayerKey_SteamID(std::string &player_steam_id, std::string &player_key)=0;
 		virtual void getPlayerKey_BEGuid(std::string &player_beguid, std::string &player_key)=0;
+		virtual std::string getPlayerRegex_BEGuid(std::string &player_beguid)=0;
 };
