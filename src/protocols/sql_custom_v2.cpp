@@ -150,7 +150,7 @@ bool SQL_CUSTOM_V2::init(AbstractExt *extension, const std::string &database_id,
 
 		if ((template_ini->getInt("Default.Version", 1)) <= EXTDB_SQL_CUSTOM_V2_LATEST_VERSION)
 		{
-			extension_ptr->logger->info("extDB2: SQL_CUSTOM_V2: Version {0} Detected, Latest Version {1} Available", (template_ini->getInt("Default.Version", 1), EXTDB_SQL_CUSTOM_V2_LATEST_VERSION));
+			extension_ptr->logger->info("extDB2: SQL_CUSTOM_V2: Version {0} Detected, Latest Version {1} Available", template_ini->getInt("Default.Version", 1), EXTDB_SQL_CUSTOM_V2_LATEST_VERSION);
 		}
 		if ((template_ini->getInt("Default.Version", 1)) >= EXTDB_SQL_CUSTOM_V2_REQUIRED_VERSION)
 		{

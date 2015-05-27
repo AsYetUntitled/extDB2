@@ -150,7 +150,7 @@ bool SQL_CUSTOM::init(AbstractExt *extension, const std::string &database_id, co
 
 		if ((template_ini->getInt("Default.Version", 1)) <= EXTDB_SQL_CUSTOM_LATEST_VERSION)
 		{
-			extension_ptr->logger->info("extDB2: SQL_CUSTOM: Version {0} Detected, Latest Version {1} Available", (template_ini->getInt("Default.Version", 1), EXTDB_SQL_CUSTOM_LATEST_VERSION));
+			extension_ptr->logger->info("extDB2: SQL_CUSTOM: Version {0} Detected, Latest Version {1} Available", template_ini->getInt("Default.Version", 1), EXTDB_SQL_CUSTOM_LATEST_VERSION);
 			extension_ptr->logger->info("extDB2: SQL_CUSTOM: Is now deprecated will be removed in a month, update to SQL_CUSTOM_V2");
 			extension_ptr->logger->info("extDB2: SQL_CUSTOM: Is now deprecated will be removed in a month, update to SQL_CUSTOM_V2");
 			extension_ptr->logger->info("extDB2: SQL_CUSTOM: Is now deprecated will be removed in a month, update to SQL_CUSTOM_V2");
