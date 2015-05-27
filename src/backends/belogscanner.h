@@ -116,15 +116,6 @@ class BELogScanner
 		std::unordered_map<std::string, BELog> belogs;
 		std::mutex belogs_mutex;
 
-
-		struct PlayerKey
-		{
-			std::list<std::string> keys;
-			std::string str;
-		};
-		std::unordered_map<std::string, PlayerKey> player_key;
-		std::mutex player_key_mutex;
-
 		struct AddPlayerKey
 		{
 			std::string steam_id;
@@ -139,9 +130,6 @@ class BELogScanner
 		};
 
 		Poco::MD5Engine md5;
-		std::vector<AddPlayerKey> add_player_key;
-		std::vector<RemovePlayerKey> remove_player_key;
-		std::mutex update_player_key_mutex;
 
 
 		void loadFilters();

@@ -6,6 +6,7 @@
 
 Ext *extension;
 
+
 #ifdef __GNUC__
 	#include <dlfcn.h>
 	// Code for GNU C compiler

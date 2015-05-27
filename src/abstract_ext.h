@@ -97,6 +97,8 @@ class AbstractExt
 		std::shared_ptr<spdlog::logger> logger;
 		std::shared_ptr<spdlog::logger> vacBans_logger;
 
+		std::mutex player_unique_keys_mutex;
+
 		virtual void saveResult_mutexlock(const unsigned int &unique_id, const resultData &result_data)=0;
 
 		virtual Poco::Data::Session getDBSession_mutexlock(DBConnectionInfo &database)=0;

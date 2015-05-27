@@ -83,7 +83,7 @@ class Ext: public AbstractExt
 			std::string regex_rule;
 		};
 		std::unordered_map<std::string, PlayerKeys> player_unique_keys;
-		std::mutex player_unique_keys_mutex;
+		// std::mutex player_unique_keys_mutex;  defined in abstract_ext.h  used by BELogscanner
 
 		// Rcon
 		std::unique_ptr<Rcon> rcon;

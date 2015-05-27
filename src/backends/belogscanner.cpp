@@ -136,28 +136,6 @@ void BELogScanner::start(AbstractExt *extension, boost::asio::io_service &io_ser
 }
 
 
-void BELogScanner::updateAdd(std::string &steam_id, std::string &value)
-{
-	AddPlayerKey key;
-	key.steam_id = steam_id;
-	key.value = value;
-
-	std::lock_guard<std::mutex> lock(update_player_key_mutex);
-	add_player_key.push_back(key);
-}
-
-
-void BELogScanner::updateRemove(std::string &steam_id, std::string &value)
-{
-	RemovePlayerKey key;
-	key.steam_id = steam_id;
-	key.value = value;
-
-	std::lock_guard<std::mutex> lock(update_player_key_mutex);
-	remove_player_key.push_back(key);
-}
-
-
 void BELogScanner::stop()
 {
 	if (be_directory_watcher)
@@ -371,161 +349,163 @@ void BELogScanner::checkLogData(std::string &filename)
 	auto const_itr = filters_rules.find(filename);
 	BELogScanner::LogData log_data = belogs[filename].log_data;
 
-	std::lock_guard<std::mutex> lock(player_key_mutex);
-	// WHITELIST
-	for (auto &whitelist : const_itr->second.whitelist_regex)
 	{
-		if (whitelist.dynamic_regex)
+		std::lock_guard<std::mutex> lock(extension_ptr->player_unique_keys_mutex);
+		// WHITELIST
+		for (auto &whitelist : const_itr->second.whitelist_regex)
 		{
-			std::string temp_str = whitelist.regex_str;
-			boost::algorithm::ireplace_all(temp_str, "[:player_key:]", extension_ptr->getPlayerRegex_BEGuid(log_data.player_guid));
-			//boost::algorithm::ireplace_all(temp_str, "[:server_key:]", server_key);
-			std::regex regex(temp_str, std::regex_constants::ECMAScript | std::regex_constants::icase);
-			if (std::regex_search(log_data.logged_line, regex))
+			if (whitelist.dynamic_regex)
 			{
-				extension_ptr->logger->info("WHITELIST: FILE: {0}, PLAYER: {2}, GUID: {3}, IP: {4}, PORT: {5}, LINE: {6}", filename, log_data.player_name, log_data.player_guid, log_data.player_ip, log_data.player_port, log_data.logged_line);
-				found = true;
-				break;
-			}
-		}
-		else
-		{
-			if (std::regex_search(log_data.logged_line, whitelist.regex))
-			{
-				extension_ptr->logger->info("WHITELIST: FILE: {0}, PLAYER: {2}, GUID: {3}, IP: {4}, PORT: {5}, LINE: {6}", filename, log_data.player_name, log_data.player_guid, log_data.player_ip, log_data.player_port, log_data.logged_line);
-				found = true;
-				break;
-			}
-		}
-	}
-	if (found)
-	{
-		extension_ptr->logger->info("WHITELISTED");
-		extension_ptr->logger->info("");
-		return;
-	}
-
-	//KICK
-	for (auto &kicklist : const_itr->second.kicklist_regex)
-	{
-		if (kicklist.dynamic_regex)
-		{
-			std::string temp_str = kicklist.regex_str;
-			boost::algorithm::ireplace_all(temp_str, "[:player_key:]", extension_ptr->getPlayerRegex_BEGuid(log_data.player_guid));
-			//boost::algorithm::ireplace_all(temp_str, "[:server_key:]", server_key);
-			std::regex regex(temp_str, std::regex_constants::ECMAScript | std::regex_constants::icase);
-			if (std::regex_search(log_data.logged_line, regex))
-			{
-				extension_ptr->logger->info("KICKLIST: FILE: {0}, PLAYER: {2}, GUID: {3}, IP: {4}, PORT: {5}, LINE: {6}", filename, log_data.player_name, log_data.player_guid, log_data.player_ip, log_data.player_port, log_data.logged_line);
-				found = true;
-
-				if (!(belogs[filename].kick_logger))
+				std::string temp_str = whitelist.regex_str;
+				boost::algorithm::ireplace_all(temp_str, "[:player_key:]", extension_ptr->getPlayerRegex_BEGuid(log_data.player_guid));
+				//boost::algorithm::ireplace_all(temp_str, "[:server_key:]", server_key);
+				std::regex regex(temp_str, std::regex_constants::ECMAScript | std::regex_constants::icase);
+				if (std::regex_search(log_data.logged_line, regex))
 				{
-					boost::filesystem::path path(be_custom_log_path);
-					path /= (filename + "-kick.log");
-					belogs[filename].kick_logger.reset(new spdlog::logger(filename + "-kick.log", std::make_shared<spdlog::sinks::simple_file_sink_mt>(path.make_preferred().string(), true)));
+					extension_ptr->logger->info("WHITELIST: FILE: {0}, PLAYER: {2}, GUID: {3}, IP: {4}, PORT: {5}, LINE: {6}", filename, log_data.player_name, log_data.player_guid, log_data.player_ip, log_data.player_port, log_data.logged_line);
+					found = true;
+					break;
 				}
-				belogs[filename].kick_logger->info("{0}", log_data.logged_line);
-				break;
 			}
-		}
-		else
-		{
-			if (std::regex_search(log_data.logged_line, kicklist.regex))
+			else
 			{
-				extension_ptr->logger->info("KICKLIST: FILE: {0}, PLAYER: {2}, GUID: {3}, IP: {4}, PORT: {5}, LINE: {6}", filename, log_data.player_name, log_data.player_guid, log_data.player_ip, log_data.player_port, log_data.logged_line);
-				found = true;
-
-				if (!(belogs[filename].kick_logger))
+				if (std::regex_search(log_data.logged_line, whitelist.regex))
 				{
-					boost::filesystem::path path(be_custom_log_path);
-					path /= (filename + "-kick.log");
-					belogs[filename].kick_logger.reset(new spdlog::logger(filename + "-kick.log", std::make_shared<spdlog::sinks::simple_file_sink_mt>(path.make_preferred().string(), true)));
+					extension_ptr->logger->info("WHITELIST: FILE: {0}, PLAYER: {2}, GUID: {3}, IP: {4}, PORT: {5}, LINE: {6}", filename, log_data.player_name, log_data.player_guid, log_data.player_ip, log_data.player_port, log_data.logged_line);
+					found = true;
+					break;
 				}
-				belogs[filename].kick_logger->info("{0}", log_data.logged_line);
-				break;
 			}
 		}
-	}
-	if (found)
-	{
-		extension_ptr->logger->info("KICK");
-		extension_ptr->logger->info("");
-		return;
-	}
-
-	//BAN
-	for (auto &banlist : const_itr->second.banlist_regex)
-	{
-		if (banlist.dynamic_regex)
+		if (found)
 		{
-			std::string temp_str = banlist.regex_str;
-			boost::algorithm::ireplace_all(temp_str, "[:player_key:]", extension_ptr->getPlayerRegex_BEGuid(log_data.player_guid));
-			//boost::algorithm::ireplace_all(temp_str, "[:server_key:]", server_key);
-			std::regex regex(temp_str, std::regex_constants::ECMAScript | std::regex_constants::icase);
-			if (std::regex_search(log_data.logged_line, regex))
+			extension_ptr->logger->info("WHITELISTED");
+			extension_ptr->logger->info("");
+			return;
+		}
+
+		//KICK
+		for (auto &kicklist : const_itr->second.kicklist_regex)
+		{
+			if (kicklist.dynamic_regex)
 			{
-				extension_ptr->logger->info("BANLIST: FILE: {0}, PLAYER: {2}, GUID: {3}, IP: {4}, PORT: {5}, LINE: {6}", filename, log_data.player_name, log_data.player_guid, log_data.player_ip, log_data.player_port, log_data.logged_line);
-				found = true;
-
-				if (!(belogs[filename].ban_logger))
+				std::string temp_str = kicklist.regex_str;
+				boost::algorithm::ireplace_all(temp_str, "[:player_key:]", extension_ptr->getPlayerRegex_BEGuid(log_data.player_guid));
+				//boost::algorithm::ireplace_all(temp_str, "[:server_key:]", server_key);
+				std::regex regex(temp_str, std::regex_constants::ECMAScript | std::regex_constants::icase);
+				if (std::regex_search(log_data.logged_line, regex))
 				{
-					boost::filesystem::path path(be_custom_log_path);
-					path /= (filename + "-ban.log");
-					belogs[filename].ban_logger.reset(new spdlog::logger(filename + "-ban.log", std::make_shared<spdlog::sinks::simple_file_sink_mt>(path.make_preferred().string(), true)));
+					extension_ptr->logger->info("KICKLIST: FILE: {0}, PLAYER: {2}, GUID: {3}, IP: {4}, PORT: {5}, LINE: {6}", filename, log_data.player_name, log_data.player_guid, log_data.player_ip, log_data.player_port, log_data.logged_line);
+					found = true;
+
+					if (!(belogs[filename].kick_logger))
+					{
+						boost::filesystem::path path(be_custom_log_path);
+						path /= (filename + "-kick.log");
+						belogs[filename].kick_logger.reset(new spdlog::logger(filename + "-kick.log", std::make_shared<spdlog::sinks::simple_file_sink_mt>(path.make_preferred().string(), true)));
+					}
+					belogs[filename].kick_logger->info("{0}", log_data.logged_line);
+					break;
 				}
-				belogs[filename].ban_logger->info("{0}", log_data.logged_line);
-				break;
 			}
-		}
-		else
-		{
-			if (std::regex_search(log_data.logged_line, banlist.regex))
+			else
 			{
-				extension_ptr->logger->info("BANLIST: FILE: {0}, PLAYER: {2}, GUID: {3}, IP: {4}, PORT: {5}, LINE: {6}", filename, log_data.player_name, log_data.player_guid, log_data.player_ip, log_data.player_port, log_data.logged_line);
-				found = true;
-
-				if (!(belogs[filename].ban_logger))
+				if (std::regex_search(log_data.logged_line, kicklist.regex))
 				{
-					boost::filesystem::path path(be_custom_log_path);
-					path /= (filename + "-ban.log");
-					belogs[filename].ban_logger.reset(new spdlog::logger(filename + "-ban.log", std::make_shared<spdlog::sinks::simple_file_sink_mt>(path.make_preferred().string(), true)));
+					extension_ptr->logger->info("KICKLIST: FILE: {0}, PLAYER: {2}, GUID: {3}, IP: {4}, PORT: {5}, LINE: {6}", filename, log_data.player_name, log_data.player_guid, log_data.player_ip, log_data.player_port, log_data.logged_line);
+					found = true;
+
+					if (!(belogs[filename].kick_logger))
+					{
+						boost::filesystem::path path(be_custom_log_path);
+						path /= (filename + "-kick.log");
+						belogs[filename].kick_logger.reset(new spdlog::logger(filename + "-kick.log", std::make_shared<spdlog::sinks::simple_file_sink_mt>(path.make_preferred().string(), true)));
+					}
+					belogs[filename].kick_logger->info("{0}", log_data.logged_line);
+					break;
 				}
-				belogs[filename].ban_logger->info("{0}", log_data.logged_line);
-				break;
 			}
 		}
-	}
-	if (found)
-	{
-		extension_ptr->logger->info("BAN");
-		extension_ptr->logger->info("");
-		return;
-	}
-
-	//SPAM
-	for (auto &spam_rules : const_itr->second.spam_rules)
-	{
-		// TODO Poco Expire Cache
-		//, std::regex_constants::ECMAScript | std::regex_constants::icase);
-	}
-	if (found)
-	{
-		extension_ptr->logger->info("SPAM ACTION");
-		extension_ptr->logger->info("");
-		return;
-	}
-
-	// UNKNOWN
-	if (!found)
-	{
-		if (!(belogs[filename].unknown_logger))
+		if (found)
 		{
-			boost::filesystem::path path(be_custom_log_path);
-			path /= (filename + "-unknown.log");
-			belogs[filename].unknown_logger.reset(new spdlog::logger(filename + "-unknown.log", std::make_shared<spdlog::sinks::simple_file_sink_mt>(path.make_preferred().string(), true)));
+			extension_ptr->logger->info("KICK");
+			extension_ptr->logger->info("");
+			return;
 		}
-		belogs[filename].unknown_logger->info("{0}", log_data.logged_line);
+
+		//BAN
+		for (auto &banlist : const_itr->second.banlist_regex)
+		{
+			if (banlist.dynamic_regex)
+			{
+				std::string temp_str = banlist.regex_str;
+				boost::algorithm::ireplace_all(temp_str, "[:player_key:]", extension_ptr->getPlayerRegex_BEGuid(log_data.player_guid));
+				//boost::algorithm::ireplace_all(temp_str, "[:server_key:]", server_key);
+				std::regex regex(temp_str, std::regex_constants::ECMAScript | std::regex_constants::icase);
+				if (std::regex_search(log_data.logged_line, regex))
+				{
+					extension_ptr->logger->info("BANLIST: FILE: {0}, PLAYER: {2}, GUID: {3}, IP: {4}, PORT: {5}, LINE: {6}", filename, log_data.player_name, log_data.player_guid, log_data.player_ip, log_data.player_port, log_data.logged_line);
+					found = true;
+
+					if (!(belogs[filename].ban_logger))
+					{
+						boost::filesystem::path path(be_custom_log_path);
+						path /= (filename + "-ban.log");
+						belogs[filename].ban_logger.reset(new spdlog::logger(filename + "-ban.log", std::make_shared<spdlog::sinks::simple_file_sink_mt>(path.make_preferred().string(), true)));
+					}
+					belogs[filename].ban_logger->info("{0}", log_data.logged_line);
+					break;
+				}
+			}
+			else
+			{
+				if (std::regex_search(log_data.logged_line, banlist.regex))
+				{
+					extension_ptr->logger->info("BANLIST: FILE: {0}, PLAYER: {2}, GUID: {3}, IP: {4}, PORT: {5}, LINE: {6}", filename, log_data.player_name, log_data.player_guid, log_data.player_ip, log_data.player_port, log_data.logged_line);
+					found = true;
+
+					if (!(belogs[filename].ban_logger))
+					{
+						boost::filesystem::path path(be_custom_log_path);
+						path /= (filename + "-ban.log");
+						belogs[filename].ban_logger.reset(new spdlog::logger(filename + "-ban.log", std::make_shared<spdlog::sinks::simple_file_sink_mt>(path.make_preferred().string(), true)));
+					}
+					belogs[filename].ban_logger->info("{0}", log_data.logged_line);
+					break;
+				}
+			}
+		}
+		if (found)
+		{
+			extension_ptr->logger->info("BAN");
+			extension_ptr->logger->info("");
+			return;
+		}
+
+		//SPAM
+		for (auto &spam_rules : const_itr->second.spam_rules)
+		{
+			// TODO Poco Expire Cache
+			//, std::regex_constants::ECMAScript | std::regex_constants::icase);
+		}
+		if (found)
+		{
+			extension_ptr->logger->info("SPAM ACTION");
+			extension_ptr->logger->info("");
+			return;
+		}
+
+		// UNKNOWN
+		if (!found)
+		{
+			if (!(belogs[filename].unknown_logger))
+			{
+				boost::filesystem::path path(be_custom_log_path);
+				path /= (filename + "-unknown.log");
+				belogs[filename].unknown_logger.reset(new spdlog::logger(filename + "-unknown.log", std::make_shared<spdlog::sinks::simple_file_sink_mt>(path.make_preferred().string(), true)));
+			}
+			belogs[filename].unknown_logger->info("{0}", log_data.logged_line);
+		}
 	}
 }
 
@@ -534,6 +514,7 @@ void BELogScanner::getBEGUID(std::string &steam_id, std::string &beguid)
 // From Frank https://gist.github.com/Fank/11127158
 // Modified to use libpoco
 {
+	// Is called from within the same mutex lock, so don't need to worry
 	bool status = true;
 
 	if (steam_id.empty())
@@ -577,6 +558,8 @@ void BELogScanner::getBEGUID(std::string &steam_id, std::string &beguid)
 
 void BELogScanner::scanLog(std::string path_str)
 {
+	std::lock_guard<std::mutex> lock(belogs_mutex);
+
 	boost::filesystem::path path(path_str);
 
 	std::string filename = path.extension().filename().string();
@@ -592,52 +575,6 @@ void BELogScanner::scanLog(std::string path_str)
 	std::string line;
 	std::string::size_type found;
 	{
-		std::lock_guard<std::mutex> lock(belogs_mutex);
-		{
-			std::lock_guard<std::mutex> lock(update_player_key_mutex);
-			for (auto &key : add_player_key)
-			{
-				std::string beguid;
-				getBEGUID(key.steam_id, beguid);
-				if (std::count(player_key[beguid].keys.begin(), player_key[beguid].keys.end(), key.value) != 0)
-				{
-					// TODO OUTPUT WARNING DUPLICATE VALUE
-				}
-				else
-				{
-					player_key[beguid].keys.push_back(std::move(key.value));
-				}
-			}
-			add_player_key.clear();
-
-			std::vector<BELogScanner::RemovePlayerKey> new_remove_player_key;
-			for (auto &key : remove_player_key)
-			{
-				std::string beguid;
-				getBEGUID(key.steam_id, beguid);
-				if (key.timestamp.elapsed() > 30000000) // Allow for overlap of player values, don't need to worry about slow sqf code / battleye buffering log output
-				{
-					if (player_key.count(beguid) != 0)
-					{
-						player_key[beguid].keys.remove(key.value);
-						if (player_key[beguid].keys.empty())
-						{
-							player_key.erase(beguid);
-						}
-					}
-					else
-					{
-						// TODO OUTOUT WARNING NON EXISTANT USER
-					}
-				}
-				else
-				{
-					new_remove_player_key.push_back(key);
-				}
-			}
-			remove_player_key = std::move(new_remove_player_key);
-		}
-
 		istr.seekg(belogs[filename].f_pos);
 		while (std::getline(istr, line))
 		{
