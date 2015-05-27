@@ -26,15 +26,15 @@ Ext *extension;
 				boost::erase_all(argument_str, "\"");
 				if (boost::algorithm::istarts_with(argument_str, "-extDB2_VAR="))
 				{
-					options["VAR"] = argument_str.substr(argument_str.find("="));
+					options["VAR"] = argument_str.substr(argument_str.find("=") + 1);
 				}
 				else if (boost::algorithm::istarts_with(argument_str, "-extDB2_WORK="))
 				{
-					options["WORK"] = argument_str.substr(argument_str.find("="));
+					options["WORK"] = argument_str.substr(argument_str.find("=") + 1);
 				}
 				else if (boost::algorithm::istarts_with(argument_str, "-bepath="))
 				{
-					options["BEPATH"] = argument_str.substr(argument_str.find("="));
+					options["BEPATH"] = argument_str.substr(argument_str.find("=") + 1);
 				}
 			}
 			free(arg);
@@ -92,15 +92,15 @@ Ext *extension;
 							boost::erase_all(argument_str, "\"");
 							if (boost::algorithm::istarts_with(argument_str, "-extDB2_VAR="))
 							{
-								options["VAR"] = argument_str.substr(argument_str.find("="));
+								options["VAR"] = argument_str.substr(argument_str.find("=") + 1);
 							}
 							else if (boost::algorithm::istarts_with(argument_str, "-extDB2_WORK="))
 							{
-								options["WORK"] = argument_str.substr(argument_str.find("="));
+								options["WORK"] = argument_str.substr(argument_str.find("=") + 1);
 							}
 							else if (boost::algorithm::istarts_with(argument_str, "-bepath="))
 							{
-								options["BEPATH"] = argument_str.substr(argument_str.find("="));
+								options["BEPATH"] = argument_str.substr(argument_str.find("=") + 1);
 							}
 						}
 					}
