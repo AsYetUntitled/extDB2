@@ -4,6 +4,44 @@ Looking for more info on SQL_CUSTOM check out https://github.com/Torndeco/extDB2
 
 Versions
 ---------------------------------------------------------------------------------------------------
+10->11
+	Added: Player_Key
+		Example of use
+		9:START_RCON:PLAYERKEY
+
+			[getPlayerBankMoney]
+			SQL1_1 = SELECT BankMoney FROM PlayerInfo WHERE UID = ?;
+
+			Number of Inputs = 1
+			SQL1_INPUTS = 1-PlayerKey
+			Return Player Key = true
+
+		Example of returned result = [1,["QWIOEJQWSAD",[2000]]]
+
+		Ok time to explain what PlayerKey is....
+
+		To start with it requires extDB2 to be connected to server via Rcon and using the option PLAYERKEY.
+		When a player connects to Rcon they are automatically given a unique randomized PlayerKey.
+		When the player disconnects the PlayerKey is removed (read note below)
+
+		By saying 1-PlayerKey we are telling SQL_CUSTOM to use Input Value 1 + return the unique player key for that player.
+		The input value can either be PlayerUID or BEGuid, makes no difference.
+		You can also use InsertID at the same time, the format for that is [1,[<InsertID>,[<PlayerKey>,<Result>]]]
+
+		If there is an error, for example extDB2 isn't connected to the server via Rcon.
+		The returned PlayerKey is an empty string.
+
+
+		Why ?
+		This will allow you to offload randomized player value to the extension.
+		But the main reason it will be integerated feature to extDB2 upcoming BELogscanner.
+		You will be able to make regex rules to ban/kick players for entries in BattlEye that don't have the correct playerkey.
+		It will be possible to enable adding/removing playerkeys manually, but it will require extra callExtensions + will be less secure.
+
+		The BELogscanner feature is heavily based of my old pyBEscanner, if anyone remembers it.
+
+
+---------------------------------------------------------------------------------------------------
 9->10
 	Added: String_Escape_Quotes
 		Escapes " -> ""  ,   ' -> ''
@@ -27,6 +65,6 @@ Versions
 
 
 ---------------------------------------------------------------------------------------------------
-8->9 
-	Change "Strip Custom Input Chars" -> "Strip Custom Chars"   
+8->9
+	Change "Strip Custom Input Chars" -> "Strip Custom Chars"
 		Not a Typo, only afew people will have "Strip Custom Input Chars", most should already be using "Strip Custom Chars".
