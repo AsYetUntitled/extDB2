@@ -1523,11 +1523,13 @@ void Ext::callExtension(char *output, const int &output_size, const char *functi
 								{
 									connectDatabase(output, output_size, tokens[2], tokens[2]);
 								}
+								/*
 								// BELOGSCANNER
 								else if (tokens[1] == "START_BELOGSCANNER")
 								{
 									startBELogscanner(output, output_size, tokens[2]);
 								}
+								*/
 								// RCON
 								else if (tokens[1] == "START_RCON")
 								{
