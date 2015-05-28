@@ -1678,7 +1678,7 @@ void Ext::callExtension(char *output, const int &output_size, const char *functi
 		}
 
 		Ext *extension;
-		extension = new Ext(std::string(""), options, true);
+		extension = new Ext(std::string(""), options);
 
 		bool test = false;
 		int test_counter = 0;
