@@ -1,4 +1,10 @@
 -------------------------------------------------------------------------------
+59 :
+	FIXED: 9:ADD_DATABASE:<database>
+
+	CHANGED: 9:TIME will now work if extension is locked or not
+
+-------------------------------------------------------------------------------
 58 :
 
 	ADDED: 9:TIME or 9:TIME:<offset> will return time. Only works before you lock extension i.e 9:LOCK  if you need it afterwards use MISC Protocol
