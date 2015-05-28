@@ -1423,25 +1423,10 @@ void Ext::callExtension(char *output, const int &output_size, const char *functi
 										std::strcpy(output, "[0]");
 									}
 								}
-								else if (tokens[1] == "TIME")
-								{
-									std::string result;
-									getDateTime(std::string(), result);
-									std::strcpy(output, result.c_str());
-								}
 								else
 								{
-									// Invalid Format
 									std::strcpy(output, "[0,\"Error Invalid Format\"]");
 									logger->error("extDB2: Invalid Format: {0}", input_str);
-								}
-								break;
-							case 3:
-								if (tokens[1] == "TIME")
-								{
-									std::string result;
-									getDateTime(tokens[1], result);
-									std::strcpy(output, result.c_str());
 								}
 								break;
 							default:
@@ -1500,6 +1485,12 @@ void Ext::callExtension(char *output, const int &output_size, const char *functi
 									std::strcpy(output, outputsize_str.c_str());
 									logger->info("extDB2: Output Size: {0}", outputsize_str);
 								}
+								else if (tokens[1] == "TIME")
+								{
+									std::string result;
+									getDateTime(std::string(), result);
+									std::strcpy(output, result.c_str());
+								}
 								else if (tokens[1] == "VAR")
 								{
 									std::strcpy(output, ext_info.var.c_str());
@@ -1539,6 +1530,12 @@ void Ext::callExtension(char *output, const int &output_size, const char *functi
 								else if (tokens[1] == "START_REMOTE")
 								{
 									startRemote(output, output_size, tokens[2]);
+								}
+								if (tokens[1] == "TIME")
+								{
+									std::string result;
+									getDateTime(tokens[2], result);
+									std::strcpy(output, result.c_str());
 								}
 								else
 								{
