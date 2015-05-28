@@ -383,15 +383,15 @@ void Ext::stop()
 
 	for (auto &database : ext_connectors_info.databases)
 	{
-		database.second.sql_pool->shutdown();
+		//database.second.sql_pool->shutdown();
 	}
 	if (ext_connectors_info.mysql)
 	{
-		Poco::Data::MySQL::Connector::unregisterConnector();
+		//Poco::Data::MySQL::Connector::unregisterConnector();
 	}
 	if (ext_connectors_info.sqlite)
 	{
-		Poco::Data::SQLite::Connector::unregisterConnector();
+		//Poco::Data::SQLite::Connector::unregisterConnector();
 	}
 }
 
