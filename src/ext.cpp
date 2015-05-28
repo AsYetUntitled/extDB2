@@ -1423,10 +1423,24 @@ void Ext::callExtension(char *output, const int &output_size, const char *functi
 										std::strcpy(output, "[0]");
 									}
 								}
+								else if (tokens[1] == "TIME")
+								{
+									std::string result;
+									getDateTime(std::string(), result);
+									std::strcpy(output, result.c_str());
+								}
 								else
 								{
 									std::strcpy(output, "[0,\"Error Invalid Format\"]");
 									logger->error("extDB2: Invalid Format: {0}", input_str);
+								}
+								break;
+							case 3:
+								if (tokens[1] == "TIME")
+								{
+									std::string result;
+									getDateTime(tokens[2], result);
+									std::strcpy(output, result.c_str());
 								}
 								break;
 							default:
