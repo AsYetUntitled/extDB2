@@ -850,7 +850,7 @@ void Ext::connectDatabase(char *output, const int &output_size, const std::strin
 
 		bool connected = true;
 
-		// Check if already connectted to Database.
+		// Check if already connected to Database.
 		if (!database->type.empty())
 		{
 			#ifdef DEBUG_TESTING
@@ -1531,7 +1531,7 @@ void Ext::callExtension(char *output, const int &output_size, const char *functi
 								{
 									startRemote(output, output_size, tokens[2]);
 								}
-								if (tokens[1] == "TIME")
+								else if (tokens[1] == "TIME")
 								{
 									std::string result;
 									getDateTime(tokens[2], result);
