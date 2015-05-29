@@ -268,7 +268,6 @@ void Rcon::loginResponse()
 		timerKeepAlive(30);
 		unsigned int unique_id = 1;
 		getPlayers(unique_id);
-		sendCommand("writeBans");
 		startReceive();
 	}
 	else
@@ -979,17 +978,8 @@ void Rcon::handleBanSent(std::shared_ptr<std::string> packet, const boost::syste
 	}
 	else
 	{
-		std::string command("loadBans");
-		logger->info("Rcon: handleBanSent: {0}", command);
-
-		RconPacket rcon_packet;
-		char *cmd = new char[command.size() + 1];
-		std::strcpy(cmd, command.c_str());
-		rcon_packet.cmd = cmd;
-		rcon_packet.packetCode = 0x01;
-
-		sendPacket(rcon_packet);
-		delete []rcon_packet.cmd;
+		sendCommand("writeBans");
+		sendCommand("loadBans");
 	}
 }
 

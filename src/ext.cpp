@@ -177,6 +177,9 @@ Ext::Ext(std::string shared_library_path, std::unordered_map<std::string, std::s
 
 		// Initialize Loggers
 		//		Console Logger
+        size_t q_size = 1048576; //queue size must be power of 2
+        spdlog::set_async_mode(q_size);
+
 		#ifdef DEBUG_TESTING
 			auto console_temp = spdlog::stdout_logger_mt("extDB Console logger");
 			console.swap(console_temp);
