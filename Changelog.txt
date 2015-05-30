@@ -1,4 +1,10 @@
 -------------------------------------------------------------------------------
+60 :
+	ADDED: Windows DLL Info. Stops arma complaining in RPT
+
+	CHANGED: RCon addban + ban will automatically cause writebans to be called
+
+-------------------------------------------------------------------------------
 59 :
 	FIXED: 9:ADD_DATABASE:<database>
 
