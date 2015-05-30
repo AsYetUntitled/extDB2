@@ -22,7 +22,7 @@ set(CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake_modules" ${CMAKE_MODULE_PATH})
 
 #Check for 32bit vs. 64bit system
 if (CMAKE_SIZEOF_VOID_P EQUAL 8) #64bit
-	message(FATAL_ERROR "Warning: You are on a 64-bit system, make sure you are pulling in the appropriate 32-bit libraries.")	
+	message(FATAL_ERROR "Warning: You are on a 64-bit system, make sure you are pulling in the appropriate 32-bit libraries.")
 elseif (CMAKE_SIZEOF_VOID_P EQUAL 4) #32bit
 	message(STATUS "You are on a 32-bit system.")
 else()
@@ -51,6 +51,7 @@ SET(SOURCES
 	../src/protocols/sql_raw_v2.cpp
 )
 
+
 SET(COMPILE_EXTENSION TRUE CACHE BOOL "Compile extDB2")
 SET(COMPILE_TEST_APPLICATION FALSE CACHE BOOL "Compiles a test application of extDB2.")
 SET(COMPILE_RCON_APPLICATION FALSE CACHE BOOL "Compiles extDB2 Rcon.")
@@ -58,6 +59,23 @@ SET(COMPILE_SANITIZE_APPLICATION FALSE CACHE BOOL "Compiles extDB2 Sanitize (tes
 
 SET(DEBUG_LOGGING FALSE CACHE BOOL "Enable Debug Logging.")
 SET(DEBUG_TESTING FALSE CACHE BOOL "Enable extra Console Output.")
+
+
+if (DEBUG_LOGGING)
+	add_definitions(-DDEBUG_LOGGING)
+	if(${WIN32})
+		LIST(APPEND SOURCES ../src/dll-debug.rc)
+	endif()
+	message(STATUS "Debug Logging is enabled.")
+else()
+	if(${WIN32})
+		LIST(APPEND SOURCES ../src/dll.rc)
+	endif()
+endif()
+if (DEBUG_TESTING)
+	add_definitions(-DDEBUG_TESTING)
+	message(STATUS "Testing flag is enabled.")
+endif()
 
 
 if (COMPILE_TEST_APPLICATION)
@@ -70,13 +88,13 @@ elseif (COMPILE_RCON_APPLICATION)
 	set(EXECUTABLE_NAME "extDB2-rcon")
 	add_executable(${EXECUTABLE_NAME} ${SOURCES})
 	add_definitions(-DRCON_APP)
-	message(STATUS "Building Rcon Applicaton")	
+	message(STATUS "Building Rcon Applicaton")
 elseif (COMPILE_SANITIZE_APPLICATION)
 	SET(SOURCES ../src/sanitize.cpp) # Override Sources
 	set(EXECUTABLE_NAME "extDB2-sanitize")
 	add_executable(${EXECUTABLE_NAME} ${SOURCES})
 	add_definitions(-DSANITIZE_APP)
-	message(STATUS "Building Sanitize Applicaton")	
+	message(STATUS "Building Sanitize Applicaton")
 else()
 	LIST(APPEND SOURCES ../src/main.cpp)
 	set(EXECUTABLE_NAME "extDB2")
@@ -84,14 +102,6 @@ else()
 	message(STATUS "Building Test Application")
 endif()
 
-if (DEBUG_LOGGING)
-	add_definitions(-DDEBUG_LOGGING)
-	message(STATUS "Debug Logging is enabled.")
-endif()
-if (DEBUG_TESTING)
-	add_definitions(-DDEBUG_TESTING)
-	message(STATUS "Testing flag is enabled.")
-endif()
 
 # -----------------------
 # START STATIC LIBRARIES
@@ -100,7 +110,7 @@ if(${UNIX})
      set(CMAKE_FIND_LIBRARY_SUFFIXES ".a")
 endif()
 
-# OpenSSL Headers 
+# OpenSSL Headers
 find_package(OpenSSL)
 if(OPENSSL_FOUND)
 	include_directories("${OPENSSL_INCLUDE_DIR}")
@@ -177,7 +187,7 @@ if(${WIN32})
 	add_definitions(-DUNICODE -D_UNICODE -DWIN32_LEAN_AND_MEAN)
 	SET_TARGET_PROPERTIES(${EXECUTABLE_NAME} PROPERTIES LINK_FLAGS " /MANIFEST:NO /ERRORREPORT:NONE")
 else()
-	# Linux 
+	# Linux
 	target_link_libraries(${EXECUTABLE_NAME} -Wl,-Bstatic ${Boost_LIBRARIES} ${POCO_LIBRARIES} ${MYSQL_LIBRARY}  -Wl,-Bdynamic -ldl -pthread -lz ${TBB_MALLOC_LIBRARY})
 	set(CMAKE_CXX_FLAGS "-std=c++0x -static-libstdc++ -static-libgcc ${CMAKE_CXX_FLAGS}")
 
