@@ -1,6 +1,6 @@
 ## Arma3 Extension DB2
-Arma3 Database Extension for Windows + Linux.
-
+Arma3 Database + Rcon Extension for both Windows + Linux.  
+<a href="https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=2SUEFTGABTAM2"><img src="https://www.paypalobjects.com/en_US/i/btn/btn_donate_LG.gif" alt="[paypal]" />
   
 #### Known Public Missions / Mods using extDB2
 http://www.exilemod.com   (Coming Soon)
@@ -9,13 +9,6 @@ http://www.exilemod.com   (Coming Soon)
 #### Known Public Missions / Mods using older extDB  
 http://www.altisliferpg.com  
 http://a3wasteland.com  
-
-
-##### Donations
-If you link to donate to extDB2 Developement use donate button below.
-Don't forget to leave message if any features you would like to see implemented.  
-
-<a href="https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=2SUEFTGABTAM2"><img src="https://www.paypalobjects.com/en_US/i/btn/btn_donate_LG.gif" alt="[paypal]" />
 
 
 #### Features
@@ -67,12 +60,12 @@ Windows 7 + Later
 Install vcredist_x86.exe  
 http://www.microsoft.com/en-ie/download/details.aspx?id=40784  
 
-#### Donation Link @  
 
-https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=2SUEFTGABTAM2
+##### Donations
+If you link to donate to extDB2 Developement use donate button above.
+Don't forget to leave message if any features you would like to see implemented.  
 
  
-
 #### Thanks to
 
  - [firefly2442](https://github.com/firefly2442) for the CMake Build System.
