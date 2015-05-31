@@ -63,7 +63,7 @@ http://www.microsoft.com/en-ie/download/details.aspx?id=40784
 
 
 ##### Donations
-If you link to donate to extDB2 Developement use donate button above.
+If you link to donate to extDB2 Developement use donate button above.  
 Don't forget to leave message if any features you would like to see implemented.  
 
  
