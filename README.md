@@ -1,13 +1,6 @@
 ## Arma3 Extension DB2
 Arma3 Database Extension for Windows + Linux.
 
-#### Donations
-If you link to donate to extDB2 Developement use donate button below.
-Don't forget to leave message if any features you would like to see implemented.  
-
-<a href="https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=2SUEFTGABTAM2"><img src="https://www.paypalobjects.com/en_US/i/btn/btn_donate_LG.gif" alt="[paypal]" />
-
- 
 #### Known Public Missions / Mods using extDB2
 http://www.exilemod.com   (Coming Soon)
   
@@ -17,7 +10,14 @@ http://www.altisliferpg.com
 http://a3wasteland.com  
 
 
-### Features
+##### Donations
+If you link to donate to extDB2 Developement use donate button below.
+Don't forget to leave message if any features you would like to see implemented.  
+
+<a href="https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=2SUEFTGABTAM2"><img src="https://www.paypalobjects.com/en_US/i/btn/btn_donate_LG.gif" alt="[paypal]" />
+
+
+#### Features
 
  - ASync + Sync Support
  - Unique ID for fetching Results
@@ -31,16 +31,11 @@ http://a3wasteland.com
  - Steam VAC + Friends Queries  
 
 
-### Supported Backends
+#### Supported Backends
 
  - MySQL
  - SQLite
  - HTTP
- 
-
- ### No Longer Supported Backends
-
- - Redis
  
 
 #### Protocols
