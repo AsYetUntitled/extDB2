@@ -1,9 +1,13 @@
-## Arma3 Extension DB  C++ (windows / linux)
+## Arma3 Extension DB2
+Arma3 Database Extension for Windows + Linux.
 
-I got bored waiting on Arma 2017 / Epoch for Arma3.  
-So i decided to write up an C++ Extension for Arma3server.
+#### Donations
+If you link to donate to extDB2 Developement use donate button below.
+Don't forget to leave message if any features you would like to see implemented.  
 
+<a href="https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=2SUEFTGABTAM2"><img src="https://www.paypalobjects.com/en_US/i/btn/btn_donate_LG.gif" alt="[paypal]" />
 
+ 
 #### Known Public Missions / Mods using extDB2
 http://www.exilemod.com   (Coming Soon)
   
@@ -70,6 +74,7 @@ http://www.microsoft.com/en-ie/download/details.aspx?id=40784
 #### Donation Link @  
 
 https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=2SUEFTGABTAM2
+
  
 
 #### Thanks to
