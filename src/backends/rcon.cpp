@@ -473,7 +473,7 @@ void Rcon::processMessagePlayers(Poco::StringTokenizer &tokens)
 			#endif
 
 			{
-				std::mutex players_name_beguid_mutex;
+				std::lock_guard<std::recursive_mutex> lock(players_name_beguid_mutex);
 				players_name_beguid[player_data.player_name] = player_data.guid;
 			}
 
@@ -705,20 +705,21 @@ void Rcon::chatMessage(std::size_t &bytes_received)
 					checkBadPlayerString(player_number, player_name, kicked);
 				}
 			}
-			else if (whitelist_settings.enable && boost::algorithm::ends_with(result, "disconnected"))
+			else if (boost::algorithm::ends_with(result, "disconnected"))
 			{
 				auto pos = result.find(" ", result.find("#"));
 				std::string player_name = result.substr(pos + 1, result.size() - (pos + 14));
 
-				#if defined(RCON_APP) || (DEBUG_TESTING)
-					logger->info("DEBUG Disconnected Player Name: {0}.", player_name);
-				#endif
-
+				if (whitelist_settings.enable)
 				{
 					std::lock_guard<std::mutex> lock(reserved_slots_mutex);
 					whitelist_settings.players_whitelisted.erase(players_name_beguid[player_name]);
 					whitelist_settings.players_non_whitelisted.erase(players_name_beguid[player_name]);
 				}
+
+				#if defined(RCON_APP) || (DEBUG_TESTING)
+					logger->info("DEBUG Disconnected Player Name: {0}.", player_name);
+				#endif
 
 				#ifndef RCON_APP
 					if (rcon_settings.generate_unique_id)
@@ -727,13 +728,15 @@ void Rcon::chatMessage(std::size_t &bytes_received)
 						extension_ptr->delPlayerKey_delayed(players_name_beguid[player_name]);
 					}
 				#endif
+
+				// REMOVE PLAYER BEGUID
 				{
-					std::mutex players_name_beguid_mutex;
+					std::lock_guard<std::recursive_mutex> lock(players_name_beguid_mutex);
 					players_name_beguid.erase(player_name);
 				}
 			}
 		}
-		else if (whitelist_settings.enable && (boost::algorithm::starts_with(result, "Verified GUID")))
+		else if (boost::algorithm::starts_with(result, "Verified GUID"))
 		{
 			auto pos_1 = result.find("(");
 			auto pos_2 = result.find(")", pos_1);
@@ -751,13 +754,18 @@ void Rcon::chatMessage(std::size_t &bytes_received)
 				logger->info("DEBUG Verified Player GUID: {0}.", player_guid);
 			#endif
 
+			// ADD PLAYER BEGUID
 			{
-				std::mutex players_name_beguid_mutex;
+				std::lock_guard<std::recursive_mutex> lock(players_name_beguid_mutex);
 				players_name_beguid[player_name] = player_guid;
 			}
 
 			bool kicked = false;
-			checkWhitelistedPlayer(player_number, player_name, player_guid, kicked);
+			if (whitelist_settings.enable)
+			{
+				checkWhitelistedPlayer(player_number, player_name, player_guid, kicked);
+			}
+
 			#ifndef RCON_APP
 				if ((!kicked) && rcon_settings.generate_unique_id)
 				{
