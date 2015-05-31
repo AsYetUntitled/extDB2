@@ -38,6 +38,8 @@ class SQL_CUSTOM_V2: public AbstractProtocol
 		bool callProtocol(std::string input_str, std::string &result, const bool async_method, const unsigned int unique_id=1);
 
 	private:
+		std::string seperator;
+
 		Poco::MD5Engine md5;
 		std::mutex mutex_md5;
 

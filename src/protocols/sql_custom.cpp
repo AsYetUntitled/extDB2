@@ -157,6 +157,7 @@ bool SQL_CUSTOM::init(AbstractExt *extension, const std::string &database_id, co
 		}
 		if ((template_ini->getInt("Default.Version", 1)) >= EXTDB_SQL_CUSTOM_REQUIRED_VERSION)
 		{
+			seperator = std::to_string(template_ini->getInt("Default.Seperator Character in Base 10", 59));
 			int default_number_of_inputs = template_ini->getInt("Default.Number of Inputs", 0);
 			int default_number_of_custom_inputs = template_ini->getInt("Default.Number of Custom Inputs", 0);
 
