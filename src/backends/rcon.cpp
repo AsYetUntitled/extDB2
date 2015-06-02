@@ -423,8 +423,11 @@ void Rcon::processMessagePlayers(Poco::StringTokenizer &tokens)
 		whitelist_settings.players_non_whitelisted.clear();
 	}
 
-	std::vector<RconPlayerInfo> info_vector;
 	std::string player_str;
+
+	std::vector<RconPlayerInfo> info_vector;
+	std::vector<std::pair <std::string, std::string> > players_vector;
+
 	for (int i = 3; i < (tokens.count() - 1); ++i)
 	{
 		player_str = tokens[i];
@@ -472,10 +475,7 @@ void Rcon::processMessagePlayers(Poco::StringTokenizer &tokens)
 				logger->info("DEBUG players Player GUID: {0}.", player_data.guid);
 			#endif
 
-			{
-				std::lock_guard<std::recursive_mutex> lock(players_name_beguid_mutex);
-				players_name_beguid[player_data.player_name] = player_data.guid;
-			}
+			players_vector.push_back(std::make_pair(player_data.player_name, player_data.guid));
 
 			bool kicked = false;
 			if (bad_playername_settings.enable)
@@ -504,6 +504,14 @@ void Rcon::processMessagePlayers(Poco::StringTokenizer &tokens)
 		else
 		{
 			logger->info("Rcon: Error: Wrong RconPlayerInfo count: {0}.", player_tokens.count());
+		}
+	}
+
+	{
+		std::lock_guard<std::mutex> lock(players_name_beguid_mutex);
+		for (auto &player : players_vector)
+		{
+			players_name_beguid[player.first] = player.second;
 		}
 	}
 
@@ -731,7 +739,7 @@ void Rcon::chatMessage(std::size_t &bytes_received)
 
 				// REMOVE PLAYER BEGUID
 				{
-					std::lock_guard<std::recursive_mutex> lock(players_name_beguid_mutex);
+					std::lock_guard<std::mutex> lock(players_name_beguid_mutex);
 					players_name_beguid.erase(player_name);
 				}
 			}
@@ -756,7 +764,7 @@ void Rcon::chatMessage(std::size_t &bytes_received)
 
 			// ADD PLAYER BEGUID
 			{
-				std::lock_guard<std::recursive_mutex> lock(players_name_beguid_mutex);
+				std::lock_guard<std::mutex> lock(players_name_beguid_mutex);
 				players_name_beguid[player_name] = player_guid;
 			}
 
