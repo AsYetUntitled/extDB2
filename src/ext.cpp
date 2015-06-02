@@ -325,9 +325,6 @@ Ext::Ext(std::string shared_library_path, std::unordered_map<std::string, std::s
 				threads.create_thread(boost::bind(&boost::asio::io_service::run, &io_service));
 			}
 
-			// Initialize so have atomic setup correctly
-			rcon.reset(new Rcon(io_service, logger));
-			rcon->extInit(this);
 			remote_server.init(this);
 
 			// Initialize so have atomic setup correctly + Setup VAC Ban Logger
@@ -381,8 +378,11 @@ void Ext::stop()
 		rcon->disconnect();
 	}
 	io_work_ptr.reset();
+	rcon_io_work_ptr.reset();
 	threads.join_all();
+	rcon_threads.join_all();
 	io_service.stop();
+	rcon_io_service.stop();
 
 	for (auto &database : ext_connectors_info.databases)
 	{
@@ -435,7 +435,7 @@ Poco::Data::Session Ext::getDBSession_mutexlock(AbstractExt::DBConnectionInfo &d
 	return database.sql_pool->get(session_data_ptr);
 }
 
-
+/*
 void Ext::createPlayerKey_mutexlock(std::string &player_beguid, int len_of_key)
 {
 	std::string player_unique_key;
@@ -515,7 +515,7 @@ void Ext::delPlayerKey_mutexlock(std::string player_beguid)
 	}
 	logger->info("Removed Player Unique ID for BEGUID 2: {0}", player_beguid);
 }
-
+*/
 
 void Ext::getPlayerKey_BEGuid(std::string &player_beguid, std::string &player_key)
 {
@@ -652,6 +652,16 @@ void Ext::startRcon(char *output, const int &output_size, const std::string &con
 	}
 	else if (pConf->hasOption(conf + ".password"))
 	{
+		if (!rcon_io_work_ptr)
+		{
+			// Setup ASIO Worker Pool
+			rcon_io_work_ptr.reset(new boost::asio::io_service::work(rcon_io_service));
+			rcon_threads.create_thread(boost::bind(&boost::asio::io_service::run, &rcon_io_service));
+
+			// Initialize so have atomic setup correctly
+			rcon.reset(new Rcon(rcon_io_service, logger));
+			rcon->extInit(this);
+		}
 		#ifdef DEBUG_TESTING
 			console->info("extDB2: Loading Rcon Config");
 		#endif

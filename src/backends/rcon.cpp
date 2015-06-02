@@ -152,7 +152,6 @@ void Rcon::start(RconSettings &rcon, BadPlayernameSettings &bad_playername, Whit
 		#ifndef RCON_APP
 			auto_reconnect = true;  // Re-enable Auto Reconnects for extension i.e if Rcon Settings are good
 		#endif
-		startReceive();
 		connect();
 	}
 	else
@@ -168,7 +167,6 @@ void Rcon::connectionHandler(const boost::system::error_code& error)
 {
 	if (!error)
 	{
-		startReceive();
 		connect();
 	}
 	else
@@ -187,6 +185,7 @@ void Rcon::connectionHandler(const boost::system::error_code& error)
 
 void Rcon::connect()
 {
+	startReceive();
 	rcon_socket.keepalive_timer.reset(new boost::asio::deadline_timer(*io_service_ptr));
 
 	*(rcon_socket.rcon_login_flag) = false;
@@ -398,17 +397,17 @@ void Rcon::processMessageMission(Poco::StringTokenizer &tokens)
 		std::vector<unsigned int> unique_id_saves;
 		{
 			std::lock_guard<std::mutex> lock(rcon_socket.mutex_mission_requests);
-				for (unsigned int unique_id : rcon_socket.mission_requests)
-				{
-					unique_id_saves.push_back(unique_id);
-				}
-				rcon_socket.mission_requests.clear();
+			for (unsigned int unique_id : rcon_socket.mission_requests)
+			{
+				unique_id_saves.push_back(unique_id);
+			}
+			rcon_socket.mission_requests.clear();
 		}
 		for (unsigned int unique_id: unique_id_saves)
 		{
 			if (unique_id != 1)
 			{
-				extension_ptr->saveResult_mutexlock(unique_id, result_data);
+				extension_ptr->saveResult_mutexlock(unique_id, result_data); // TODO FIX WITH LOOPER
 			}
 		}
 	#endif
@@ -417,12 +416,6 @@ void Rcon::processMessageMission(Poco::StringTokenizer &tokens)
 
 void Rcon::processMessagePlayers(Poco::StringTokenizer &tokens)
 {
-	{
-		std::lock_guard<std::mutex> lock(reserved_slots_mutex);
-		whitelist_settings.players_whitelisted.clear();
-		whitelist_settings.players_non_whitelisted.clear();
-	}
-
 	std::string player_str;
 
 	std::vector<RconPlayerInfo> info_vector;
@@ -469,11 +462,9 @@ void Rcon::processMessagePlayers(Poco::StringTokenizer &tokens)
 				player_data.lobby = "false";
 			}
 
-			#if defined(RCON_APP) || (DEBUG_TESTING)
-				logger->info("DEBUG players Player Number: {0}.", player_data.number);
-				logger->info("DEBUG players Player Name: {0}.", player_data.player_name);
-				logger->info("DEBUG players Player GUID: {0}.", player_data.guid);
-			#endif
+			logger->info("DEBUG players Player Number: {0}.", player_data.number);
+			logger->info("DEBUG players Player Name: {0}.", player_data.player_name);
+			logger->info("DEBUG players Player GUID: {0}.", player_data.guid);
 
 			players_vector.push_back(std::make_pair(player_data.player_name, player_data.guid));
 
@@ -482,10 +473,9 @@ void Rcon::processMessagePlayers(Poco::StringTokenizer &tokens)
 			{
 				checkBadPlayerString(player_data.number, player_data.player_name, kicked);
 			}
-
-			if (whitelist_settings.enable && (whitelist_settings.open_slots == 0))
+			if (!kicked)
 			{
-				if (!kicked)
+				if (whitelist_settings.enable && (whitelist_settings.open_slots == 0))
 				{
 					checkWhitelistedPlayer(player_data.number, player_data.player_name, player_data.guid, kicked);
 				}
@@ -495,7 +485,7 @@ void Rcon::processMessagePlayers(Poco::StringTokenizer &tokens)
 				if ((!kicked) && rcon_settings.generate_unique_id)
 				{
 					// We only bother to generate a key if player has not been kicked
-					extension_ptr->createPlayerKey_mutexlock(player_data.guid, 10);
+					//extension_ptr->createPlayerKey_mutexlock(player_data.guid, 10);
 				}
 			#endif
 
@@ -690,7 +680,7 @@ void Rcon::chatMessage(std::size_t &bytes_received)
 	sendPacket(rcon_packet);
 
 	//boost::algorithm::trim(result);
-	if (bad_playername_settings.enable || whitelist_settings.enable)
+	if (bad_playername_settings.enable || whitelist_settings.enable || rcon_settings.generate_unique_id)
 	{
 		if (boost::algorithm::starts_with(result, "Player #"))
 		{
@@ -704,10 +694,8 @@ void Rcon::chatMessage(std::size_t &bytes_received)
 					const std::string::size_type found2 = result.find_last_of("(");
 					std::string player_name = result.substr(found+1, found2-(found+1));
 
-					#if defined(RCON_APP) || (DEBUG_TESTING)
-						logger->info("DEBUG Connected Player Number: {0}.", player_number);
-						logger->info("DEBUG Connected Player Name: {0}.", player_name);
-					#endif
+					logger->info("DEBUG Connected Player Number: {0}.", player_number);
+					logger->info("DEBUG Connected Player Name: {0}.", player_name);
 
 					bool kicked = false;
 					checkBadPlayerString(player_number, player_name, kicked);
@@ -718,28 +706,26 @@ void Rcon::chatMessage(std::size_t &bytes_received)
 				auto pos = result.find(" ", result.find("#"));
 				std::string player_name = result.substr(pos + 1, result.size() - (pos + 14));
 
-				if (whitelist_settings.enable)
-				{
-					std::lock_guard<std::mutex> lock(reserved_slots_mutex);
-					whitelist_settings.players_whitelisted.erase(players_name_beguid[player_name]);
-					whitelist_settings.players_non_whitelisted.erase(players_name_beguid[player_name]);
-				}
-
-				#if defined(RCON_APP) || (DEBUG_TESTING)
-					logger->info("DEBUG Disconnected Player Name: {0}.", player_name);
-				#endif
-
-				#ifndef RCON_APP
-					if (rcon_settings.generate_unique_id)
-					{
-						// We only bother to generate a key if player has not been kicked
-						extension_ptr->delPlayerKey_delayed(players_name_beguid[player_name]);
-					}
-				#endif
-
-				// REMOVE PLAYER BEGUID
+				logger->info("DEBUG Disconnected Player Name: {0}.", player_name);
 				{
 					std::lock_guard<std::mutex> lock(players_name_beguid_mutex);
+
+					if (whitelist_settings.enable || rcon_settings.generate_unique_id)
+					{
+						std::lock_guard<std::mutex> lock(reserved_slots_mutex);
+						if (whitelist_settings.enable)
+						{
+							whitelist_settings.players_whitelisted.erase(players_name_beguid[player_name]);
+							whitelist_settings.players_non_whitelisted.erase(players_name_beguid[player_name]);
+						}
+						#ifndef RCON_APP
+							if (rcon_settings.generate_unique_id)
+							{
+								// We only bother to generate a key if player has not been kicked
+								//extension_ptr->delPlayerKey_delayed(players_name_beguid[player_name]); // TODO Change Timer
+							}
+						#endif
+					}
 					players_name_beguid.erase(player_name);
 				}
 			}
@@ -778,7 +764,7 @@ void Rcon::chatMessage(std::size_t &bytes_received)
 				if ((!kicked) && rcon_settings.generate_unique_id)
 				{
 					// We only bother to generate a key if player has not been kicked
-					extension_ptr->createPlayerKey_mutexlock(player_guid, 10); // TODO Make this configureable
+					//extension_ptr->createPlayerKey_mutexlock(player_guid, 10); // TODO Make this configureable
 				}
 			#endif
 		}

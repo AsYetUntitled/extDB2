@@ -114,8 +114,8 @@ class AbstractExt
 		virtual void getDateTime(const std::string &input_str, std::string &result)=0;
 		virtual void getUniqueString(int &len_of_string, int &num_of_string, std::string &result)=0;
 
-		virtual void createPlayerKey_mutexlock(std::string &player_beguid, int len_of_key)=0;
-		virtual void delPlayerKey_delayed(std::string &player_beguid)=0;
+		//virtual void createPlayerKey_mutexlock(std::string &player_beguid, int len_of_key)=0;
+		//virtual void delPlayerKey_delayed(std::string &player_beguid)=0;
 
 		virtual void getPlayerKey_SteamID(std::string &player_steam_id, std::string &player_key)=0;
 		virtual void getPlayerKey_BEGuid(std::string &player_beguid, std::string &player_key)=0;

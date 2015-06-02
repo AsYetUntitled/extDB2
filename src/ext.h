@@ -97,11 +97,16 @@ class Ext: public AbstractExt
 		// Steam
 		Steam steam;
 
-		// ASIO Thread Queue
+		// Main ASIO Thread Queue
 		std::unique_ptr<boost::asio::io_service::work> io_work_ptr;
 		boost::asio::io_service io_service;
 		boost::thread_group threads;
 		std::unique_ptr<boost::asio::deadline_timer> timer;
+
+		// Rcon ASIO Thread Queue
+		std::unique_ptr<boost::asio::io_service::work> rcon_io_work_ptr;
+		boost::asio::io_service rcon_io_service;
+		boost::thread_group rcon_threads;
 
 		// Protocols
 		std::unordered_map< std::string, std::unique_ptr<AbstractProtocol> > unordered_map_protocol;
