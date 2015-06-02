@@ -1,4 +1,10 @@
 -------------------------------------------------------------------------------
+61 :
+	FIXED: RCon crashes, should be fine now
+
+	ADDED: Advanced Option to define seperator character used by SQL_CUSTOM + SQL_CUSTOM_V2
+
+-------------------------------------------------------------------------------
 60 :
 	ADDED: Windows DLL Info. Stops arma complaining in RPT
 
