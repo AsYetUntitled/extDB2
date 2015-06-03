@@ -1,4 +1,10 @@
 -------------------------------------------------------------------------------
+62 :
+	FIXED: RCon crashes, might be all fixed now
+
+	IMPROVED: Advanced Option to define seperator character used by SQL_CUSTOM + SQL_CUSTOM_V2 now can be defined in calls
+
+-------------------------------------------------------------------------------
 61 :
 	FIXED: RCon crashes, should be fine now
 
