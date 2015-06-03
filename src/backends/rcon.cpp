@@ -456,7 +456,6 @@ void Rcon::processMessagePlayers(Poco::StringTokenizer &tokens)
 			else
 			{
 				player_data.verified = "false";
-				player_data.guid = player_tokens[3]
 			}
 
 			found = tokens[i].find(")");
@@ -479,7 +478,7 @@ void Rcon::processMessagePlayers(Poco::StringTokenizer &tokens)
 			logger->info("DEBUG players Player GUID: {0}.", player_data.guid);
 
 			bool kicked = false;
-			if (player_data.verified)
+			if (player_data.verified == "true")
 			{
 				players_name_beguid[player_data.player_name] = player_data.guid;
 				if (bad_playername_settings.enable)
