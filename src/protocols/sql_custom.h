@@ -28,7 +28,7 @@ along with this program. If not, see <http://www.gnu.org/licenses/>.
 #include "abstract_protocol.h"
 
 #define EXTDB_SQL_CUSTOM_REQUIRED_VERSION 8
-#define EXTDB_SQL_CUSTOM_LATEST_VERSION 11
+#define EXTDB_SQL_CUSTOM_LATEST_VERSION 12
 
 
 class SQL_CUSTOM: public AbstractProtocol
@@ -38,7 +38,7 @@ class SQL_CUSTOM: public AbstractProtocol
 		bool callProtocol(std::string input_str, std::string &result, const bool async_method, const unsigned int unique_id=1);
 
 	private:
-		std::string seperator;
+		std::string default_seperator;
 
 		Poco::MD5Engine md5;
 		std::mutex mutex_md5;
@@ -78,6 +78,8 @@ class SQL_CUSTOM: public AbstractProtocol
 			int strip_chars_action;
 			std::string strip_chars;
 			std::string strip_custom_input_chars;
+
+			std::string seperator;
 
 			std::vector< std::string> sql_prepared_statements;
 

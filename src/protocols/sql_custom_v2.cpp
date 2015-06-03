@@ -154,7 +154,7 @@ bool SQL_CUSTOM_V2::init(AbstractExt *extension, const std::string &database_id,
 		}
 		if ((template_ini->getInt("Default.Version", 1)) >= EXTDB_SQL_CUSTOM_V2_REQUIRED_VERSION)
 		{
-			seperator = std::to_string(template_ini->getInt("Default.Seperator Character in Base 10", 59));
+			default_seperator = std::to_string(template_ini->getInt("Default.Seperator Character (Base10)", 59));
 			int default_number_of_inputs = template_ini->getInt("Default.Number of Inputs", 0);
 			int default_number_of_custom_inputs = template_ini->getInt("Default.Number of Custom Inputs", 0);
 
@@ -203,6 +203,7 @@ bool SQL_CUSTOM_V2::init(AbstractExt *extension, const std::string &database_id,
 				std::string sql_line_num_str;
 				std::string sql_part_num_str;
 
+				custom_calls[call_name].seperator = template_ini->getString(call_name + ".Seperator Character (Base10)", default_seperator);
 				custom_calls[call_name].number_of_inputs = template_ini->getInt(call_name + ".Number of Inputs", default_number_of_inputs);
 				custom_calls[call_name].number_of_custom_inputs = template_ini->getInt(call_name + ".Number of Custom Inputs", default_number_of_custom_inputs);
 				custom_calls[call_name].preparedStatement_cache = template_ini->getBool(call_name + ".Prepared Statement Cache", default_preparedStatement_cache);
@@ -270,7 +271,7 @@ bool SQL_CUSTOM_V2::init(AbstractExt *extension, const std::string &database_id,
 								int temp_int;
 								if (Poco::NumberParser::tryParse(options_tokens[x], temp_int))
 								{
-									outputs_options.number = temp_int;
+									outputs_options.number = temp_int - 1;
 								}
 								else
 								{
@@ -364,7 +365,7 @@ bool SQL_CUSTOM_V2::init(AbstractExt *extension, const std::string &database_id,
 							int temp_int;
 							if (Poco::NumberParser::tryParse(sub_token_input, temp_int))
 							{
-								inputs_options.number = temp_int;
+								inputs_options.number = temp_int - 1;
 							}
 							else
 							{
@@ -983,30 +984,32 @@ bool SQL_CUSTOM_V2::callProtocol(std::string input_str, std::string &result, con
 		extension_ptr->logger->info("extDB2: SQL_CUSTOM_V2: Trace: UniqueID: {0} Input: {1}", unique_id, input_str);
 	#endif
 
-	Poco::StringTokenizer tokens(input_str, ":");
-	auto custom_calls_const_itr = custom_calls.find(tokens[0]);
+	const std::string::size_type found = input_str.find(default_seperator);
+	const std::string callname = input_str.substr(0, found-1);
+	auto custom_calls_const_itr = custom_calls.find(callname);
 	if (custom_calls_const_itr == custom_calls.end())
 	{
 		// NO CALLNAME FOUND IN PROTOCOL
 		result = "[0,\"Error No Custom Call Not Found\"]";
 		extension_ptr->logger->warn("extDB2: SQL_CUSTOM_V2: Error No Custom Call Not Found: Input String {0}", input_str);
-		extension_ptr->logger->warn("extDB2: SQL_CUSTOM_V2: Error No Custom Call Not Found: Callname {0}", tokens[0]);
+		extension_ptr->logger->warn("extDB2: SQL_CUSTOM_V2: Error No Custom Call Not Found: Callname {0}", callname);
 		#ifdef DEBUG_TESTING
 			extension_ptr->console->warn("extDB2: SQL_CUSTOM_V2: Error No Custom Call Not Found: Input String {0}", input_str);
-			extension_ptr->console->warn("extDB2: SQL_CUSTOM_V2: Error No Custom Call Not Found: Callname {0}", tokens[0]);
+			extension_ptr->console->warn("extDB2: SQL_CUSTOM_V2: Error No Custom Call Not Found: Callname {0}", callname);
 		#endif
 	}
 	else
 	{
-		if ((custom_calls_const_itr->second.number_of_inputs + custom_calls_const_itr->second.number_of_custom_inputs) != (tokens.count() - 1))
+		Poco::StringTokenizer tokens(input_str.substr(found+1), custom_calls_const_itr->second.seperator);
+		if ((custom_calls_const_itr->second.number_of_inputs + custom_calls_const_itr->second.number_of_custom_inputs) != tokens.count())
 		{
 			// BAD Number of Inputs
 			result = "[0,\"Error Incorrect Number of Inputs\"]";
 			extension_ptr->logger->warn("extDB2: SQL_CUSTOM_V2: Incorrect Number of Inputs: Input String {0}", input_str);
-			extension_ptr->logger->warn("extDB2: SQL_CUSTOM_V2: Incorrect Number of Inputs: Expected: {0} Got: {1}", (custom_calls_const_itr->second.number_of_inputs + custom_calls_const_itr->second.number_of_custom_inputs), (tokens.count() - 1));
+			extension_ptr->logger->warn("extDB2: SQL_CUSTOM_V2: Incorrect Number of Inputs: Expected: {0} Got: {1}", (custom_calls_const_itr->second.number_of_inputs + custom_calls_const_itr->second.number_of_custom_inputs), tokens.count());
 			#ifdef DEBUG_TESTING
 				extension_ptr->console->warn("extDB2: SQL_CUSTOM_V2: Incorrect Number of Inputs: Input String {0}", input_str);
-				extension_ptr->console->warn("extDB2: SQL_CUSTOM_V2: Incorrect Number of Inputs: Expected: {0} Got: {1}", (custom_calls_const_itr->second.number_of_inputs + custom_calls_const_itr->second.number_of_custom_inputs), (tokens.count() - 1));
+				extension_ptr->console->warn("extDB2: SQL_CUSTOM_V2: Incorrect Number of Inputs: Expected: {0} Got: {1}", (custom_calls_const_itr->second.number_of_inputs + custom_calls_const_itr->second.number_of_custom_inputs), tokens.count());
 			#endif
 		}
 		else
@@ -1025,7 +1028,7 @@ bool SQL_CUSTOM_V2::callProtocol(std::string input_str, std::string &result, con
 			else
 			{
 				auto itr = tokens.begin();
-				std::advance(itr, custom_calls_const_itr->second.number_of_inputs + 1);
+				std::advance(itr, custom_calls_const_itr->second.number_of_inputs);
 				inputs.insert(inputs.begin(), tokens.begin(), itr);
 
 				custom_inputs.insert(custom_inputs.begin(), itr, tokens.end());
@@ -1070,7 +1073,7 @@ bool SQL_CUSTOM_V2::callProtocol(std::string input_str, std::string &result, con
 									status = false;
 								case 2: // Strip + Log
 									extension_ptr->logger->warn("extDB2: SQL_CUSTOM_V2: Error Bad Char Detected: Input: {0}", input_str);
-									extension_ptr->logger->warn("extDB2: SQL_CUSTOM_V2: Error Bad Char Detected: Token: {0}", sql_input_option.number);
+									extension_ptr->logger->warn("extDB2: SQL_CUSTOM_V2: Error Bad Char Detected: Token: {0}", (sql_input_option.number + 1));
 								case 1: // Strip
 									result = "[0,\"Error Strip Char Found\"]";
 									break;
