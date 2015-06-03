@@ -105,7 +105,11 @@ void Rcon::Reconnect(const boost::system::error_code& error)
 {
 	logger->info("Rcon: Attempting to Reconnect");
 	boost::asio::ip::udp::endpoint endpoint(boost::asio::ip::address::from_string(rcon_settings.address), rcon_settings.port);
-	rcon_socket.socket->async_connect(endpoint, boost::bind(&Rcon::connectionHandler, this, boost::asio::placeholders::error));
+
+	{
+		std::lock_guard<std::mutex> lock(rcon_socket.mutex);
+		rcon_socket.socket->async_connect(endpoint, boost::bind(&Rcon::connectionHandler, this, boost::asio::placeholders::error));
+	}
 }
 
 
@@ -174,7 +178,10 @@ void Rcon::connectionHandler(const boost::system::error_code& error)
 
 		logger->info("Rcon: UDP Socket Connection Error");
 		timerKeepAlive(0);
-		rcon_socket.socket->close();
+		{
+			std::lock_guard<std::mutex> lock(rcon_socket.mutex);
+			rcon_socket.socket->close();
+		}
 		if (auto_reconnect)
 		{
 			timerReconnect(5);
@@ -204,7 +211,10 @@ void Rcon::disconnect()
 {
 	auto_reconnect = false;
 	timerKeepAlive(0);
-	rcon_socket.socket->close();
+	{
+		std::lock_guard<std::mutex> lock(rcon_socket.mutex);
+		rcon_socket.socket->close();
+	}
 }
 
 
@@ -216,6 +226,7 @@ bool Rcon::status()
 
 void Rcon::startReceive()
 {
+	std::lock_guard<std::mutex> lock(rcon_socket.mutex);
 	rcon_socket.socket->async_receive(
 		boost::asio::buffer(rcon_socket.recv_buffer),
 		boost::bind(&Rcon::handleReceive, this,
@@ -248,7 +259,10 @@ void Rcon::handleReceive(const boost::system::error_code& error, std::size_t byt
 		logger->info("Rcon: UDP handleReceive Error: {0}", error.message());
 
 		timerKeepAlive(0);
-		rcon_socket.socket->close();
+		{
+			std::lock_guard<std::mutex> lock(rcon_socket.mutex);
+			rcon_socket.socket->close();
+		}
 		if (auto_reconnect)
 		{
 			timerReconnect(5);
@@ -413,7 +427,6 @@ void Rcon::processMessagePlayers(Poco::StringTokenizer &tokens)
 	std::string player_str;
 
 	std::vector<RconPlayerInfo> info_vector;
-	std::vector<std::pair <std::string, std::string> > players_vector;
 
 	for (int i = 3; i < (tokens.count() - 1); ++i)
 	{
@@ -460,7 +473,7 @@ void Rcon::processMessagePlayers(Poco::StringTokenizer &tokens)
 			logger->info("DEBUG players Player Name: {0}.", player_data.player_name);
 			logger->info("DEBUG players Player GUID: {0}.", player_data.guid);
 
-			players_vector.push_back(std::make_pair(player_data.player_name, player_data.guid));
+			players_name_beguid[player_data.player_name] = player_data.guid;
 
 			bool kicked = false;
 			if (bad_playername_settings.enable)
@@ -491,13 +504,6 @@ void Rcon::processMessagePlayers(Poco::StringTokenizer &tokens)
 		}
 	}
 
-	{
-		std::lock_guard<std::mutex> lock(players_name_beguid_mutex);
-		for (auto &player : players_vector)
-		{
-			players_name_beguid[player.first] = player.second;
-		}
-	}
 
 	AbstractExt::resultData result_data;
 	if (info_vector.empty())
@@ -591,8 +597,6 @@ void Rcon::checkWhitelistedPlayer(std::string &player_number, std::string &playe
 {
 	bool whitelisted_player = false;
 	{
-		std::lock_guard<std::mutex> lock(reserved_slots_mutex);
-
 		// Checking vector for Whitelisted GUID
 		if (std::find(whitelist_settings.whitelisted_guids.begin(), whitelist_settings.whitelisted_guids.end(), player_guid) != whitelist_settings.whitelisted_guids.end())
 		{
@@ -695,27 +699,22 @@ void Rcon::chatMessage(std::size_t &bytes_received)
 				std::string player_name = result.substr(pos + 1, result.size() - (pos + 14));
 
 				logger->info("DEBUG Disconnected Player Name: {0}.", player_name);
+				if (whitelist_settings.enable || rcon_settings.generate_unique_id)
 				{
-					std::lock_guard<std::mutex> lock(players_name_beguid_mutex);
-
-					if (whitelist_settings.enable || rcon_settings.generate_unique_id)
+					if (whitelist_settings.enable)
 					{
-						std::lock_guard<std::mutex> lock(reserved_slots_mutex);
-						if (whitelist_settings.enable)
-						{
-							whitelist_settings.players_whitelisted.erase(players_name_beguid[player_name]);
-							whitelist_settings.players_non_whitelisted.erase(players_name_beguid[player_name]);
-						}
-						#ifndef RCON_APP
-							if (rcon_settings.generate_unique_id)
-							{
-								// We only bother to generate a key if player has not been kicked
-								extension_ptr->delPlayerKey_delayed(players_name_beguid[player_name]); // TODO Change Timer
-							}
-						#endif
+						whitelist_settings.players_whitelisted.erase(players_name_beguid[player_name]);
+						whitelist_settings.players_non_whitelisted.erase(players_name_beguid[player_name]);
 					}
-					players_name_beguid.erase(player_name);
+					#ifndef RCON_APP
+						if (rcon_settings.generate_unique_id)
+						{
+							// We only bother to generate a key if player has not been kicked
+							extension_ptr->delPlayerKey_delayed(players_name_beguid[player_name]); // TODO Change Timer
+						}
+					#endif
 				}
+				players_name_beguid.erase(player_name);
 			}
 		}
 		else if (boost::algorithm::starts_with(result, "Verified GUID"))
@@ -736,11 +735,7 @@ void Rcon::chatMessage(std::size_t &bytes_received)
 				logger->info("DEBUG Verified Player GUID: {0}.", player_guid);
 			#endif
 
-			// ADD PLAYER BEGUID
-			{
-				std::lock_guard<std::mutex> lock(players_name_beguid_mutex);
-				players_name_beguid[player_name] = player_guid;
-			}
+			players_name_beguid[player_name] = player_guid;
 
 			bool kicked = false;
 			if (whitelist_settings.enable)
@@ -819,10 +814,13 @@ void Rcon::createKeepAlive(const boost::system::error_code& error)
 		std::shared_ptr<std::string> packet;
 		packet.reset(new std::string(cmdPacketStream.str()));
 
-		rcon_socket.socket->async_send(boost::asio::buffer(*packet),
-								boost::bind(&Rcon::handleSent, this, packet,
-								boost::asio::placeholders::error,
-								boost::asio::placeholders::bytes_transferred));
+		{
+			std::lock_guard<std::mutex> lock(rcon_socket.mutex);
+			rcon_socket.socket->async_send(boost::asio::buffer(*packet),
+									boost::bind(&Rcon::handleSent, this, packet,
+									boost::asio::placeholders::error,
+									boost::asio::placeholders::bytes_transferred));
+		}
 		timerKeepAlive(30);
 	}
 	else
@@ -889,10 +887,13 @@ void Rcon::sendPacket(RconPacket &rcon_packet)
 	std::shared_ptr<std::string> packet;
 	packet.reset( new std::string(cmdPacketStream.str()) );
 
-	rcon_socket.socket->async_send(boost::asio::buffer(*packet),
-							boost::bind(&Rcon::handleSent, this, packet,
-							boost::asio::placeholders::error,
-							boost::asio::placeholders::bytes_transferred));
+	{
+		std::lock_guard<std::mutex> lock(rcon_socket.mutex);
+		rcon_socket.socket->async_send(boost::asio::buffer(*packet),
+								boost::bind(&Rcon::handleSent, this, packet,
+								boost::asio::placeholders::error,
+								boost::asio::placeholders::bytes_transferred));
+	}
 }
 
 
@@ -953,10 +954,13 @@ void Rcon::sendBanPacket(RconPacket &rcon_packet)
 	std::shared_ptr<std::string> packet;
 	packet.reset( new std::string(cmdPacketStream.str()) );
 
-	rcon_socket.socket->async_send(boost::asio::buffer(*packet),
+	{
+		std::lock_guard<std::mutex> lock(rcon_socket.mutex);
+		rcon_socket.socket->async_send(boost::asio::buffer(*packet),
 							boost::bind(&Rcon::handleBanSent, this, packet,
 							boost::asio::placeholders::error,
 							boost::asio::placeholders::bytes_transferred));
+	}
 }
 
 
