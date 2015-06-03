@@ -25,6 +25,8 @@ along with this program. If not, see <http://www.gnu.org/licenses/>.
 #include <regex>
 #include <thread>
 
+#include <boost/date_time/posix_time/posix_time.hpp>
+
 #include <boost/algorithm/string.hpp>
 #include <boost/asio.hpp>
 #include <boost/bind.hpp>
@@ -435,7 +437,7 @@ Poco::Data::Session Ext::getDBSession_mutexlock(AbstractExt::DBConnectionInfo &d
 	return database.sql_pool->get(session_data_ptr);
 }
 
-/*
+
 void Ext::createPlayerKey_mutexlock(std::string &player_beguid, int len_of_key)
 {
 	std::string player_unique_key;
@@ -495,27 +497,59 @@ void Ext::createPlayerKey_mutexlock(std::string &player_beguid, int len_of_key)
 
 void Ext::delPlayerKey_delayed(std::string &player_beguid)
 {
+	std::lock_guard<std::mutex> lock(player_unique_keys_mutex);
+
 	logger->info("Removed Player Timer for BEGUID: {0}", player_beguid);
-	timer->expires_from_now(boost::posix_time::seconds(30)); // TODO Make Configureable ?
-	timer->async_wait(boost::bind(&Ext::delPlayerKey_mutexlock, this, player_beguid));
+
+	int diff_time = boost::posix_time::time_duration((boost::posix_time::microsec_clock::local_time() + boost::posix_time::seconds(30)) - timer->expires_at()).total_seconds();
+	if (diff_time <= 0)
+	{
+		del_players_keys.push_back(std::make_pair(30, player_beguid));
+		timer->expires_from_now(boost::posix_time::seconds(30));
+		timer->async_wait(boost::bind(&Ext::delPlayerKey_mutexlock, this));
+	}
+	else
+	{
+		std::size_t wait_time = 30 - diff_time;
+		del_players_keys.push_back(std::make_pair(wait_time, player_beguid));
+	}
 }
 
 
-void Ext::delPlayerKey_mutexlock(std::string player_beguid)
+void Ext::delPlayerKey_mutexlock()
 {
-	logger->info("Removed Player Unique ID for BEGUID: {0}", player_beguid);
 	std::lock_guard<std::mutex> lock(player_unique_keys_mutex);
-	if (player_unique_keys.count(player_beguid))
+
+	logger->info("Removed Player Unique ID ");
+
+	while (true)
 	{
-		player_unique_keys[player_beguid].keys.pop_front();
-		if (player_unique_keys[player_beguid].keys.empty())
+		if (del_players_keys.size() == 0)
 		{
-			player_unique_keys.erase(player_beguid);
+			break;
+		}
+		if (del_players_keys.front().first > 1)
+		{
+			timer->expires_from_now(boost::posix_time::seconds(del_players_keys.front().first));
+			timer->async_wait(boost::bind(&Ext::delPlayerKey_mutexlock, this));
+			break;
+		}
+		else
+		{
+			if (player_unique_keys.count(del_players_keys.front().second))
+			{
+				player_unique_keys[del_players_keys.front().second].keys.pop_front();
+				if (player_unique_keys[del_players_keys.front().second].keys.empty())
+				{
+					player_unique_keys.erase(del_players_keys.front().second);
+				}
+				logger->info("Removed Player Unique ID for BEGUID 2: {0}", del_players_keys.front().second);
+			}
+			del_players_keys.pop_front();
 		}
 	}
-	logger->info("Removed Player Unique ID for BEGUID 2: {0}", player_beguid);
 }
-*/
+
 
 void Ext::getPlayerKey_BEGuid(std::string &player_beguid, std::string &player_key)
 {
@@ -1181,12 +1215,23 @@ const unsigned int Ext::saveResult_mutexlock(const resultData &result_data)
 
 
 void Ext::saveResult_mutexlock(const unsigned int &unique_id, const resultData &result_data)
-// Stores Result String  in a unordered map array.
-//   Used when string > arma output char
+// Stores Result String for Unique ID
 {
 	std::lock_guard<std::mutex> lock(mutex_results);
 	stored_results[unique_id] = std::move(result_data);
 	stored_results[unique_id].wait = false;
+}
+
+
+void Ext::saveResult_mutexlock(std::vector<unsigned int> &unique_ids, const resultData &result_data)
+// Stores Result for multiple Unique IDs (used by Rcon Backend)
+{
+	std::lock_guard<std::mutex> lock(mutex_results);
+	for (auto &unique_id : unique_ids)
+	{
+		stored_results[unique_id] = result_data;
+		stored_results[unique_id].wait = false;
+	}
 }
 
 

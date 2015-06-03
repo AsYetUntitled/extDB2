@@ -58,7 +58,7 @@ class Ext: public AbstractExt
 		void createPlayerKey_mutexlock(std::string &player_beguid, int len_of_key);
 
 		void delPlayerKey_delayed(std::string &player_beguid);
-		void delPlayerKey_mutexlock(std::string player_beguid);
+		void delPlayerKey_mutexlock();
 
 		void getPlayerKey_SteamID(std::string &player_steam_id, std::string &player_key);
 		void getPlayerKey_BEGuid(std::string &player_beguid, std::string &player_key);
@@ -67,6 +67,7 @@ class Ext: public AbstractExt
 	protected:
 		const unsigned int saveResult_mutexlock(const resultData &result_data);
 		void saveResult_mutexlock(const unsigned int &unique_id, const resultData &result_data);
+		void saveResult_mutexlock(std::vector<unsigned int> &unique_ids, const resultData &result_data);
 
 		Poco::Thread steam_thread;
 
@@ -83,6 +84,7 @@ class Ext: public AbstractExt
 			std::string regex_rule;
 		};
 		std::unordered_map<std::string, PlayerKeys> player_unique_keys;
+		std::list< std::pair<std::size_t, std::string> > del_players_keys;
 		// std::mutex player_unique_keys_mutex;  defined in abstract_ext.h  used by BELogscanner
 
 		// Rcon

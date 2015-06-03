@@ -99,6 +99,7 @@ class AbstractExt
 		std::mutex player_unique_keys_mutex;
 
 		virtual void saveResult_mutexlock(const unsigned int &unique_id, const resultData &result_data)=0;
+		virtual void saveResult_mutexlock(std::vector<unsigned int> &unique_ids, const resultData &result_data)=0;
 
 		virtual Poco::Data::Session getDBSession_mutexlock(DBConnectionInfo &database)=0;
 		virtual Poco::Data::Session getDBSession_mutexlock(DBConnectionInfo &database, Poco::Data::SessionPool::SessionDataPtr &session_data_ptr)=0;
@@ -114,8 +115,8 @@ class AbstractExt
 		virtual void getDateTime(const std::string &input_str, std::string &result)=0;
 		virtual void getUniqueString(int &len_of_string, int &num_of_string, std::string &result)=0;
 
-		//virtual void createPlayerKey_mutexlock(std::string &player_beguid, int len_of_key)=0;
-		//virtual void delPlayerKey_delayed(std::string &player_beguid)=0;
+		virtual void createPlayerKey_mutexlock(std::string &player_beguid, int len_of_key)=0;
+		virtual void delPlayerKey_delayed(std::string &player_beguid)=0;
 
 		virtual void getPlayerKey_SteamID(std::string &player_steam_id, std::string &player_key)=0;
 		virtual void getPlayerKey_BEGuid(std::string &player_beguid, std::string &player_key)=0;

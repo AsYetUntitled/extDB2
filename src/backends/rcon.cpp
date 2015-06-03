@@ -403,13 +403,7 @@ void Rcon::processMessageMission(Poco::StringTokenizer &tokens)
 			}
 			rcon_socket.mission_requests.clear();
 		}
-		for (unsigned int unique_id: unique_id_saves)
-		{
-			if (unique_id != 1)
-			{
-				extension_ptr->saveResult_mutexlock(unique_id, result_data); // TODO FIX WITH LOOPER
-			}
-		}
+		extension_ptr->saveResult_mutexlock(unique_id_saves, result_data);
 	#endif
 }
 
@@ -485,7 +479,7 @@ void Rcon::processMessagePlayers(Poco::StringTokenizer &tokens)
 				if ((!kicked) && rcon_settings.generate_unique_id)
 				{
 					// We only bother to generate a key if player has not been kicked
-					//extension_ptr->createPlayerKey_mutexlock(player_data.guid, 10);
+					extension_ptr->createPlayerKey_mutexlock(player_data.guid, 10);
 				}
 			#endif
 
@@ -559,13 +553,7 @@ void Rcon::processMessagePlayers(Poco::StringTokenizer &tokens)
 		#endif
 	}
 	#ifndef RCON_APP
-		for (unsigned int unique_id: unique_id_saves)
-		{
-			if (unique_id != 1)
-			{
-				extension_ptr->saveResult_mutexlock(unique_id, result_data);
-			}
-		}
+		extension_ptr->saveResult_mutexlock(unique_id_saves, result_data);
 	#endif
 }
 
@@ -722,7 +710,7 @@ void Rcon::chatMessage(std::size_t &bytes_received)
 							if (rcon_settings.generate_unique_id)
 							{
 								// We only bother to generate a key if player has not been kicked
-								//extension_ptr->delPlayerKey_delayed(players_name_beguid[player_name]); // TODO Change Timer
+								extension_ptr->delPlayerKey_delayed(players_name_beguid[player_name]); // TODO Change Timer
 							}
 						#endif
 					}
@@ -764,7 +752,7 @@ void Rcon::chatMessage(std::size_t &bytes_received)
 				if ((!kicked) && rcon_settings.generate_unique_id)
 				{
 					// We only bother to generate a key if player has not been kicked
-					//extension_ptr->createPlayerKey_mutexlock(player_guid, 10); // TODO Make this configureable
+					extension_ptr->createPlayerKey_mutexlock(player_guid, 10); // TODO Make this configureable
 				}
 			#endif
 		}
