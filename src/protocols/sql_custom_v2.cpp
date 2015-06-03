@@ -154,7 +154,7 @@ bool SQL_CUSTOM_V2::init(AbstractExt *extension, const std::string &database_id,
 		}
 		if ((template_ini->getInt("Default.Version", 1)) >= EXTDB_SQL_CUSTOM_V2_REQUIRED_VERSION)
 		{
-			default_seperator = std::to_string(template_ini->getInt("Default.Seperator Character (Base10)", 59));
+			default_seperator = char(template_ini->getInt("Default.Seperator Character (Base10)", 58));
 			int default_number_of_inputs = template_ini->getInt("Default.Number of Inputs", 0);
 			int default_number_of_custom_inputs = template_ini->getInt("Default.Number of Custom Inputs", 0);
 
@@ -203,7 +203,14 @@ bool SQL_CUSTOM_V2::init(AbstractExt *extension, const std::string &database_id,
 				std::string sql_line_num_str;
 				std::string sql_part_num_str;
 
-				custom_calls[call_name].seperator = template_ini->getString(call_name + ".Seperator Character (Base10)", default_seperator);
+				if (template_ini->hasOption(call_name + ".Seperator Character (Base10)"))
+				{
+					custom_calls[call_name].seperator = char(template_ini->getInt(call_name + ".Seperator Character (Base10)"));
+				}
+				else
+				{
+					custom_calls[call_name].seperator = default_seperator;
+				}
 				custom_calls[call_name].number_of_inputs = template_ini->getInt(call_name + ".Number of Inputs", default_number_of_inputs);
 				custom_calls[call_name].number_of_custom_inputs = template_ini->getInt(call_name + ".Number of Custom Inputs", default_number_of_custom_inputs);
 				custom_calls[call_name].preparedStatement_cache = template_ini->getBool(call_name + ".Prepared Statement Cache", default_preparedStatement_cache);
