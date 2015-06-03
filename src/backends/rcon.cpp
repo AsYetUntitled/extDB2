@@ -425,7 +425,6 @@ void Rcon::processMessageMission(Poco::StringTokenizer &tokens)
 void Rcon::processMessagePlayers(Poco::StringTokenizer &tokens)
 {
 	std::string player_str;
-
 	std::vector<RconPlayerInfo> info_vector;
 
 	for (int i = 3; i < (tokens.count() - 1); ++i)
@@ -444,22 +443,28 @@ void Rcon::processMessagePlayers(Poco::StringTokenizer &tokens)
 			player_data.port = player_tokens[1].substr(found + 1);
 			player_data.ping = player_tokens[2];
 
-			if (boost::algorithm::ends_with(player_tokens[3], "(OK)"))
+			if (boost::algorithm::iends_with(player_tokens[3], "(OK)"))
 			{
 				player_data.verified = "true";
 				player_data.guid = player_tokens[3].substr(0, (player_tokens[3].size() - 4));
 			}
-			else
+			else if (boost::algorithm::iends_with(player_tokens[3], "(unverified)"))
 			{
 				player_data.verified = "false";
 				player_data.guid = player_tokens[3].substr(0, (player_tokens[3].size() - 12));
 			}
+			else
+			{
+				player_data.verified = "false";
+				player_data.guid = player_tokens[3]
+			}
+
 			found = tokens[i].find(")");
 			player_data.player_name = tokens[i].substr(found + 2);
 			boost::replace_all(player_data.player_name, "\"", "\"\"");
 			boost::replace_all(player_data.player_name, "'", "''");
 
-			if (boost::algorithm::ends_with(player_data.player_name, " (Lobby)"))
+			if (boost::algorithm::iends_with(player_data.player_name, " (Lobby)"))
 			{
 				player_data.player_name = player_data.player_name.substr(0, player_data.player_name.size() - 8);
 				player_data.lobby = "true";
@@ -473,30 +478,38 @@ void Rcon::processMessagePlayers(Poco::StringTokenizer &tokens)
 			logger->info("DEBUG players Player Name: {0}.", player_data.player_name);
 			logger->info("DEBUG players Player GUID: {0}.", player_data.guid);
 
-			players_name_beguid[player_data.player_name] = player_data.guid;
-
 			bool kicked = false;
-			if (bad_playername_settings.enable)
+			if (player_data.verified)
 			{
-				checkBadPlayerString(player_data.number, player_data.player_name, kicked);
-			}
-			if (!kicked)
-			{
-				if (whitelist_settings.enable && (whitelist_settings.open_slots == 0))
+				players_name_beguid[player_data.player_name] = player_data.guid;
+				if (bad_playername_settings.enable)
 				{
-					checkWhitelistedPlayer(player_data.number, player_data.player_name, player_data.guid, kicked);
+					checkBadPlayerString(player_data.number, player_data.player_name, kicked);
+				}
+				if (!kicked)
+				{
+					if (whitelist_settings.enable && (whitelist_settings.open_slots == 0))
+					{
+						checkWhitelistedPlayer(player_data.number, player_data.player_name, player_data.guid, kicked);
+					}
+				}
+
+				#ifndef RCON_APP
+					if ((!kicked) && rcon_settings.generate_unique_id)
+					{
+						// We only bother to generate a key if player has not been kicked
+						extension_ptr->createPlayerKey_mutexlock(player_data.guid, 10);
+					}
+				#endif
+				info_vector.push_back(std::move(player_data));
+			}
+			else
+			{
+				if (bad_playername_settings.enable)
+				{
+					checkBadPlayerString(player_data.number, player_data.player_name, kicked);
 				}
 			}
-
-			#ifndef RCON_APP
-				if ((!kicked) && rcon_settings.generate_unique_id)
-				{
-					// We only bother to generate a key if player has not been kicked
-					extension_ptr->createPlayerKey_mutexlock(player_data.guid, 10);
-				}
-			#endif
-
-			info_vector.push_back(std::move(player_data));
 		}
 		else
 		{
