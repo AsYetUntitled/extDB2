@@ -447,21 +447,24 @@ void Rcon::processMessagePlayers(Poco::StringTokenizer &tokens)
 			{
 				player_data.verified = "true";
 				player_data.guid = player_tokens[3].substr(0, (player_tokens[3].size() - 4));
+				found = tokens[i].find(")");
+				player_data.player_name = tokens[i].substr(found + 2);
+				boost::replace_all(player_data.player_name, "\"", "\"\"");
+				boost::replace_all(player_data.player_name, "'", "''");
 			}
 			else if (boost::algorithm::iends_with(player_tokens[3], "(unverified)"))
 			{
 				player_data.verified = "false";
 				player_data.guid = player_tokens[3].substr(0, (player_tokens[3].size() - 12));
+				found = tokens[i].find("- ");
+				player_data.player_name = tokens[i].substr(found + 2);
+				boost::replace_all(player_data.player_name, "\"", "\"\"");
+				boost::replace_all(player_data.player_name, "'", "''");
 			}
 			else
 			{
 				player_data.verified = "false";
 			}
-
-			found = tokens[i].find(")");
-			player_data.player_name = tokens[i].substr(found + 2);
-			boost::replace_all(player_data.player_name, "\"", "\"\"");
-			boost::replace_all(player_data.player_name, "'", "''");
 
 			if (boost::algorithm::iends_with(player_data.player_name, " (Lobby)"))
 			{
