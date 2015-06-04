@@ -4,6 +4,12 @@ Looking for more info on SQL_CUSTOM check out https://github.com/Torndeco/extDB2
 
 Versions
 ---------------------------------------------------------------------------------------------------
+11->12
+	Added: SQL_CUSTOM + SQL_CUSTOM_V2   Seperator Character (Base10)   Option
+		Allows you define the seperator character for entire SQL_CUSTOM Protocol or callnames
+			Value for Option is in Base10  i.e  58 = :
+
+---------------------------------------------------------------------------------------------------
 10->11
 	Added: Player_Key
 		Example of use
