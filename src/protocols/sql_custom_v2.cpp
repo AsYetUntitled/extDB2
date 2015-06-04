@@ -992,7 +992,19 @@ bool SQL_CUSTOM_V2::callProtocol(std::string input_str, std::string &result, con
 	#endif
 
 	const std::string::size_type found = input_str.find(default_seperator);
-	const std::string callname = input_str.substr(0, found-1);
+	std::string callname;
+	std::string tokens_str;
+
+	if (found != std::string::npos)
+	{
+		callname = input_str.substr(0, found);
+		tokens_str = input_str.substr(found+1);
+	}
+	else
+	{
+		callname = input_str;
+	}
+
 	auto custom_calls_const_itr = custom_calls.find(callname);
 	if (custom_calls_const_itr == custom_calls.end())
 	{
@@ -1007,23 +1019,24 @@ bool SQL_CUSTOM_V2::callProtocol(std::string input_str, std::string &result, con
 	}
 	else
 	{
-		Poco::StringTokenizer tokens(input_str.substr(found+1), custom_calls_const_itr->second.seperator);
-		if ((custom_calls_const_itr->second.number_of_inputs + custom_calls_const_itr->second.number_of_custom_inputs) != tokens.count())
+		const int expected_inputs = (custom_calls_const_itr->second.number_of_inputs + custom_calls_const_itr->second.number_of_custom_inputs);
+
+		Poco::StringTokenizer tokens(tokens_str, custom_calls_const_itr->second.seperator);
+		if (expected_inputs != tokens.count())
 		{
 			// BAD Number of Inputs
 			result = "[0,\"Error Incorrect Number of Inputs\"]";
 			extension_ptr->logger->warn("extDB2: SQL_CUSTOM_V2: Incorrect Number of Inputs: Input String {0}", input_str);
-			extension_ptr->logger->warn("extDB2: SQL_CUSTOM_V2: Incorrect Number of Inputs: Expected: {0} Got: {1}", (custom_calls_const_itr->second.number_of_inputs + custom_calls_const_itr->second.number_of_custom_inputs), tokens.count());
+			extension_ptr->logger->warn("extDB2: SQL_CUSTOM_V2: Incorrect Number of Inputs: Expected: {0} Got: {1}", expected_inputs, tokens.count());
 			#ifdef DEBUG_TESTING
 				extension_ptr->console->warn("extDB2: SQL_CUSTOM_V2: Incorrect Number of Inputs: Input String {0}", input_str);
-				extension_ptr->console->warn("extDB2: SQL_CUSTOM_V2: Incorrect Number of Inputs: Expected: {0} Got: {1}", (custom_calls_const_itr->second.number_of_inputs + custom_calls_const_itr->second.number_of_custom_inputs), tokens.count());
+				extension_ptr->console->warn("extDB2: SQL_CUSTOM_V2: Incorrect Number of Inputs: Expected: {0} Got: {1}", expected_inputs, tokens.count());
 			#endif
 		}
 		else
 		{
 			// GOOD Number of Inputs
 			bool status = true;
-			bool strip_chars_detected = false;
 
 			std::vector<std::string> inputs;
 			std::vector<std::string> custom_inputs;
@@ -1073,14 +1086,13 @@ bool SQL_CUSTOM_V2::callProtocol(std::string input_str, std::string &result, con
 						}
 						if (temp_str != inputs[sql_input_option.number])
 						{
-							strip_chars_detected = true;
 							switch (custom_calls_const_itr->second.strip_chars_action)
 							{
 								case 3: // Strip + Log + Error
 									status = false;
 								case 2: // Strip + Log
 									extension_ptr->logger->warn("extDB2: SQL_CUSTOM_V2: Error Bad Char Detected: Input: {0}", input_str);
-									extension_ptr->logger->warn("extDB2: SQL_CUSTOM_V2: Error Bad Char Detected: Token: {0}", (sql_input_option.number + 1));
+									extension_ptr->logger->warn("extDB2: SQL_CUSTOM_V2: Error Bad Char Detected: Token: {0}", (sql_input_option.number));
 								case 1: // Strip
 									result = "[0,\"Error Strip Char Found\"]";
 									break;
@@ -1179,7 +1191,7 @@ bool SQL_CUSTOM_V2::callProtocol(std::string input_str, std::string &result, con
 
 			if (status)
 			{
-				callPreparedStatement(tokens[0], custom_calls_const_itr, all_processed_inputs, custom_inputs, player_key, status, result);
+				callPreparedStatement(callname, custom_calls_const_itr, all_processed_inputs, custom_inputs, player_key, status, result);
 				#if defined(DEBUG_TESTING) || defined(DEBUG_LOGGING)
 					if (status)
 					{

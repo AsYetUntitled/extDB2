@@ -1025,7 +1025,7 @@ bool SQL_CUSTOM::callProtocol(std::string input_str, std::string &result, const 
 		{
 			// BAD Number of Inputs
 			result = "[0,\"Error Incorrect Number of Inputs\"]";
-			extension_ptr->logger->warn("extDB2: SQL_CUSTOM: Incorrect Number of Inputs: Input String {0}", tokens_str);
+			extension_ptr->logger->warn("extDB2: SQL_CUSTOM: Incorrect Number of Inputs: Input String {0}", input_str);
 			extension_ptr->logger->warn("extDB2: SQL_CUSTOM: Incorrect Number of Inputs: Expected: {0} Got: {1}", expected_inputs, tokens.count());
 			#ifdef DEBUG_TESTING
 				extension_ptr->console->warn("extDB2: SQL_CUSTOM: Incorrect Number of Inputs: Input String {0}", input_str);
@@ -1060,6 +1060,7 @@ bool SQL_CUSTOM::callProtocol(std::string input_str, std::string &result, const 
 					}
 				}
 			}
+
 			// Multiple INPUT Lines
 			std::vector<std::vector<std::string> > all_processed_inputs;
 			all_processed_inputs.reserve(custom_calls_const_itr->second.sql_inputs_options.size());
@@ -1186,6 +1187,7 @@ bool SQL_CUSTOM::callProtocol(std::string input_str, std::string &result, const 
 				}
 				all_processed_inputs.push_back(std::move(processed_inputs));
 			}
+
 			if (status)
 			{
 				callPreparedStatement(callname, custom_calls_const_itr, all_processed_inputs, custom_inputs, player_key, status, result);
