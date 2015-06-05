@@ -99,6 +99,9 @@ option(POCO_UNBUNDLED
 if(MSVC)
     option(POCO_MT
       "Set to OFF|ON (default is OFF) to control build of POCO as /MT instead of /MD" OFF)
+
+    option(ENABLE_MSVC_MP
+      "Set to OFF|ON (default is OFF) to control parallel build of POCO with MSVC" OFF)
 endif()
 
 # Uncomment from next two lines to force static or dynamic library, default is autodetection
@@ -137,18 +140,13 @@ endif ()
 
 add_subdirectory(Foundation)
 if(ENABLE_XML)
-  add_subdirectory(XML)
-  list(APPEND Poco_COMPONENTS "XML")
-else ()
-  add_definitions( -DPOCO_UTIL_NO_XMLCONFIGURATION )
-  endif()
-if(ENABLE_JSON)
-  add_subdirectory(JSON)
-  list(APPEND Poco_COMPONENTS "JSON")
-else ()
-  add_definitions( -DPOCO_UTIL_NO_JSONCONFIGURATION )
+add_subdirectory(XML)
+list(APPEND Poco_COMPONENTS "XML")
 endif()
-
+if(ENABLE_JSON)
+add_subdirectory(JSON)
+list(APPEND Poco_COMPONENTS "JSON")
+endif()
 if(ENABLE_MONGODB)
 add_subdirectory(MongoDB)
 list(APPEND Poco_COMPONENTS "MongoDB")
