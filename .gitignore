@@ -1,6 +1,1 @@
-compile/
-release/
-windows_build/
-linux_build/
-old/
-*.aps
+bld/
