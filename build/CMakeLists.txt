@@ -111,15 +111,6 @@ if(${UNIX})
      set(CMAKE_FIND_LIBRARY_SUFFIXES ".a")
 endif()
 
-# OpenSSL Headers
-find_package(OpenSSL)
-if(OPENSSL_FOUND)
-	include_directories("${OPENSSL_INCLUDE_DIR}")
-	target_link_libraries(${EXECUTABLE_NAME} ${OPENSSL_SSL_LIBRARY} ${OPENSSL_CRYPTO_LIBRARY})
-else()
-	message(FATAL_ERROR "\nOpenSSL not found")
-endif()
-
 # BOOST
 set(Boost_USE_STATIC_LIBS ON)
 set(Boost_USE_MULTITHREADED ON)

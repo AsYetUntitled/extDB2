@@ -11,7 +11,7 @@
 # Once done, this will define
 #
 #  POCO_FOUND - system has POCO
-#  POCO_INCLUDE_DIRS - the POCO include directories 
+#  POCO_INCLUDE_DIRS - the POCO include directories
 #  POCO_LIBRARIES - link these to use POCO
 
 include(FindPkgMacros)
@@ -27,8 +27,8 @@ getenv_path(POCO_ROOT)
 getenv_path(POCO_BASE)
 
 # construct search paths
-set(POCO_PREFIX_PATH 
-  ${POCO_HOME} ${ENV_POCO_HOME} 
+set(POCO_PREFIX_PATH
+  ${POCO_HOME} ${ENV_POCO_HOME}
   ${POCO_ROOT} ${ENV_POCO_ROOT}
   ${POCO_BASE} ${ENV_POCO_BASE}
 )
@@ -55,13 +55,6 @@ set(POCO_JSON_LIBRARY_NAMES PocoJSONmt PocoJSON)
 find_library(POCO_JSON_LIBRARY NAMES ${POCO_JSON_LIBRARY_NAMES} HINTS ${POCO_LIB_SEARCH_PATH} ${POCO_PKGC_LIBRARY_DIRS} PATH_SUFFIXES Linux/i686)
 list(APPEND POCO_LIBRARIES ${POCO_JSON_LIBRARY})
 findpkg_finish(POCO_JSON)
-
-# Look for Poco's Crypto package
-findpkg_begin(POCO_Crypto)
-set(POCO_CRYPTO_LIBRARY_NAMES PocoCryptomt PocoCrypto)
-find_library(POCO_Crypto_LIBRARY NAMES ${POCO_CRYPTO_LIBRARY_NAMES} HINTS ${POCO_LIB_SEARCH_PATH} ${POCO_PKGC_LIBRARY_DIRS} PATH_SUFFIXES Linux/i686)
-list(APPEND POCO_LIBRARIES ${POCO_Crypto_LIBRARY})
-findpkg_finish(POCO_Crypto)
 
 # Look for Poco's SQLite package
 findpkg_begin(POCO_Data_SQLite)
