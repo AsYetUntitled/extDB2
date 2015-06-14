@@ -1,7 +1,9 @@
+#include <jemalloc/jemalloc.h>
+
+#include "ext.h"
 
 #include <boost/algorithm/string.hpp>
 #include <boost/filesystem.hpp>
-#include "ext.h"
 
 
 Ext *extension;
@@ -13,6 +15,7 @@ Ext *extension;
 	static void __attribute__((constructor))
 	extension_init(void)
 	{
+		je_init();
 		std::unordered_map<std::string, std::string> options;
 
 		FILE *fh = fopen ("/proc/self/cmdline", "r"); // /proc/self  :D
@@ -50,11 +53,12 @@ Ext *extension;
 	extension_destroy(void)
 	{
 		extension->stop();
+		je_uninit();
 	}
 
 	extern "C"
 	{
-		void RVExtension(char *output, int outputSize, const char *function); 
+		void RVExtension(char *output, int outputSize, const char *function);
 	};
 
 	void RVExtension(char *output, int outputSize, const char *function)
@@ -79,6 +83,7 @@ Ext *extension;
 		{
 			case DLL_PROCESS_ATTACH:
 				{
+					je_init();
 					int nArgs;
 					LPWSTR *pszArgsW = CommandLineToArgvW(GetCommandLineW(), &nArgs);
 					std::unordered_map<std::string, std::string> options;
@@ -112,6 +117,7 @@ Ext *extension;
 				break;
 			case DLL_PROCESS_DETACH:
 				extension->stop();
+				je_uninit();
 				break;
 		}
 		return true;
@@ -119,7 +125,7 @@ Ext *extension;
 
 	extern "C"
 	{
-		__declspec(dllexport) void __stdcall RVExtension(char *output, int outputSize, const char *function); 
+		__declspec(dllexport) void __stdcall RVExtension(char *output, int outputSize, const char *function);
 	};
 
 	void __stdcall RVExtension(char *output, int outputSize, const char *function)

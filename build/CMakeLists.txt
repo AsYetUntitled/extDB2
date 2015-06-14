@@ -58,7 +58,7 @@ SET(COMPILE_RCON_APPLICATION FALSE CACHE BOOL "Compiles extDB2 Rcon.")
 SET(COMPILE_SANITIZE_APPLICATION FALSE CACHE BOOL "Compiles extDB2 Sanitize (testing application).")
 
 SET(DEBUG_LOGGING FALSE CACHE BOOL "Enable Debug Logging.")
-SET(DEBUG_TESTING FALSE CACHE BOOL "Enable extra Console Output.")
+SET(DEBUG_TESTING FALSE CACHE BOOL "Enable Extra Console Output.")
 
 
 if (DEBUG_LOGGING)
@@ -156,22 +156,6 @@ endif()
 # END STATIC LIBRARIES
 # -----------------------
 
-
-# -----------------------
-# START DYNAMIC LIBRARIES
-# -----------------------
-
-# Look for Intel Threading Building Blocks (TBB)
-include(FindTBB)
-if(TBB_FOUND)
-	include_directories(${TBB_INCLUDE_DIRS})
-else()
-	message(FATAL_ERROR "\nIntel TBB not found\n Please Set TBB_ROOT")
-endif()
-
-# -----------------------
-# END DYNAMIC LIBRARIES
-# -----------------------
 
 if(${WIN32})
 	# Windows
