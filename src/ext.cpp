@@ -63,7 +63,6 @@ along with this program. If not, see <http://www.gnu.org/licenses/>.
 #include "backends/steam.h"
 
 #include "protocols/abstract_protocol.h"
-#include "protocols/http_raw.h"
 #include "protocols/sql_custom.h"
 #include "protocols/sql_custom_v2.h"
 #include "protocols/sql_raw.h"
@@ -1091,11 +1090,7 @@ void Ext::addProtocol(char *output, const int &output_size, const std::string &d
 		}
 		else
 		{
-			if (boost::algorithm::iequals(protocol, std::string("HTTP_RAW")) == 1)
-			{
-				unordered_map_protocol[protocol_name] = std::unique_ptr<AbstractProtocol> (new HTTP_RAW());
-			}
-			else if (boost::algorithm::iequals(protocol, std::string("SQL_CUSTOM")) == 1)
+			if (boost::algorithm::iequals(protocol, std::string("SQL_CUSTOM")) == 1)
 			{
 				unordered_map_protocol[protocol_name] = std::unique_ptr<AbstractProtocol> (new SQL_CUSTOM());
 			}

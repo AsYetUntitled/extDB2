@@ -1,4 +1,10 @@
 -------------------------------------------------------------------------------
+64 :
+	REMOVED: HTTP_RAW, was broken + noone was using it.
+	
+	Changed: Malloc over to JEMalloc
+
+-------------------------------------------------------------------------------
 63 :
 	Improved: Changed Poco Library to use mysql_stmt_store_result(), should improve handling of Database Connection Lose when fetching results
 
