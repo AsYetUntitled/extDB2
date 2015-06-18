@@ -111,6 +111,18 @@ if(${UNIX})
      set(CMAKE_FIND_LIBRARY_SUFFIXES ".a")
 endif()
 
+# JEMalloc
+if(${WIN32})
+	add_definitions(-D JEMALLOC_LAZY_LOCK)
+  add_definitions(-D USE_STATIC)
+endif()
+include(FindJEMalloc)
+if(JEMalloc_FOUND)
+	include_directories(${JEMalloc_INCLUDE_DIR})
+else()
+	message(FATAL_ERROR "\nJEMalloc not found\n Please Set JEMalloc_INCLUDE_DIR & JEMalloc_LIBRARIES")
+endif()
+
 # BOOST
 set(Boost_USE_STATIC_LIBS ON)
 set(Boost_USE_MULTITHREADED ON)
