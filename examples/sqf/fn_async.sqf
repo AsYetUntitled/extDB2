@@ -13,14 +13,14 @@
 
 private["_queryStmt","_queryResult","_key","_mode","_return","_loop"];
 
+if (!params [
+	["_queryStmt", "", [""]],
+	["_mode", 0, [0]]
+]) exitWith {};
+
 _tickTime = diag_tickTime;
 
-_queryStmt = [_this,0,"",[""]] call BIS_fnc_param;
-_mode = [_this,1,1,[0]] call BIS_fnc_param;
-_multiarr = [_this,2,false,[false]] call BIS_fnc_param;
-
 _key = "extDB2" callExtension format["%1:%2:%3",_mode, (call extDB_SQL_CUSTOM_ID), _queryStmt];
-
 if(_mode isEqualTo 1) exitWith {true};
 
 _key = call compile format["%1",_key];
@@ -57,7 +57,7 @@ while{_loop} do
 
 _queryResult = call compile _queryResult;
 
-// Not needed, its SQF Code incase extDB ever returns error message i.e Database Died
+// Not needed, its SQF Code incase extDB2 ever returns error message i.e Database Connection Died
 if ((_queryResult select 0) isEqualTo 0) exitWith {diag_log format ["extDB2: Protocol Error: %1", _queryResult]; []};
 _return = (_queryResult select 1);
 _return;
