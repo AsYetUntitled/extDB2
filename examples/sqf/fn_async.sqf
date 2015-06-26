@@ -18,8 +18,6 @@ if (!params [
 	["_mode", 0, [0]]
 ]) exitWith {};
 
-_tickTime = diag_tickTime;
-
 _key = "extDB2" callExtension format["%1:%2:%3",_mode, (call extDB_SQL_CUSTOM_ID), _queryStmt];
 if(_mode isEqualTo 1) exitWith {true};
 
