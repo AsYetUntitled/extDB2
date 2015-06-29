@@ -31,7 +31,6 @@ along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 #include "abstract_ext.h"
 #include "backends/belogscanner.h"
-#include "backends/http.h"
 #include "backends/rcon.h"
 #include "backends/remoteserver.h"
 #include "backends/steam.h"

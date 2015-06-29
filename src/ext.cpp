@@ -57,20 +57,16 @@ along with this program. If not, see <http://www.gnu.org/licenses/>.
 #include <Poco/Data/SQLite/SQLiteException.h>
 
 #include "abstract_ext.h"
-#include "backends/http.h"
 #include "backends/rcon.h"
 #include "backends/remoteserver.h"
 #include "backends/steam.h"
 
 #include "protocols/abstract_protocol.h"
-#include "protocols/sql_custom.h"
 #include "protocols/sql_custom_v2.h"
-#include "protocols/sql_raw.h"
 #include "protocols/sql_raw_v2.h"
 #include "protocols/log.h"
 #include "protocols/misc.h"
 #include "protocols/rcon.h"
-#include "protocols/steam.h"
 #include "protocols/steam_v2.h"
 
 
@@ -1073,10 +1069,6 @@ void Ext::addProtocol(char *output, const int &output_size, const std::string &d
 			{
 				unordered_map_protocol[protocol_name] = std::unique_ptr<AbstractProtocol> (new RCON());
 			}
-			else if (boost::algorithm::iequals(protocol, std::string("STEAM")) == 1)
-			{
-				unordered_map_protocol[protocol_name] = std::unique_ptr<AbstractProtocol> (new STEAM());
-			}
 			else if (boost::algorithm::iequals(protocol, std::string("STEAM_V2")) == 1)
 			{
 				unordered_map_protocol[protocol_name] = std::unique_ptr<AbstractProtocol> (new STEAM_V2());
@@ -1090,17 +1082,9 @@ void Ext::addProtocol(char *output, const int &output_size, const std::string &d
 		}
 		else
 		{
-			if (boost::algorithm::iequals(protocol, std::string("SQL_CUSTOM")) == 1)
-			{
-				unordered_map_protocol[protocol_name] = std::unique_ptr<AbstractProtocol> (new SQL_CUSTOM());
-			}
-			else if (boost::algorithm::iequals(protocol, std::string("SQL_CUSTOM_V2")) == 1)
+			if (boost::algorithm::iequals(protocol, std::string("SQL_CUSTOM_V2")) == 1)
 			{
 				unordered_map_protocol[protocol_name] = std::unique_ptr<AbstractProtocol> (new SQL_CUSTOM_V2());
-			}
-			else if (boost::algorithm::iequals(protocol, std::string("SQL_RAW")) == 1)
-			{
-				unordered_map_protocol[protocol_name] = std::unique_ptr<AbstractProtocol> (new SQL_RAW());
 			}
 			else if (boost::algorithm::iequals(protocol, std::string("SQL_RAW_V2")) == 1)
 			{
