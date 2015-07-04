@@ -4,6 +4,12 @@
 #include <cstdlib>
 
 
+#ifndef	_WIN32
+#  define je_malloc	malloc
+#  define je_free free
+#endif
+
+
 void* operator new (size_t size)
 {
 	if (size == 0) size = 1;

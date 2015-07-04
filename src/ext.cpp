@@ -14,8 +14,9 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program. If not, see <http://www.gnu.org/licenses/>.
 */
-
-#include <jemalloc/jemalloc.h>
+#ifdef _WIN32
+	#include <jemalloc/jemalloc.h>
+#endif
 
 #include "ext.h"
 
@@ -1698,7 +1699,9 @@ void Ext::callExtension(char *output, const int &output_size, const char *functi
 #if defined(TEST_APP) && defined(DEBUG_TESTING)
 	int main(int nNumberofArgs, char* pszArgs[])
 	{
-		je_init();
+		#ifdef _WIN32
+			je_init();
+		#endif
 		int result_size = 80;
 		char result[81] = {0};
 		std::string input_str;
@@ -1768,7 +1771,9 @@ void Ext::callExtension(char *output, const int &output_size, const char *functi
 			}
 		}
 		extension->stop();
-		je_uninit();
+		#ifdef _WIN32
+			je_uninit();
+		#endif
 		return 0;
 	}
 #endif

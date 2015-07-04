@@ -12,14 +12,14 @@ find_path(JEMalloc_INCLUDE_DIR jemalloc/jemalloc.h NO_DEFAULT_PATH PATHS
   /usr/local/include
 )
 
-set(JEMalloc_NAMES jemalloc libjemalloc_x86_Release-Static)
+set(JEMalloc_NAMES jemalloc libjemalloc libjemalloc_x86_Release-Static)
 
 find_library(JEMalloc_LIBRARY NO_DEFAULT_PATH
   NAMES ${JEMalloc_NAMES} PATHS
   C:/local/GitHub/jemalloc-win32/lib/vc2013/x86
   /lib
-  /usr/lib
-  /usr/local/lib
+  /usr/lib/i386-linux-gnu
+  /usr/local/lib/i386-linux-gnu
 )
 
 if (JEMalloc_INCLUDE_DIR AND JEMalloc_LIBRARY)

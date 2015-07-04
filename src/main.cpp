@@ -15,7 +15,7 @@ Ext *extension;
 	static void __attribute__((constructor))
 	extension_init(void)
 	{
-		je_init();
+		//je_init();
 		std::unordered_map<std::string, std::string> options;
 
 		FILE *fh = fopen ("/proc/self/cmdline", "r"); // /proc/self  :D
@@ -53,7 +53,7 @@ Ext *extension;
 	extension_destroy(void)
 	{
 		extension->stop();
-		je_uninit();
+		//je_uninit();
 	}
 
 	extern "C"
