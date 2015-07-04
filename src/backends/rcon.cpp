@@ -1,6 +1,5 @@
 /*
-Copyright (C) 2012 Prithu "bladez" Parker <https://github.com/bladez-/bercon>
-Copyright (C) 2014 Declan Ireland <http://github.com/torndeco/extDB>
+Copyright (C) 2015 Declan Ireland <http://github.com/torndeco/extDB>
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -15,8 +14,6 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program. If not, see <http://www.gnu.org/licenses/>.
 
- * Change Log
- * Changed Code to use Poco Net Library & Poco Checksums
 */
 
 
@@ -816,18 +813,12 @@ void Rcon::createKeepAlive(const boost::system::error_code& error)
 		}
 
 		// Create Packet
-		std::stringstream cmdPacketStream;
-		cmdPacketStream.put(0x42); // B
-		cmdPacketStream.put(0x45); // E
-		cmdPacketStream.put(reversedCrc[0]); // 4-byte Checksum
-		cmdPacketStream.put(reversedCrc[1]);
-		cmdPacketStream.put(reversedCrc[2]);
-		cmdPacketStream.put(reversedCrc[3]);
-		cmdPacketStream << cmd;
-		cmdPacketStream.str();
-
-		std::shared_ptr<std::string> packet;
-		packet.reset(new std::string(cmdPacketStream.str()));
+		std::shared_ptr<std::string> packet(new std::string("BE"));
+		packet->push_back(reversedCrc[0]);
+		packet->push_back(reversedCrc[1]);
+		packet->push_back(reversedCrc[2]);
+		packet->push_back(reversedCrc[3]);
+		packet->append(cmd);
 
 		{
 			std::lock_guard<std::mutex> lock(rcon_socket.mutex);
@@ -866,15 +857,12 @@ void Rcon::sendPacket(RconPacket &rcon_packet)
 		logger->info("Rcon: Sending Login Packet");
 		cmdStream << rcon_packet.cmd;
 	}
-
 	std::string cmd = cmdStream.str();
+
 	boost::crc_32_type crc32;
 	crc32.process_bytes(cmd.data(), cmd.length());
-	long int crcVal = crc32.checksum();
-
-	std::stringstream hexStream;
-	hexStream << std::setfill('0') << std::setw(sizeof(int)*2);
-	hexStream << std::hex << crcVal;
+	std::ostringstream hexStream;
+	hexStream << std::setfill('0') << std::setw(sizeof(int)*2) << std::hex << crc32.checksum();
 	std::string crcAsHex = hexStream.str();
 
 	unsigned char reversedCrc[4];
@@ -889,18 +877,12 @@ void Rcon::sendPacket(RconPacket &rcon_packet)
 		reversedCrc[i] = x;
 	}
 
-	// Create Packet
-	std::stringstream cmdPacketStream;
-	cmdPacketStream.put(0x42); // B
-	cmdPacketStream.put(0x45); // E
-	cmdPacketStream.put(reversedCrc[0]); // 4-byte Checksum
-	cmdPacketStream.put(reversedCrc[1]);
-	cmdPacketStream.put(reversedCrc[2]);
-	cmdPacketStream.put(reversedCrc[3]);
-	cmdPacketStream << cmd;
-
-	std::shared_ptr<std::string> packet;
-	packet.reset( new std::string(cmdPacketStream.str()) );
+	std::shared_ptr<std::string> packet(new std::string("BE"));
+	packet->push_back(reversedCrc[0]);
+	packet->push_back(reversedCrc[1]);
+	packet->push_back(reversedCrc[2]);
+	packet->push_back(reversedCrc[3]);
+	packet->append(cmd);
 
 	{
 		std::lock_guard<std::mutex> lock(rcon_socket.mutex);
@@ -957,17 +939,12 @@ void Rcon::sendBanPacket(RconPacket &rcon_packet)
 	}
 
 	// Create Packet
-	std::stringstream cmdPacketStream;
-	cmdPacketStream.put(0x42); // B
-	cmdPacketStream.put(0x45); // E
-	cmdPacketStream.put(reversedCrc[0]); // 4-byte Checksum
-	cmdPacketStream.put(reversedCrc[1]);
-	cmdPacketStream.put(reversedCrc[2]);
-	cmdPacketStream.put(reversedCrc[3]);
-	cmdPacketStream << cmd;
-
-	std::shared_ptr<std::string> packet;
-	packet.reset( new std::string(cmdPacketStream.str()) );
+	std::shared_ptr<std::string> packet(new std::string("BE"));
+	packet->push_back(reversedCrc[0]);
+	packet->push_back(reversedCrc[1]);
+	packet->push_back(reversedCrc[2]);
+	packet->push_back(reversedCrc[3]);
+	packet->append(cmd);
 
 	{
 		std::lock_guard<std::mutex> lock(rcon_socket.mutex);
