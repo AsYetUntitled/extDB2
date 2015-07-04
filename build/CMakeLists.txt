@@ -41,7 +41,6 @@ SET(SOURCES
 	../src/protocols/log.cpp
 	../src/protocols/misc.cpp
 	../src/protocols/rcon.cpp
-	../src/protocols/steam.cpp
 	../src/protocols/steam_v2.cpp
 	../src/protocols/sql_custom_v2.cpp
 	../src/protocols/sql_raw_v2.cpp
@@ -167,12 +166,12 @@ endif()
 
 if(${WIN32})
 	# Windows
-	target_link_libraries(${EXECUTABLE_NAME} ${Boost_LIBRARIES}  ${POCO_LIBRARIES} ${MYSQL_LIBRARY} ${TBB_MALLOC_LIBRARY} Iphlpapi)
+	target_link_libraries(${EXECUTABLE_NAME} ${JEMalloc_LIBRARY}  ${Boost_LIBRARIES}  ${POCO_LIBRARIES} ${MYSQL_LIBRARY} Iphlpapi)
 	add_definitions(-DUNICODE -D_UNICODE -DWIN32_LEAN_AND_MEAN)
 	SET_TARGET_PROPERTIES(${EXECUTABLE_NAME} PROPERTIES LINK_FLAGS " /MANIFEST:NO /ERRORREPORT:NONE")
 else()
 	# Linux
-	target_link_libraries(${EXECUTABLE_NAME} -Wl,-Bstatic ${Boost_LIBRARIES} ${POCO_LIBRARIES} ${MYSQL_LIBRARY}  -Wl,-Bdynamic -ldl -pthread -lz ${TBB_MALLOC_LIBRARY})
+	target_link_libraries(${EXECUTABLE_NAME} -Wl,-Bstatic ${JEMalloc_LIBRARY} ${Boost_LIBRARIES} ${POCO_LIBRARIES} ${MYSQL_LIBRARY}  -Wl,-Bdynamic -ldl -pthread -lz)
 	set(CMAKE_CXX_FLAGS "-std=c++0x -static-libstdc++ -static-libgcc ${CMAKE_CXX_FLAGS}")
 
 	if (NOT((COMPILE_TEST_APPLICATION) OR (COMPILE_RCON_APPLICATION) OR (COMPILE_TEST_SANITIZE_APPLICATION)))
