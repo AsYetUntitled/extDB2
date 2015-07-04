@@ -895,6 +895,20 @@ void SQL_CUSTOM_V2::callPreparedStatement(std::string call_name, Custom_Call_Uno
  			session_data_ptr->statements_map.clear();
 		}
 	}
+	catch (Poco::Exception& e)
+	{
+		// Error
+		status = false;
+		#ifdef DEBUG_TESTING
+			extension_ptr->console->error("extDB2: SQL_CUSTOM_V2: Error Exception: {0}", e.displayText());
+		#endif
+		extension_ptr->logger->error("extDB2: SQL_CUSTOM_V2: Error Exception: {0}", e.displayText());
+		result = "[0,\"Error Exception\"]";
+		if (!session_data_ptr.isNull())
+		{
+ 			session_data_ptr->statements_map.clear();
+		}
+	}
 }
 
 
@@ -974,6 +988,19 @@ void SQL_CUSTOM_V2::callPreparedStatement(std::string call_name, Custom_Call_Uno
 		#endif
 		extension_ptr->logger->error("extDB2: SQL_CUSTOM_V2: Error ConnectionFailedException: {0}", e.displayText());
 		result = "[0,\"Error ConnectionFailedException\"]";
+		if (!session_data_ptr.isNull())
+		{
+ 			session_data_ptr->statements_map.clear();
+		}
+	}
+	catch (Poco::Exception& e)
+	{
+		status = false;
+		#ifdef DEBUG_TESTING
+			extension_ptr->console->error("extDB2: SQL_CUSTOM_V2: Error Exception: {0}", e.displayText());
+		#endif
+		extension_ptr->logger->error("extDB2: SQL_CUSTOM_V2: Error Exception: {0}", e.displayText());
+		result = "[0,\"Error Exception\"]";
 		if (!session_data_ptr.isNull())
 		{
  			session_data_ptr->statements_map.clear();
