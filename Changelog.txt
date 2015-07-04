@@ -1,8 +1,9 @@
 -------------------------------------------------------------------------------
 64 :
-	REMOVED: HTTP_RAW, was broken + noone was using it.
-	
-	Changed: Malloc over to JEMalloc
+	REMOVED: HTTP_RAW, it was broken and no-one was using it.
+	REMOVED: SQL_RAW + SQL_CUSTOM + STEAM  (V1 Protocols)
+
+	Changed: TBBMalloc over to statically linked JEMalloc. No extra tbb/tbbmalloc dll's required anymore.
 
 -------------------------------------------------------------------------------
 63 :
