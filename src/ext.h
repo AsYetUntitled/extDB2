@@ -32,7 +32,6 @@ along with this program. If not, see <http://www.gnu.org/licenses/>.
 #include "abstract_ext.h"
 #include "backends/belogscanner.h"
 #include "backends/rcon.h"
-#include "backends/remoteserver.h"
 #include "backends/steam.h"
 
 #include "protocols/abstract_protocol.h"
@@ -92,9 +91,6 @@ class Ext: public AbstractExt
 		// Rcon
 		std::unique_ptr<Rcon> rcon;
 
-		/// Remote Server
-		RemoteServer remote_server;
-
 		// BELogScanner
 		BELogScanner belog_scanner;
 
@@ -149,11 +145,6 @@ class Ext: public AbstractExt
 
 		// RCon
 		void startRcon(char *output, const int &output_size, const std::string &conf, std::vector<std::string> &extra_rcon_options);
-
-		// Remote
-		void startRemote(char *output, const int &output_size, const std::string &conf);
-		void getTCPRemote_mutexlock(char *output, const int &output_size);
-		void sendTCPRemote_mutexlock(std::string &input_str);
 
 		// Protocols
 		void addProtocol(char *output, const int &output_size, const std::string &database_id, const std::string &protocol, const std::string &protocol_name, const std::string &init_data);

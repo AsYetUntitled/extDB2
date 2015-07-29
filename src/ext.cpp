@@ -55,7 +55,6 @@ along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 #include "abstract_ext.h"
 #include "backends/rcon.h"
-#include "backends/remoteserver.h"
 #include "backends/steam.h"
 
 #include "protocols/abstract_protocol.h"
@@ -320,8 +319,6 @@ Ext::Ext(std::string shared_library_path, std::unordered_map<std::string, std::s
 			{
 				threads.create_thread(boost::bind(&boost::asio::io_service::run, &io_service));
 			}
-
-			remote_server.init(this);
 
 			// Initialize so have atomic setup correctly + Setup VAC Ban Logger
 			steam.init(this, ext_info.path, current_dateTime);
@@ -644,29 +641,6 @@ void Ext::startBELogscanner(char *output, const int &output_size, const std::str
 	else
 	{
 		std::strcpy(output, ("[0,\"BELogscanner Disabled in Config\"]"));
-	}
-}
-
-
-void Ext::startRemote(char *output, const int &output_size, const std::string &conf)
-// Start RCon
-{
-	if (pConf->getBool(conf + ".Enable", false))
-	{
-		if (!ext_connectors_info.remote)
-		{
-			remote_server.setup(conf);
-			ext_connectors_info.remote = true;
-			std::strcpy(output, ("[1]"));
-		}
-		else
-		{
-			std::strcpy(output, ("[0,\"RemoteAccess Already Started\"]"));
-		}
-	}
-	else
-	{
-		std::strcpy(output, ("[0,\"RemoteAccess Disabled in Config\"]"));
 	}
 }
 
@@ -1213,63 +1187,6 @@ void Ext::saveResult_mutexlock(std::vector<unsigned int> &unique_ids, const resu
 }
 
 
-void Ext::getTCPRemote_mutexlock(char *output, const int &output_size)
-{
-	std::string result;
-	{
-		std::lock_guard<std::mutex> lock(remote_server.inputs_mutex);
-		if (!remote_server.inputs.empty())
-		{
-			result = remote_server.inputs[0];
-			remote_server.inputs.erase(remote_server.inputs.begin());
-			if (remote_server.inputs.empty())
-			{
-				*(remote_server.inputs_flag) = false;
-			}
-		}
-	}
-
-	if (result.length() <= output_size)
-	{
-		std::strcpy(output, result.c_str());
-	}
-	else
-	{
-		resultData result_data;
-		result_data.message = std::move(result);
-		const unsigned int unique_id = saveResult_mutexlock(result_data);
-		std::strcpy(output, Poco::NumberFormatter::format(unique_id).c_str());
-	}
-}
-
-
-void Ext::sendTCPRemote_mutexlock(std::string &input_str)
-{
-	const std::string::size_type found = input_str.find(":", 2);
-
-	if ((found==std::string::npos) || (found == (input_str.size() - 1)))
-	{
-		logger->error("extDB2: Invalid Format: sendTCPRemote: {0}", input_str);
-	}
-	else
-	{
-		int unique_client_id;
-		if (Poco::NumberParser::tryParse(input_str.substr(2,(found-2)), unique_client_id))
-		{
-			std::lock_guard<std::mutex> lock(remote_server.clients_data_mutex);
-			if (remote_server.clients_data.count(unique_client_id) != 0)
-			{
-				remote_server.clients_data[unique_client_id].outputs.push_back(input_str.substr(found+1));
-			}
-		}
-		else
-		{
-			logger->error("extDB2: Invalid Format: sendTCPRemote: {0}", input_str);
-		}
-	}
-}
-
-
 void Ext::syncCallProtocol(char *output, const int &output_size, std::string &input_str)
 // Sync callPlugin
 {
@@ -1411,19 +1328,6 @@ void Ext::callExtension(char *output, const int &output_size, const char *functi
 				{
 					const unsigned int unique_id = Poco::NumberParser::parse(input_str.substr(2));
 					getMultiPartResult_mutexlock(output, output_size, unique_id);
-					break;
-				}
-				case '6': // GET -- TCPRemoteCode
-				{
-					if (*(remote_server.inputs_flag))
-					{
-						getTCPRemote_mutexlock(output, output_size);
-					}
-					break;
-				}
-				case '7': // SEND -- TCPRemoteCode
-				{
-					io_service.post(boost::bind(&Ext::sendTCPRemote_mutexlock, this, std::move(input_str)));
 					break;
 				}
 				case '0': //SYNC
@@ -1575,10 +1479,6 @@ void Ext::callExtension(char *output, const int &output_size, const char *functi
 								{
 									std::vector<std::string> extra_rcon_options;
 									startRcon(output, output_size, tokens[2], extra_rcon_options);
-								}
-								else if (tokens[1] == "START_REMOTE")
-								{
-									startRemote(output, output_size, tokens[2]);
 								}
 								else if (tokens[1] == "TIME")
 								{

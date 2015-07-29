@@ -36,7 +36,6 @@ SET(SOURCES
 	../src/ext.cpp
 	../src/backends/belogscanner.cpp
 	../src/backends/rcon.cpp
-	../src/backends/remoteserver.cpp
 	../src/backends/steam.cpp
 	../src/protocols/log.cpp
 	../src/protocols/misc.cpp

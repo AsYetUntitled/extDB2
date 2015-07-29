@@ -61,7 +61,6 @@ class AbstractExt
 
 			bool belog_scanner = false;
 			bool rcon = false;
-			bool remote = false;
 			bool steam=false;
 		};
 		extConnectors ext_connectors_info;
@@ -80,13 +79,6 @@ class AbstractExt
 
 		};
 		extInfo ext_info;
-
-		// RemoteAccess Info
-		struct remoteAccessInfo
-		{
-			std::string password;
-		};
-		remoteAccessInfo remote_access_info;
 
 		Poco::AutoPtr<Poco::Util::IniFileConfiguration> pConf;
 

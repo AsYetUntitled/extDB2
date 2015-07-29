@@ -22,7 +22,6 @@ http://a3wasteland.com
  - Commandline Arguments Support
  - Rcon Support
  - Rcon Whitelisting + Kicking for Bad Playernames
- - RemoteTCP Support to send/receive text from extDB2  
  - Steam VAC + Friends Queries  
 
 
@@ -33,7 +32,6 @@ http://a3wasteland.com
 
 #### Protocols
 
- - HTTP_RAW (Support for Auth, GET, POST)
  - SQL_CUSTOM_V2 (Ability to define sql prepared statements in a .ini file)
  - SQL_RAW
  - LOG (Custom Logfiles)
