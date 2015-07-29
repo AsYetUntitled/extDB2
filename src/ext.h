@@ -124,7 +124,7 @@ class Ext: public AbstractExt
 
 		// Unique ID
 		std::string::size_type call_extension_input_str_length;
-		unsigned int unique_id_counter = EXTDB_VERSION; // Can't be value 1
+		unsigned int unique_id_counter = 100; // Can't be value 1
 
 		// Results
 		std::unordered_map<unsigned int, resultData> stored_results;

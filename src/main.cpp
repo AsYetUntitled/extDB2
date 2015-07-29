@@ -82,7 +82,6 @@ Ext *extension;
 		{
 			case DLL_PROCESS_ATTACH:
 				{
-					je_init();
 					int nArgs;
 					LPWSTR *pszArgsW = CommandLineToArgvW(GetCommandLineW(), &nArgs);
 					std::unordered_map<std::string, std::string> options;
@@ -116,7 +115,6 @@ Ext *extension;
 				break;
 			case DLL_PROCESS_DETACH:
 				extension->stop();
-				je_uninit();
 				break;
 		}
 		return true;
