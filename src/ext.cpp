@@ -331,7 +331,7 @@ Ext::Ext(std::string shared_library_path, std::unordered_map<std::string, std::s
 		logger->info();
 
 		#ifdef _WIN32
-			spdlog::set_pattern("[%H:%M:%S:%e %z] [Thread %t] %v");
+			spdlog::set_pattern("[%H:%M:%S:%f %z] [Thread %t] %v");
 		#else
 			spdlog::set_pattern("[%H:%M:%S %z] [Thread %t] %v");
 		#endif
@@ -1270,12 +1270,12 @@ void Ext::sendTCPRemote_mutexlock(std::string &input_str)
 }
 
 
-void Ext::syncCallProtocol(char *output, const int &output_size, std::string &input_str, std::string::size_type &input_str_length)
+void Ext::syncCallProtocol(char *output, const int &output_size, std::string &input_str)
 // Sync callPlugin
 {
 	const std::string::size_type found = input_str.find(":",2);
 
-	if ((found==std::string::npos) || (found == (input_str_length - 1)))
+	if ((found==std::string::npos) || (found == (call_extension_input_str_length - 1)))
 	{
 		std::strcpy(output, "[0,\"Error Invalid Format\"]");
 		logger->error("extDB2: Invalid Format: {0}", input_str);
@@ -1307,7 +1307,7 @@ void Ext::syncCallProtocol(char *output, const int &output_size, std::string &in
 }
 
 
-void Ext::onewayCallProtocol(const int &output_size, std::string &input_str)
+void Ext::onewayCallProtocol(std::string &input_str)
 // ASync callProtocol
 {
 	const std::string::size_type found = input_str.find(":",2);
@@ -1321,7 +1321,6 @@ void Ext::onewayCallProtocol(const int &output_size, std::string &input_str)
 		if (const_itr != unordered_map_protocol.end())
 		{
 			resultData result_data;
-			result_data.message.reserve(output_size);
 			const_itr->second->callProtocol(input_str.substr(found+1), result_data.message, true);
 		}
 	}
@@ -1346,13 +1345,13 @@ void Ext::callExtension(char *output, const int &output_size, const char *functi
 	try
 	{
 		#ifdef DEBUG_LOGGING
-			logger->info("extDB2: Extension Input from Server: {0}", std::string(function));
+			logger->info("extDB2: Input from Server: {0}", std::string(function));
 		#endif
 
 		std::string input_str(function);
-		std::string::size_type input_str_length = input_str.length();
+		call_extension_input_str_length = input_str.length();
 
-		if (input_str_length <= 2)
+		if (call_extension_input_str_length <= 2)
 		{
 			std::strcpy(output, "[0,\"Error Invalid Message\"]");
 			logger->info("extDB2: Invalid Message: {0}", input_str);
@@ -1364,19 +1363,19 @@ void Ext::callExtension(char *output, const int &output_size, const char *functi
 			{
 				case '1': //ASYNC
 				{
-					io_service.post(boost::bind(&Ext::onewayCallProtocol, this, output_size, std::move(input_str)));
+					io_service.post(boost::bind(&Ext::onewayCallProtocol, this, std::move(input_str)));
 					std::strcpy(output, "[1]");
 					break;
 				}
 				case '2': //ASYNC + SAVE
 				{
 					// Protocol
-					const std::string::size_type found = input_str.find(":",2);
+					const std::string::size_type found = input_str.find(":", 2);
 
-					if ((found==std::string::npos) || (found == (input_str_length - 1)))
+					if ((found==std::string::npos) || (found == (call_extension_input_str_length - 1)))
 					{
 						std::strcpy(output, "[0,\"Error Invalid Format\"]");
-						logger->error("extDB2: Invalid Format: {0}", input_str);
+						logger->error("extDB2: Error Invalid Format: {0}", input_str);
 					}
 					else
 					{
@@ -1397,7 +1396,7 @@ void Ext::callExtension(char *output, const int &output_size, const char *functi
 						else
 						{
 							std::strcpy(output, "[0,\"Error Unknown Protocol\"]");
-							logger->error("extDB2: Unknown Protocol: {0}", protocol);
+							logger->error("extDB2: Error Unknown Protocol: {0}  Input String: {1}", protocol, input_str);
 						}
 					}
 					break;
@@ -1429,7 +1428,7 @@ void Ext::callExtension(char *output, const int &output_size, const char *functi
 				}
 				case '0': //SYNC
 				{
-					syncCallProtocol(output, output_size, input_str, input_str_length);
+					syncCallProtocol(output, output_size, input_str);
 					break;
 				}
 				case '9': // SYSTEM CALLS / SETUP
@@ -1468,7 +1467,7 @@ void Ext::callExtension(char *output, const int &output_size, const char *functi
 								else
 								{
 									std::strcpy(output, "[0,\"Error Invalid Format\"]");
-									logger->error("extDB2: Invalid Format: {0}", input_str);
+									logger->error("extDB2: Error Invalid Format: {0}", input_str);
 								}
 								break;
 							case 3:
@@ -1482,7 +1481,7 @@ void Ext::callExtension(char *output, const int &output_size, const char *functi
 							default:
 								// Invalid Format
 								std::strcpy(output, "[0,\"Error Invalid Format\"]");
-								logger->error("extDB2: Invalid Format: {0}", input_str);
+								logger->error("extDB2: Error Invalid Format: {0}", input_str);
 						}
 					}
 					else
@@ -1544,18 +1543,18 @@ void Ext::callExtension(char *output, const int &output_size, const char *functi
 								else if (tokens[1] == "VAR")
 								{
 									std::strcpy(output, ext_info.var.c_str());
-									logger->info("Extension Output Size: {0}", ext_info.var);
+									logger->info("Extension Command Line Variable: {0}", ext_info.var);
 								}
 								else if (tokens[1] == "SHUTDOWN")
 								{
 									std::strcpy(output, "[1]");
-									logger->info("extDB2: exit sent to armaserver");
+									logger->info("extDB2: Sending Shutdown to Armaserver");
 									std::exit(EXIT_SUCCESS);
 								}
 								else
 								{
 									std::strcpy(output, "[0,\"Error Invalid Format\"]");
-									logger->error("extDB2: Invalid Format: {0}", input_str);
+									logger->error("extDB2: Error Invalid Format: {0}", input_str);
 								}
 								break;
 							case 3:
@@ -1591,7 +1590,7 @@ void Ext::callExtension(char *output, const int &output_size, const char *functi
 								{
 									// Invalid Format
 									std::strcpy(output, "[0,\"Error Invalid Format\"]");
-									logger->error("extDB2: Invalid Format: {0}", input_str);
+									logger->error("extDB2: Error Invalid Format: {0}", input_str);
 								}
 								break;
 							case 4:
@@ -1614,7 +1613,7 @@ void Ext::callExtension(char *output, const int &output_size, const char *functi
 								{
 									// Invalid Format
 									std::strcpy(output, "[0,\"Error Invalid Format\"]");
-									logger->error("extDB2: Invalid Format: {0}", input_str);
+									logger->error("extDB2: Error Invalid Format: {0}", input_str);
 								}
 								break;
 							case 5:
@@ -1638,7 +1637,7 @@ void Ext::callExtension(char *output, const int &output_size, const char *functi
 								{
 									// Invalid Format
 									std::strcpy(output, "[0,\"Error Invalid Format\"]");
-									logger->error("extDB2: Invalid Format: {0}", input_str);
+									logger->error("extDB2: Error Invalid Format: {0}", input_str);
 								}
 								break;
 							case 6:
@@ -1650,14 +1649,14 @@ void Ext::callExtension(char *output, const int &output_size, const char *functi
 								{
 									// Invalid Format
 									std::strcpy(output, "[0,\"Error Invalid Format\"]");
-									logger->error("extDB2: Invalid Format: {0}", input_str);
+									logger->error("extDB2: Error Invalid Format: {0}", input_str);
 								}
 								break;
 							default:
 								{
 									// Invalid Format
 									std::strcpy(output, "[0,\"Error Invalid Format\"]");
-									logger->error("extDB2: Invalid Format: {0}", input_str);
+									logger->error("extDB2: Error Invalid Format: {0}", input_str);
 								}
 						}
 					}
@@ -1666,12 +1665,12 @@ void Ext::callExtension(char *output, const int &output_size, const char *functi
 				default:
 				{
 					std::strcpy(output, "[0,\"Error Invalid Message\"]");
-					logger->error("extDB2: Invalid Message: {0}", input_str);
+					logger->error("extDB2: Error Invalid Message: {0}", input_str);
 				}
 			}
 		}
 		#ifdef DEBUG_LOGGING
-			logger->info("extDB2: Extension Output to Server: {0}", output);
+			logger->info("extDB2: Output to Server: {0}", output);
 		#endif
 	}
 	catch (spdlog::spdlog_ex& e)
@@ -1693,15 +1692,9 @@ void Ext::callExtension(char *output, const int &output_size, const char *functi
 
 
 #if defined(TEST_APP) && defined(DEBUG_TESTING)
-	#ifdef _WIN32
-		#include <jemalloc/jemalloc.h>
-	#endif
 
 	int main(int nNumberofArgs, char* pszArgs[])
 	{
-		#ifdef _WIN32
-			je_init();
-		#endif
 		int result_size = 80;
 		char result[81] = {0};
 		std::string input_str;
@@ -1771,9 +1764,6 @@ void Ext::callExtension(char *output, const int &output_size, const char *functi
 			}
 		}
 		extension->stop();
-		#ifdef _WIN32
-			je_uninit();
-		#endif
 		return 0;
 	}
 #endif

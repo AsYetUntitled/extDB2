@@ -77,6 +77,9 @@ class Ext: public AbstractExt
 		void steamQuery(const unsigned int &unique_id, bool queryFriends, bool queryVacBans, std::vector<std::string> &steamIDs, bool wakeup);
 
 	private:
+		// Input
+		std::string::size_type input_str_length;
+
 		struct PlayerKeys
 		{
 			std::list<std::string> keys;
@@ -120,7 +123,8 @@ class Ext: public AbstractExt
 		std::vector < std::string > uniqueRandomVarNames;
 
 		// Unique ID
-		unsigned int unique_id_counter = 9816; // Can't be value 1
+		std::string::size_type call_extension_input_str_length;
+		unsigned int unique_id_counter = EXTDB_VERSION; // Can't be value 1
 
 		// Results
 		std::unordered_map<unsigned int, resultData> stored_results;
@@ -153,7 +157,7 @@ class Ext: public AbstractExt
 
 		// Protocols
 		void addProtocol(char *output, const int &output_size, const std::string &database_id, const std::string &protocol, const std::string &protocol_name, const std::string &init_data);
-		void syncCallProtocol(char *output, const int &output_size, std::string &input_str, std::string::size_type &input_str_length);
-		void onewayCallProtocol(const int &output_size, std::string &input_str);
+		void syncCallProtocol(char *output, const int &output_size, std::string &input_str);
+		void onewayCallProtocol(std::string &input_str);
 		void asyncCallProtocol(const int &output_size, const std::string &protocol, const std::string &data, const unsigned int unique_id);
 };

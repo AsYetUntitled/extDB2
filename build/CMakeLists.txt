@@ -106,18 +106,6 @@ if(${UNIX})
      set(CMAKE_FIND_LIBRARY_SUFFIXES ".a")
 endif()
 
-# JEMalloc
-if(${WIN32})
-	add_definitions(-D JEMALLOC_LAZY_LOCK)
-  add_definitions(-D USE_STATIC)
-endif()
-include(FindJEMalloc)
-if(JEMalloc_FOUND)
-	include_directories(${JEMalloc_INCLUDE_DIR})
-else()
-	message(FATAL_ERROR "\nJEMalloc not found\n Please Set JEMalloc_INCLUDE_DIR & JEMalloc_LIBRARIES")
-endif()
-
 # BOOST
 set(Boost_USE_STATIC_LIBS ON)
 set(Boost_USE_MULTITHREADED ON)
@@ -164,14 +152,32 @@ endif()
 # -----------------------
 
 
+# -----------------------
+# START DYNAMIC LIBRARIES
+# -----------------------
+
+add_definitions(-D TBB_MALLOC)
+include(FindTBB)
+if(TBB_FOUND)
+ include_directories(${TBB_INCLUDE_DIRS})
+else()
+ message(FATAL_ERROR "\nIntel TBB not found\n Please Set TBB_ROOT")
+endif()
+
+# -----------------------
+# END DYNAMIC LIBRARIES
+# -----------------------
+
+
+
 if(${WIN32})
 	# Windows
-	target_link_libraries(${EXECUTABLE_NAME} ${JEMalloc_LIBRARY}  ${Boost_LIBRARIES}  ${POCO_LIBRARIES} ${MYSQL_LIBRARY} Iphlpapi)
+	target_link_libraries(${EXECUTABLE_NAME} ${TBB_MALLOC_LIBRARY}  ${Boost_LIBRARIES}  ${POCO_LIBRARIES} ${MYSQL_LIBRARY} Iphlpapi)
 	add_definitions(-DUNICODE -D_UNICODE -DWIN32_LEAN_AND_MEAN)
 	SET_TARGET_PROPERTIES(${EXECUTABLE_NAME} PROPERTIES LINK_FLAGS " /MANIFEST:NO /ERRORREPORT:NONE")
 else()
 	# Linux
-	target_link_libraries(${EXECUTABLE_NAME} -Wl,-Bstatic ${JEMalloc_LIBRARY} ${Boost_LIBRARIES} ${POCO_LIBRARIES} ${MYSQL_LIBRARY}  -Wl,-Bdynamic -ldl -pthread -lz)
+	target_link_libraries(${EXECUTABLE_NAME} -Wl,-Bstatic ${Boost_LIBRARIES} ${POCO_LIBRARIES} ${MYSQL_LIBRARY}  -Wl,-Bdynamic ${TBB_MALLOC_LIBRARY}, -ldl -pthread -lz)
 	set(CMAKE_CXX_FLAGS "-std=c++0x -static-libstdc++ -static-libgcc ${CMAKE_CXX_FLAGS}")
 
 	if (NOT((COMPILE_TEST_APPLICATION) OR (COMPILE_RCON_APPLICATION) OR (COMPILE_TEST_SANITIZE_APPLICATION)))

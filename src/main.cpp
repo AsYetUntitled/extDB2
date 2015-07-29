@@ -69,7 +69,6 @@ Ext *extension;
 #elif _MSC_VER
 	// Code for MSVC compiler
 	//#define WIN32_LEAN_AND_MEAN             // Exclude rarely-used stuff from Windows headers   // Now Defined VIA CMake Build System
-	#include <jemalloc/jemalloc.h>
 
 	#include <windows.h>
 	#include <atlstr.h>

@@ -1,19 +1,22 @@
-#include <new>
-#include <jemalloc/jemalloc.h>
+#include "tbb/scalable_allocator.h"
 
-#include <cstdlib>
+// No retry loop because we assume that scalable_malloc does
+// all it takes to allocate the memory, so calling it repeatedly
+// will not improve the situation at all
+//
+// No use of std::new_handler because it cannot be done in portable
+// and thread-safe way (see sidebar)
+//
+// We throw std::bad_alloc() when scalable_malloc returns NULL
+//(we return NULL if it is a no-throw implementation)
 
-
-#ifndef	_WIN32
-#  define je_malloc	malloc
-#  define je_free free
-#endif
+// Code is from Intel threading building blocks
 
 
 void* operator new (size_t size)
 {
 	if (size == 0) size = 1;
-	void* ptr = je_malloc(size);
+	void* ptr = scalable_malloc(size);
 	if (ptr == NULL)
 	{
 		throw std::bad_alloc();
@@ -23,7 +26,7 @@ void* operator new (size_t size)
 
 void* operator new[] (size_t size)
 {
-	void* ptr = je_malloc(size);
+	void* ptr = scalable_malloc(size);
 	if (ptr == NULL)
 	{
 		throw std::bad_alloc();
@@ -34,7 +37,7 @@ void* operator new[] (size_t size)
 void* operator new (size_t size, const std::nothrow_t&)
 {
 	if (size == 0) size = 1;
-	void* ptr = je_malloc(size);
+	void* ptr = scalable_malloc(size);
 	if (ptr == NULL)
 	{
 		return ptr;
@@ -47,7 +50,7 @@ void* operator new (size_t size, const std::nothrow_t&)
 
 void* operator new[] (size_t size, const std::nothrow_t&)
 {
-	void* ptr = je_malloc(size);
+	void* ptr = scalable_malloc(size);
 	if (ptr == NULL)
 	{
 		return ptr;
@@ -62,7 +65,7 @@ void operator delete (void* ptr)
 {
 	if (ptr != NULL)
 	{
-		je_free(ptr);
+		scalable_free(ptr);
 	}
 }
 
@@ -75,7 +78,7 @@ void operator delete (void* ptr, const std::nothrow_t&)
 {
 	if (ptr != NULL)
 	{
-		je_free(ptr);
+		scalable_free(ptr);
 	}
 }
 

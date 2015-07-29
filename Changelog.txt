@@ -1,4 +1,10 @@
 -------------------------------------------------------------------------------
+65 :
+	Changed: Reverted back to TBBMalloc
+
+	IMPROVED: Minor tweaks to Improve Speed for CallExtension
+
+-------------------------------------------------------------------------------
 64 :
 	REMOVED: HTTP_RAW, it was broken and no-one was using it.
 	REMOVED: SQL_RAW + SQL_CUSTOM + STEAM  (V1 Protocols)

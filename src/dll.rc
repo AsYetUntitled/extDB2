@@ -2,8 +2,8 @@
 
 #define PRODUCT_NAME_STR     "extDB2"
 #define PRODUCT_DESCRIPTION  "Arma Kitchen Sink Extension"
-#define VER_VERSION          64,0,0,0
-#define VER_VERSION_STR      "64.0.0.0"
+#define VER_VERSION          65,0,0,0
+#define VER_VERSION_STR      "65.0.0.0"
 
 VS_VERSION_INFO VERSIONINFO
 FILEVERSION VER_VERSION

@@ -337,8 +337,6 @@ void BELogScanner::launchProcess()
 	std::string command;
 	std::vector<std::string> args;
 	std::string initialDirectory;
-
-
 	Poco::Process::launch(command, args, initialDirectory);
 }
 
