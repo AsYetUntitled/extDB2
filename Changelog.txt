@@ -1,8 +1,10 @@
 -------------------------------------------------------------------------------
 65 :
-	Changed: Reverted back to TBBMalloc
-
 	IMPROVED: Minor tweaks to Improve Speed for CallExtension
+
+	REMOVED: RemoteServer, it wasn't not user friendly. Plus i don't know anyone that was using it.
+
+	Changed: Reverted back to TBBMalloc
 
 -------------------------------------------------------------------------------
 64 :
