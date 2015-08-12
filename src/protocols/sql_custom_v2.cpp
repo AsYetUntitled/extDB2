@@ -521,10 +521,9 @@ void SQL_CUSTOM_V2::getResult(Custom_Call_UnorderedMap::const_iterator &custom_c
 			if (more)
 			{
 				result += "[";
+				std::size_t sql_output_options_size = custom_calls_itr->second.sql_outputs_options.size();
 				while (more)
 				{
-					std::size_t sql_output_options_size = custom_calls_itr->second.sql_outputs_options.size();
-
 					for (std::size_t col = 0; col < cols; ++col)
 					{
 						if (rs[col].isEmpty())
@@ -563,6 +562,7 @@ void SQL_CUSTOM_V2::getResult(Custom_Call_UnorderedMap::const_iterator &custom_c
 								// GENERATE BEGUID
 								getBEGUID(temp_str, temp_str);
 							}
+							extension_ptr->console->error("extDB2: F");
 							// STRING
 							if (custom_calls_itr->second.sql_outputs_options[col].string)
 							{
@@ -636,7 +636,6 @@ void SQL_CUSTOM_V2::getResult(Custom_Call_UnorderedMap::const_iterator &custom_c
 							{
 								temp_str = "\"\"";
 							}
-
 							// SANITIZE CHECK
 							if (custom_calls_itr->second.sql_outputs_options[col].check)
 							{
