@@ -136,18 +136,18 @@ class Ext: public AbstractExt
 		#endif
 
 		// BELogScanner
-		void startBELogscanner(char *output, const int &output_size, const std::string &conf);
+		void startBELogscanner(char *output, const std::string &conf);
 
 		// Database
-		void connectDatabase(char *output, const int &output_size, const std::string &database_conf, const std::string &database_id);
+		void connectDatabase(char *output, const std::string &database_conf, const std::string &database_id);
 		void getSinglePartResult_mutexlock(char *output, const int &output_size, const unsigned int &unique_id);
 		void getMultiPartResult_mutexlock(char *output, const int &output_size, const unsigned int &unique_id);
 
 		// RCon
-		void startRcon(char *output, const int &output_size, const std::string &conf, std::vector<std::string> &extra_rcon_options);
+		void startRcon(char *output, const std::string &conf, std::vector<std::string> &extra_rcon_options);
 
 		// Protocols
-		void addProtocol(char *output, const int &output_size, const std::string &database_id, const std::string &protocol, const std::string &protocol_name, const std::string &init_data);
+		void addProtocol(char *output, const std::string &database_id, const std::string &protocol, const std::string &protocol_name, const std::string &init_data);
 		void syncCallProtocol(char *output, const int &output_size, std::string &input_str);
 		void onewayCallProtocol(std::string &input_str);
 		void asyncCallProtocol(const int &output_size, const std::string &protocol, const std::string &data, const unsigned int unique_id);

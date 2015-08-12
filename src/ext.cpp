@@ -623,7 +623,7 @@ void Ext::steamQuery(const unsigned int &unique_id, bool queryFriends, bool quer
 }
 
 
-void Ext::startBELogscanner(char *output, const int &output_size, const std::string &conf)
+void Ext::startBELogscanner(char *output, const std::string &conf)
 {
 	if (pConf->getBool(conf + ".Enable", false))
 	{
@@ -645,7 +645,7 @@ void Ext::startBELogscanner(char *output, const int &output_size, const std::str
 }
 
 
-void Ext::startRcon(char *output, const int &output_size, const std::string &conf, std::vector<std::string> &extra_rcon_options)
+void Ext::startRcon(char *output, const std::string &conf, std::vector<std::string> &extra_rcon_options)
 // Start RCon
 {
 	if (ext_connectors_info.rcon)
@@ -856,7 +856,7 @@ void Ext::getUniqueString(int &len_of_string, int &num_of_strings, std::string &
 }
 
 
-void Ext::connectDatabase(char *output, const int &output_size, const std::string &database_conf, const std::string &database_id)
+void Ext::connectDatabase(char *output, const std::string &database_conf, const std::string &database_id)
 // Connection to Database, database_id used when connecting to multiple different database.
 {
 	if (!database_conf.empty())
@@ -1015,7 +1015,7 @@ void Ext::connectDatabase(char *output, const int &output_size, const std::strin
 }
 
 
-void Ext::addProtocol(char *output, const int &output_size, const std::string &database_id, const std::string &protocol, const std::string &protocol_name, const std::string &init_data)
+void Ext::addProtocol(char *output, const std::string &database_id, const std::string &protocol, const std::string &protocol_name, const std::string &init_data)
 {
 	std::lock_guard<std::mutex> lock(mutex_unordered_map_protocol);
 	if (unordered_map_protocol.find(protocol_name) != unordered_map_protocol.end())
@@ -1281,7 +1281,6 @@ void Ext::callExtension(char *output, const int &output_size, const char *functi
 				case '1': //ASYNC
 				{
 					io_service.post(boost::bind(&Ext::onewayCallProtocol, this, std::move(input_str)));
-					std::strcpy(output, "[1]");
 					break;
 				}
 				case '2': //ASYNC + SAVE
@@ -1299,7 +1298,7 @@ void Ext::callExtension(char *output, const int &output_size, const char *functi
 						// Check for Protocol Name Exists...
 						// Do this so if someone manages to get server, the error message wont get stored in the result unordered map
 						const std::string protocol = input_str.substr(2,(found-2));
-						if (unordered_map_protocol.find(protocol) != unordered_map_protocol.end())
+						if (unordered_map_protocol.find(protocol) != unordered_map_protocol.end()) //TODO Change to ITER
 						{
 							unsigned int unique_id;
 							{
@@ -1465,20 +1464,20 @@ void Ext::callExtension(char *output, const int &output_size, const char *functi
 								// DATABASE
 								if (tokens[1] == "ADD_DATABASE")
 								{
-									connectDatabase(output, output_size, tokens[2], tokens[2]);
+									connectDatabase(output, tokens[2], tokens[2]);
 								}
 								/*
 								// BELOGSCANNER
 								else if (tokens[1] == "START_BELOGSCANNER")
 								{
-									startBELogscanner(output, output_size, tokens[2]);
+									startBELogscanner(output, tokens[2]);
 								}
 								*/
 								// RCON
 								else if (tokens[1] == "START_RCON")
 								{
 									std::vector<std::string> extra_rcon_options;
-									startRcon(output, output_size, tokens[2], extra_rcon_options);
+									startRcon(output, tokens[2], extra_rcon_options);
 								}
 								else if (tokens[1] == "TIME")
 								{
@@ -1497,17 +1496,17 @@ void Ext::callExtension(char *output, const int &output_size, const char *functi
 								// DATABASE
 								if (tokens[1] == "ADD_DATABASE")
 								{
-									connectDatabase(output, output_size, tokens[2], tokens[3]);
+									connectDatabase(output, tokens[2], tokens[3]);
 								}
 								else if (tokens[1] == "ADD_PROTOCOL")
 								{
-									addProtocol(output, output_size, "", tokens[2], tokens[3], ""); // ADD No Options
+									addProtocol(output, "", tokens[2], tokens[3], ""); // ADD No Options
 								}
 								else if (tokens[1] == "START_RCON")
 								{
 									std::vector<std::string> extra_rcon_options;
 									extra_rcon_options.push_back(tokens[3]);
-									startRcon(output, output_size, tokens[2], extra_rcon_options);
+									startRcon(output, tokens[2], extra_rcon_options);
 								}
 								else
 								{
@@ -1520,18 +1519,18 @@ void Ext::callExtension(char *output, const int &output_size, const char *functi
 								//ADD PROTOCOL
 								if (tokens[1] == "ADD_PROTOCOL")
 								{
-									addProtocol(output, output_size, "", tokens[2], tokens[3], tokens[4]); // ADD + Init Options
+									addProtocol(output, "", tokens[2], tokens[3], tokens[4]); // ADD + Init Options
 								}
 								else if (tokens[1] == "ADD_DATABASE_PROTOCOL")
 								{
-									addProtocol(output, output_size, tokens[2], tokens[3], tokens[4], ""); // ADD Database Protocol + No Options
+									addProtocol(output, tokens[2], tokens[3], tokens[4], ""); // ADD Database Protocol + No Options
 								}
 								else if (tokens[1] == "START_RCON")
 								{
 									std::vector<std::string> extra_rcon_options;
 									extra_rcon_options.push_back(tokens[3]);
 									extra_rcon_options.push_back(tokens[4]);
-									startRcon(output, output_size, tokens[2], extra_rcon_options);
+									startRcon(output, tokens[2], extra_rcon_options);
 								}
 								else
 								{
@@ -1543,7 +1542,7 @@ void Ext::callExtension(char *output, const int &output_size, const char *functi
 							case 6:
 								if (tokens[1] == "ADD_DATABASE_PROTOCOL")
 								{
-									addProtocol(output, output_size, tokens[2], tokens[3], tokens[4], tokens[5]); // ADD Database Protocol + Options
+									addProtocol(output, tokens[2], tokens[3], tokens[4], tokens[5]); // ADD Database Protocol + Options
 								}
 								else
 								{
