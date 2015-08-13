@@ -1,4 +1,11 @@
 -------------------------------------------------------------------------------
+66 :
+	FIXED: Issue with SQL_CUSTOM_V2 + Error handling of null entries, when no there is no OUTPUT setting defined.
+	ADDED: SQL_CUSTOM_V2 for DEBUG BUILDS, will output a warning if Number of OUTPUT Options != SQL Columns.
+
+	MINOR: Some minor code tweaks
+
+-------------------------------------------------------------------------------
 65 :
 	IMPROVED: Minor tweaks to Improve Speed for CallExtension
 
