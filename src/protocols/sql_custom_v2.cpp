@@ -514,6 +514,17 @@ void SQL_CUSTOM_V2::getResult(Custom_Call_UnorderedMap::const_iterator &custom_c
 		std::size_t cols = rs.columnCount();
 		if (cols >= 1)
 		{
+			std::size_t sql_output_options_size = custom_calls_itr->second.sql_outputs_options.size();
+			#ifdef DEBUG_LOGGING
+				if (cols != sql_output_options_size)
+				{
+					#ifdef DEBUG_TESTING
+						extension_ptr->console->warn("extDB2: SQL_CUSTOM_V2: Warning: Number of Output Options: {0}, Number of SQL Columns: {1}", cols, sql_output_options_size);
+					#endif
+					extension_ptr->logger->warn("extDB2: SQL_CUSTOM_V2: Warning: Number of Output Options: {0}, Number of SQL Columns: {1}", cols, sql_output_options_size);				
+				}
+			#endif
+
 			std::string temp_str;
 			temp_str.reserve(result.capacity());
 
@@ -521,7 +532,6 @@ void SQL_CUSTOM_V2::getResult(Custom_Call_UnorderedMap::const_iterator &custom_c
 			if (more)
 			{
 				result += "[";
-				std::size_t sql_output_options_size = custom_calls_itr->second.sql_outputs_options.size();
 				while (more)
 				{
 					for (std::size_t col = 0; col < cols; ++col)
@@ -538,7 +548,6 @@ void SQL_CUSTOM_V2::getResult(Custom_Call_UnorderedMap::const_iterator &custom_c
 						// NO OUTPUT OPTIONS
 						if (col >= sql_output_options_size)
 						{
-							temp_str = rs[col].convert<std::string>();
 							// DEFAULT BEHAVIOUR
 							if (temp_str.empty())
 							{
@@ -562,7 +571,6 @@ void SQL_CUSTOM_V2::getResult(Custom_Call_UnorderedMap::const_iterator &custom_c
 								// GENERATE BEGUID
 								getBEGUID(temp_str, temp_str);
 							}
-							extension_ptr->console->error("extDB2: F");
 							// STRING
 							if (custom_calls_itr->second.sql_outputs_options[col].string)
 							{
