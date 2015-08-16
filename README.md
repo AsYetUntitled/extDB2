@@ -5,6 +5,7 @@ Arma3 Database + Rcon Extension for both Windows + Linux.
 
 #### Public Missions / Mods using extDB2
 http://www.exilemod.com   (Coming Soon)
+https://github.com/MrEliasen/Supremacy-Framework
 
 
 #### Public Missions / Mods using older extDB  
