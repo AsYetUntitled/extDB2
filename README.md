@@ -1,4 +1,4 @@
-## Exile Server Looking for Linux Extension 
+## Running an Exile Server Looking for Linux Extension ?
 Grab v65 at
 https://github.com/Torndeco/extDB2/releases/tag/65
 
