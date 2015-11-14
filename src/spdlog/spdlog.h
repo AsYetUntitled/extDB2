@@ -68,7 +68,7 @@ void set_level(level::level_enum log_level);
 // worker_warmup_cb (optional):
 //     callback function that will be called in worker thread upon start (can be used to init stuff like thread affinity)
 //
-void set_async_mode(size_t queue_size, const async_overflow_policy overflow_policy = async_overflow_policy::block_retry, const std::function<void()>& worker_warmup_cb = nullptr);
+void set_async_mode(size_t queue_size, const async_overflow_policy overflow_policy = async_overflow_policy::block_retry, const std::function<void()>& worker_warmup_cb = nullptr, const std::chrono::milliseconds& flush_interval_ms = std::chrono::milliseconds::zero());
 
 // Turn off async mode
 void set_sync_mode();
@@ -112,7 +112,7 @@ std::shared_ptr<logger> create(const std::string& logger_name, const It& sinks_b
 // Create and register a logger with templated sink type
 // Example: spdlog::create<daily_file_sink_st>("mylog", "dailylog_filename", "txt");
 template <typename Sink, typename... Args>
-std::shared_ptr<spdlog::logger> create(const std::string& logger_name, const Args&...);
+std::shared_ptr<spdlog::logger> create(const std::string& logger_name, Args&...);
 
 
 // Register the given logger with the given name

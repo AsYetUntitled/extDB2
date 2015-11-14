@@ -75,9 +75,12 @@ public:
 
     void log(const details::log_msg &msg) override
     {
-        ::syslog(syslog_prio_from_level(msg), "%s", msg.formatted.str().c_str());
+        ::syslog(syslog_prio_from_level(msg), "%s", msg.raw.str().c_str());
     }
 
+    void flush() override
+    {
+    }
 
 
 private:

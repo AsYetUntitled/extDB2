@@ -108,7 +108,7 @@ inline std::shared_ptr<spdlog::logger> spdlog::create(const std::string& logger_
 
 
 template <typename Sink, typename... Args>
-inline std::shared_ptr<spdlog::logger> spdlog::create(const std::string& logger_name, const Args&... args)
+inline std::shared_ptr<spdlog::logger> spdlog::create(const std::string& logger_name, Args&... args)
 {
     sink_ptr sink = std::make_shared<Sink>(args...);
     return details::registry::instance().create(logger_name, { sink });
@@ -137,9 +137,9 @@ inline void spdlog::set_level(level::level_enum log_level)
 }
 
 
-inline void spdlog::set_async_mode(size_t queue_size, const async_overflow_policy overflow_policy, const std::function<void()>& worker_warmup_cb)
+inline void spdlog::set_async_mode(size_t queue_size, const async_overflow_policy overflow_policy, const std::function<void()>& worker_warmup_cb, const std::chrono::milliseconds& flush_interval_ms)
 {
-    details::registry::instance().set_async_mode(queue_size, overflow_policy, worker_warmup_cb);
+    details::registry::instance().set_async_mode(queue_size, overflow_policy, worker_warmup_cb, flush_interval_ms);
 }
 
 inline void spdlog::set_sync_mode()
