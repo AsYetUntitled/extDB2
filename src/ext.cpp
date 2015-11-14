@@ -389,6 +389,7 @@ void Ext::stop()
 	{
 		//Poco::Data::SQLite::Connector::unregisterConnector();
 	}
+	spdlog::drop_all();
 }
 
 #ifdef _WIN32
