@@ -1,12 +1,3 @@
-## Running an Exile Server Looking for Linux Extension ?
-Grab v65 at
-https://github.com/Torndeco/extDB2/releases/tag/65
-
-## Having a problem?
-
-Have a look at this: [Troubleshooting](https://github.com/Torndeco/extDB2/wiki/Troubleshooting)   
-
-
 ## Arma3 Extension DB2
 Arma3 Database + Rcon Extension for both Windows + Linux.  
 
@@ -48,6 +39,10 @@ http://www.altisliferpg.com
 
 #### Documentation @  
 https://github.com/Torndeco/extDB2/wiki
+
+
+#### Troubleshooting for Server Admins  
+Have a look at this: [Troubleshooting](https://github.com/Torndeco/extDB2/wiki/Troubleshooting)   
 
 
 #### Linux Requirements  
