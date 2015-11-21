@@ -51,6 +51,8 @@ class Ext: public AbstractExt
 		void rconPlayers(unsigned int unique_id);
 
 		void getDateTime(const std::string &input_str, std::string &result);
+		void getUPTimeMinutes(std::string &result);
+		void getUPTimeSeconds(std::string &result);
 		void getUniqueString(int &len_of_string, int &num_of_string, std::string &result);
 
 		void createPlayerKey_mutexlock(std::string &player_beguid, int len_of_key);
@@ -129,6 +131,9 @@ class Ext: public AbstractExt
 		// Player Key
 		Poco::MD5Engine md5;
 		std::mutex mutex_md5;
+
+		// Timestamp
+		Poco::Timestamp uptime;
 
 		#ifdef _WIN32
 			// Search for randomized config file

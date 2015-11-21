@@ -71,6 +71,7 @@ Ext::Ext(std::string shared_library_path, std::unordered_map<std::string, std::s
 {
 	try
 	{
+		uptime.update();
 		bool conf_found = false;
 		#ifdef _WIN32
 			bool conf_randomized = false;
@@ -808,6 +809,16 @@ void Ext::getDateTime(const std::string &input_str, std::string &result)
 }
 
 
+void Ext::getUPTimeMinutes(std::string &result)
+{
+	result = "[1,[" + Poco::NumberFormatter::format(Poco::Timespan(uptime.elapsed()).totalMinutes()) + "]]";
+}
+
+void Ext::getUPTimeSeconds(std::string &result)
+{
+	result = "[1,[" + Poco::NumberFormatter::format(Poco::Timespan(uptime.elapsed()).totalSeconds()) + "]]";
+}
+
 void Ext::getUniqueString(int &len_of_string, int &num_of_strings, std::string &result)
 {
 	int num_of_retrys = 0;
@@ -1368,6 +1379,18 @@ void Ext::callExtension(char *output, const int &output_size, const char *functi
 									getDateTime(std::string(), result);
 									std::strcpy(output, result.c_str());
 								}
+								else if (tokens[1] == "UPTIME_MINUTES")
+								{
+									std::string result;
+									getUPTimeMinutes(result);
+									std::strcpy(output, result.c_str());
+								}
+								else if (tokens[1] == "UPTIME_SECONDS")
+								{
+									std::string result;
+									getUPTimeSeconds(result);
+									std::strcpy(output, result.c_str());
+								}
 								else
 								{
 									std::strcpy(output, "[0,\"Error Invalid Format\"]");
@@ -1442,6 +1465,18 @@ void Ext::callExtension(char *output, const int &output_size, const char *functi
 								{
 									std::string result;
 									getDateTime(std::string(), result);
+									std::strcpy(output, result.c_str());
+								}
+								else if (tokens[1] == "UPTIME_MINUTES")
+								{
+									std::string result;
+									getUPTimeMinutes(result);
+									std::strcpy(output, result.c_str());
+								}
+								else if (tokens[1] == "UPTIME_SECONDS")
+								{
+									std::string result;
+									getUPTimeSeconds(result);
 									std::strcpy(output, result.c_str());
 								}
 								else if (tokens[1] == "VAR")
