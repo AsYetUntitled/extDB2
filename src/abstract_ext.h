@@ -61,7 +61,7 @@ class AbstractExt
 
 			bool belog_scanner = false;
 			bool rcon = false;
-			bool steam=false;
+			bool steam = false;
 		};
 		extConnectors ext_connectors_info;
 

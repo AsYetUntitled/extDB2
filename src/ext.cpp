@@ -814,10 +814,12 @@ void Ext::getUPTimeMinutes(std::string &result)
 	result = "[1,[" + Poco::NumberFormatter::format(Poco::Timespan(uptime.elapsed()).totalMinutes()) + "]]";
 }
 
+
 void Ext::getUPTimeSeconds(std::string &result)
 {
 	result = "[1,[" + Poco::NumberFormatter::format(Poco::Timespan(uptime.elapsed()).totalSeconds()) + "]]";
 }
+
 
 void Ext::getUniqueString(int &len_of_string, int &num_of_strings, std::string &result)
 {
@@ -1379,18 +1381,6 @@ void Ext::callExtension(char *output, const int &output_size, const char *functi
 									getDateTime(std::string(), result);
 									std::strcpy(output, result.c_str());
 								}
-								else if (tokens[1] == "UPTIME_MINUTES")
-								{
-									std::string result;
-									getUPTimeMinutes(result);
-									std::strcpy(output, result.c_str());
-								}
-								else if (tokens[1] == "UPTIME_SECONDS")
-								{
-									std::string result;
-									getUPTimeSeconds(result);
-									std::strcpy(output, result.c_str());
-								}
 								else
 								{
 									std::strcpy(output, "[0,\"Error Invalid Format\"]");
@@ -1403,6 +1393,20 @@ void Ext::callExtension(char *output, const int &output_size, const char *functi
 									std::string result;
 									getDateTime(tokens[2], result);
 									std::strcpy(output, result.c_str());
+								}
+								else if (tokens[1] == "UPTIME")
+								{
+									std::string result;
+									if (tokens[2] == "MINUTES")
+									{
+										getUPTimeMinutes(result);
+										std::strcpy(output, result.c_str());
+									}
+									else if (tokens[2] == "SECONDS")
+									{
+										getUPTimeSeconds(result);
+										std::strcpy(output, result.c_str());
+									}
 								}
 								break;
 							default:
@@ -1467,18 +1471,6 @@ void Ext::callExtension(char *output, const int &output_size, const char *functi
 									getDateTime(std::string(), result);
 									std::strcpy(output, result.c_str());
 								}
-								else if (tokens[1] == "UPTIME_MINUTES")
-								{
-									std::string result;
-									getUPTimeMinutes(result);
-									std::strcpy(output, result.c_str());
-								}
-								else if (tokens[1] == "UPTIME_SECONDS")
-								{
-									std::string result;
-									getUPTimeSeconds(result);
-									std::strcpy(output, result.c_str());
-								}
 								else if (tokens[1] == "VAR")
 								{
 									std::strcpy(output, ext_info.var.c_str());
@@ -1520,6 +1512,20 @@ void Ext::callExtension(char *output, const int &output_size, const char *functi
 									std::string result;
 									getDateTime(tokens[2], result);
 									std::strcpy(output, result.c_str());
+								}
+								else if (tokens[1] == "UPTIME")
+								{
+									std::string result;
+									if (tokens[2] == "MINUTES")
+									{
+										getUPTimeMinutes(result);
+										std::strcpy(output, result.c_str());
+									}
+									else if (tokens[2] == "SECONDS")
+									{
+										getUPTimeSeconds(result);
+										std::strcpy(output, result.c_str());
+									}
 								}
 								else
 								{
