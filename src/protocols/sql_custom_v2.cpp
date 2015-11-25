@@ -520,8 +520,8 @@ void SQL_CUSTOM_V2::getResult(Custom_Call_UnorderedMap::const_iterator &custom_c
 				{
 					#ifdef DEBUG_TESTING
 						extension_ptr->console->warn("extDB2: SQL_CUSTOM_V2: Warning: Number of Output Options: {0}, Number of SQL Columns: {1}", cols, sql_output_options_size);
+						extension_ptr->logger->warn("extDB2: SQL_CUSTOM_V2: Warning: Number of Output Options: {0}, Number of SQL Columns: {1}, this warning only exists in Debug Version. Its just to let you know of a possible mistake", cols, sql_output_options_size);
 					#endif
-					extension_ptr->logger->warn("extDB2: SQL_CUSTOM_V2: Warning: Number of Output Options: {0}, Number of SQL Columns: {1}", cols, sql_output_options_size);				
 				}
 			#endif
 
@@ -796,125 +796,6 @@ void SQL_CUSTOM_V2::executeSQL(Poco::Data::Statement &sql_statement, std::string
 		#endif
 		extension_ptr->logger->error("extDB2: SQL_CUSTOM_V2: Error Exception: {0}", e.displayText());
 		result = "[0,\"Error Exception\"]";
-	}
-}
-
-
-void SQL_CUSTOM_V2::callPreparedStatement(std::string call_name, Custom_Call_UnorderedMap::const_iterator custom_calls_itr, std::vector< std::vector< std::string > > &all_processed_inputs, std::string &player_key, bool &status, std::string &result)
-{
-	Poco::Data::SessionPool::SessionDataPtr session_data_ptr;
-	try
-	{
-		Poco::Data::Session session = extension_ptr->getDBSession_mutexlock(*database_ptr, session_data_ptr);
-
-		std::unordered_map <std::string, Poco::Data::SessionPool::StatementCache>::iterator statement_cache_itr = session_data_ptr->statements_map.find(call_name);
-		if (statement_cache_itr != session_data_ptr->statements_map.end())
-		{
-			// CACHE
-			for (std::vector<int>::size_type i = 0; i != statement_cache_itr->second.size(); ++i)
-			{
-				statement_cache_itr->second[i].bindClear();
-				for (auto &processed_input : all_processed_inputs[i])
-				{
-					statement_cache_itr->second[i], Poco::Data::Keywords::use(processed_input);
-				}
-				statement_cache_itr->second[i].bindFixup();
-
-				executeSQL(statement_cache_itr->second[i], result, status);
-				if (!status)
-				{
-					break;
-				}
-				else if (i == (statement_cache_itr->second.size() - 1))
-				{
-					getResult(custom_calls_itr, session, statement_cache_itr->second[i], player_key, result, status);
-				}
-			}
-		}
-		else
-		{
-			// NO CACHE
-			int i = -1;
-			for (std::vector< std::string >::const_iterator it_sql_prepared_statements_vector = custom_calls_itr->second.sql_prepared_statements.begin(); it_sql_prepared_statements_vector != custom_calls_itr->second.sql_prepared_statements.end(); ++it_sql_prepared_statements_vector)
-			{
-				++i;
-
-				Poco::Data::Statement sql_statement(session);
-				sql_statement << *it_sql_prepared_statements_vector;
-
-				for (auto &processed_input : all_processed_inputs[i])
-				{
-					sql_statement, Poco::Data::Keywords::use(processed_input);
-				}
-
-				executeSQL(sql_statement, result, status);
-				if (!status)
-				{
-					break;
-				}
-				else if ( it_sql_prepared_statements_vector+1 == custom_calls_itr->second.sql_prepared_statements.end() )
-				{
-					getResult(custom_calls_itr, session, sql_statement, player_key, result, status);
-				}
-				if (custom_calls_itr->second.preparedStatement_cache)
-				{
-					session_data_ptr->statements_map[call_name].push_back(std::move(sql_statement));
-				}
-			}
-		}
-		if (!status)
-		{
-			// Don't need to wipe cached session if error caused by sanitize check
-			if (result != "[0,\"Error Value Failed Sanitize Check\"]")
-			{
-				#ifdef DEBUG_TESTING
-					extension_ptr->console->error("extDB2: SQL_CUSTOM_V2: Wiping Statements + Session");
-				#endif
-				extension_ptr->logger->error("extDB2: SQL_CUSTOM_V2: Wiping Statements + Session");
-				session_data_ptr->statements_map.clear();
-			}
-		}
-	}
-	catch (Poco::Data::MySQL::ConnectionException& e)
-	{
-		status = false;
-		#ifdef DEBUG_TESTING
-			extension_ptr->console->error("extDB2: SQL_CUSTOM_V2: Error ConnectionException: {0}", e.displayText());
-		#endif
-		extension_ptr->logger->error("extDB2: SQL_CUSTOM_V2: Error ConnectionException: {0}", e.displayText());
-		result = "[0,\"Error Connection Exception\"]";
-		if (!session_data_ptr.isNull())
-		{
- 			session_data_ptr->statements_map.clear();
-		}
-	}
-	catch (Poco::Data::ConnectionFailedException& e)
-	{
-		// Error
-		status = false;
-		#ifdef DEBUG_TESTING
-			extension_ptr->console->error("extDB2: SQL_CUSTOM_V2: Error ConnectionFailedException: {0}", e.displayText());
-		#endif
-		extension_ptr->logger->error("extDB2: SQL_CUSTOM_V2: Error ConnectionFailedException: {0}", e.displayText());
-		result = "[0,\"Error ConnectionFailedException\"]";
-		if (!session_data_ptr.isNull())
-		{
- 			session_data_ptr->statements_map.clear();
-		}
-	}
-	catch (Poco::Exception& e)
-	{
-		// Error
-		status = false;
-		#ifdef DEBUG_TESTING
-			extension_ptr->console->error("extDB2: SQL_CUSTOM_V2: Error Exception: {0}", e.displayText());
-		#endif
-		extension_ptr->logger->error("extDB2: SQL_CUSTOM_V2: Error Exception: {0}", e.displayText());
-		result = "[0,\"Error Exception\"]";
-		if (!session_data_ptr.isNull())
-		{
- 			session_data_ptr->statements_map.clear();
-		}
 	}
 }
 

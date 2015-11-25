@@ -91,7 +91,6 @@ class SQL_CUSTOM_V2: public AbstractProtocol
 
 		Custom_Call_UnorderedMap custom_calls;
 
-		void callPreparedStatement(std::string call_name, Custom_Call_UnorderedMap::const_iterator custom_calls_itr, std::vector< std::vector<std::string> > &all_processed_inputs, std::string &player_key, bool &status, std::string &result);
 		void callPreparedStatement(std::string call_name, Custom_Call_UnorderedMap::const_iterator custom_calls_itr, std::vector< std::vector<std::string> > &all_processed_inputs, std::vector<std::string> &custom_inputs, std::string &player_key, bool &status, std::string &result);
 
 		void executeSQL(Poco::Data::Statement &sql_statement, std::string &result, bool &status);
