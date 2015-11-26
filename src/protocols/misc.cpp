@@ -44,6 +44,22 @@ bool MISC::init(AbstractExt *extension, const std::string &database_id, const st
 }
 
 
+void MISC::getDateTime(const std::string &input_str, std::string &result)
+{
+	int time_offset = 0;
+	if (!(input_str.empty()))
+	{
+		if (!(Poco::NumberParser::tryParse(input_str, time_offset)))
+		{
+			time_offset = 0;
+		}
+	}
+
+	Poco::DateTime newtime = Poco::DateTime() + Poco::Timespan(time_offset * Poco::Timespan::HOURS);
+	result = "[1,[" + Poco::DateTimeFormatter::format(newtime, "%Y,%n,%d,%H,%M") + "]]";
+}
+
+
 void MISC::getCrc32(std::string &input_str, std::string &result)
 {
 	std::lock_guard<std::mutex> lock(mutex_crc32);
@@ -167,7 +183,7 @@ bool MISC::callProtocol(std::string input_str, std::string &result, const bool a
 	}
 	if (command == "TIME")
 	{
-		extension_ptr->getDateTime(data, result);
+		getDateTime(data, result);
 	}
 	else if (command == "BEGUID")
 	{

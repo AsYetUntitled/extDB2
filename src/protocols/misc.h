@@ -48,6 +48,7 @@ class MISC: public AbstractProtocol
 		void getMD4(std::string &input_str, std::string &result);
 		void getMD5(std::string &input_str, std::string &result);
 		void getBEGUID(std::string &input_str, std::string &result);
+		void getDateTime(const std::string &input_str, std::string &result);
 
 		void getRandomString(std::string &input_str, std::string &result);
 };

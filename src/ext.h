@@ -50,9 +50,6 @@ class Ext: public AbstractExt
 		void rconMissions(unsigned int unique_id);
 		void rconPlayers(unsigned int unique_id);
 
-		void getDateTime(const std::string &input_str, std::string &result);
-		void getUPTimeMinutes(std::string &result);
-		void getUPTimeSeconds(std::string &result);
 		void getUniqueString(int &len_of_string, int &num_of_string, std::string &result);
 
 		void createPlayerKey_mutexlock(std::string &player_beguid, int len_of_key);
@@ -133,12 +130,33 @@ class Ext: public AbstractExt
 		std::mutex mutex_md5;
 
 		// Timestamp
-		Poco::Timestamp uptime;
+		Poco::Timestamp timestamp;
+
+		// DateTime
+		int dateTime_offset = 0;
+		Poco::DateTime dateTime;
+		Poco::LocalDateTime localdateTime;
+
+		// TimeDiff
+		int timeDiff_zoneDiff = 0; //ALways Zero
+		std::string timeDiff_fmt = ("[%Y,%n,%d,%H,%M]");
+		Poco::DateTime dateDiffTime_1;
+		Poco::DateTime dateDiffTime_2;
+		Poco::Timespan timespan;
+
 
 		#ifdef _WIN32
 			// Search for randomized config file
 			void search(boost::filesystem::path &extDB_config_path, bool &conf_found, bool &conf_randomized);
 		#endif
+
+		// Time
+		void getDateTime(const std::string &input_str, std::string &result);
+		void getLocalDateTime(std::string &result);
+		void getUPTime(std::string &token, std::string &result);
+		void getTimeDiff(std::string &type, std::string& time1, std::string& time2, std::string &result);
+		void getCurrentTimeDiff(std::string &type, std::string& time1, std::string &result);
+		void getCurrentTimeDiff(std::string &type, std::string &time1, std::string &offset, std::string &result);
 
 		// BELogScanner
 		void startBELogscanner(char *output, const std::string &conf);

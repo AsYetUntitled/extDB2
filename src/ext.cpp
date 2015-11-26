@@ -41,6 +41,7 @@ along with this program. If not, see <http://www.gnu.org/licenses/>.
 #include <Poco/DateTime.h>
 #include <Poco/DateTimeFormatter.h>
 #include <Poco/Exception.h>
+#include <Poco/LocalDateTime.h>
 #include <Poco/NumberFormatter.h>
 #include <Poco/NumberParser.h>
 #include <Poco/StringTokenizer.h>
@@ -71,7 +72,7 @@ Ext::Ext(std::string shared_library_path, std::unordered_map<std::string, std::s
 {
 	try
 	{
-		uptime.update();
+		timestamp.update();
 		bool conf_found = false;
 		#ifdef _WIN32
 			bool conf_randomized = false;
@@ -793,31 +794,107 @@ void Ext::rconPlayers(unsigned int unique_id)
 }
 
 
+void Ext::getUPTime(std::string &token, std::string &result)
+{
+	if (token == "SECONDS")
+	{
+		result = "[1,[" + Poco::NumberFormatter::format(Poco::Timespan(timestamp.elapsed()).totalSeconds()) + "]]";
+	} else if (token == "MINUTES") {
+		result = "[1,[" + Poco::NumberFormatter::format(Poco::Timespan(timestamp.elapsed()).totalMinutes()) + "]]";
+	} else if (token == "HOURS") {
+		result = "[1,[" + Poco::NumberFormatter::format(Poco::Timespan(timestamp.elapsed()).totalHours()) + "]]";
+	}
+}
+
+
 void Ext::getDateTime(const std::string &input_str, std::string &result)
 {
-	int time_offset = 0;
 	if (!(input_str.empty()))
 	{
-		if (!(Poco::NumberParser::tryParse(input_str, time_offset)))
+		if (!(Poco::NumberParser::tryParse(input_str, dateTime_offset)))
 		{
-			time_offset = 0;
+			dateTime_offset = 0;
 		}
+	} else {
+		dateTime_offset = 0;
 	}
 
-	Poco::DateTime newtime = Poco::DateTime() + Poco::Timespan(time_offset * Poco::Timespan::HOURS);
-	result = "[1,[" + Poco::DateTimeFormatter::format(newtime, "%Y, %n, %d, %H, %M") + "]]";
+	dateTime = Poco::DateTime() + Poco::Timespan(dateTime_offset * Poco::Timespan::HOURS);
+	result = "[1,[" + Poco::DateTimeFormatter::format(dateTime, "%Y,%n,%d,%H,%M") + "]]";
 }
 
 
-void Ext::getUPTimeMinutes(std::string &result)
+void Ext::getLocalDateTime(std::string &result)
 {
-	result = "[1,[" + Poco::NumberFormatter::format(Poco::Timespan(uptime.elapsed()).totalMinutes()) + "]]";
+	result = "[1,[" + Poco::DateTimeFormatter::format(Poco::DateTime(), "%Y,%n,%d,%H,%M") + "]]";
 }
 
 
-void Ext::getUPTimeSeconds(std::string &result)
+void Ext::getCurrentTimeDiff(std::string &type, std::string& time1, std::string &result)
 {
-	result = "[1,[" + Poco::NumberFormatter::format(Poco::Timespan(uptime.elapsed()).totalSeconds()) + "]]";
+	Poco::DateTimeParser::parse(timeDiff_fmt, time1, dateDiffTime_1, timeDiff_zoneDiff);
+	timespan = dateDiffTime_1 - Poco::DateTime();
+
+	if (type == "ALL") {
+		result = "[1,[" + Poco::DateTimeFormatter::format(timespan, "%Y,%n,%d,%H,%M") + "]]";
+	} else if (type == "DAYS") {
+		result = "[1," + Poco::NumberFormatter::format(timespan.days())+ "]";
+	} else if (type == "HOURS") {
+		result = "[1," + Poco::NumberFormatter::format(timespan.totalHours())+ "]";
+	} else if (type == "MINUTES") {
+		result = "[1," + Poco::NumberFormatter::format(timespan.totalMinutes())+ "]";
+	} else if (type == "SECONDS") {
+		result = "[1," + Poco::NumberFormatter::format(timespan.totalSeconds())+ "]";
+	};
+}
+
+
+void Ext::getCurrentTimeDiff(std::string &type, std::string &time1, std::string &offset, std::string &result)
+{
+	if (!(offset.empty()))
+	{
+		if (!(Poco::NumberParser::tryParse(offset, dateTime_offset)))
+		{
+			dateTime_offset = 0;
+		}
+	} else {
+		dateTime_offset = 0;
+	}
+
+	Poco::DateTimeParser::parse(timeDiff_fmt, time1, dateDiffTime_1, timeDiff_zoneDiff);
+	timespan = dateDiffTime_1 - (Poco::DateTime() + Poco::Timespan(dateTime_offset * Poco::Timespan::HOURS));
+
+	if (type == "ALL") {
+		result = "[1,[" + Poco::DateTimeFormatter::format(timespan, "%Y,%n,%d,%H,%M") + "]]";
+	} else if (type == "DAYS") {
+		result = "[1," + Poco::NumberFormatter::format(timespan.days())+ "]";
+	} else if (type == "HOURS") {
+		result = "[1," + Poco::NumberFormatter::format(timespan.totalHours())+ "]";
+	} else if (type == "MINUTES") {
+		result = "[1," + Poco::NumberFormatter::format(timespan.totalMinutes())+ "]";
+	} else if (type == "SECONDS") {
+		result = "[1," + Poco::NumberFormatter::format(timespan.totalSeconds())+ "]";
+	};
+}
+
+
+void Ext::getTimeDiff(std::string &type, std::string& time1, std::string& time2, std::string &result)
+{
+	Poco::DateTimeParser::parse(timeDiff_fmt, time1, dateDiffTime_1, timeDiff_zoneDiff);
+	Poco::DateTimeParser::parse(timeDiff_fmt, time2, dateDiffTime_2, timeDiff_zoneDiff);
+	timespan = dateDiffTime_1 - dateDiffTime_2;
+
+	if (type == "ALL") {
+		result = "[1,[" + Poco::DateTimeFormatter::format(timespan, "%Y,%n,%d,%H,%M") + "]]";
+	} else if (type == "DAYS") {
+		result = "[1," + Poco::NumberFormatter::format(timespan.days())+ "]";
+	} else if (type == "HOURS") {
+		result = "[1," + Poco::NumberFormatter::format(timespan.totalHours())+ "]";
+	} else if (type == "MINUTES") {
+		result = "[1," + Poco::NumberFormatter::format(timespan.totalMinutes())+ "]";
+	} else if (type == "SECONDS") {
+		result = "[1," + Poco::NumberFormatter::format(timespan.totalSeconds())+ "]";
+	};
 }
 
 
@@ -1381,6 +1458,12 @@ void Ext::callExtension(char *output, const int &output_size, const char *functi
 									getDateTime(std::string(), result);
 									std::strcpy(output, result.c_str());
 								}
+								else if (tokens[1] == "LOCAL_TIME")
+								{
+									std::string result;
+									getLocalDateTime(result);
+									std::strcpy(output, result.c_str());
+								}
 								else
 								{
 									std::strcpy(output, "[0,\"Error Invalid Format\"]");
@@ -1397,16 +1480,30 @@ void Ext::callExtension(char *output, const int &output_size, const char *functi
 								else if (tokens[1] == "UPTIME")
 								{
 									std::string result;
-									if (tokens[2] == "MINUTES")
-									{
-										getUPTimeMinutes(result);
-										std::strcpy(output, result.c_str());
-									}
-									else if (tokens[2] == "SECONDS")
-									{
-										getUPTimeSeconds(result);
-										std::strcpy(output, result.c_str());
-									}
+									getUPTime(tokens[2], result);
+									std::strcpy(output, result.c_str());
+								}
+								break;
+							case 4:
+								if (tokens[1] == "TIMEDIFF_CURRENT_UTC")
+								{
+									std::string result;
+									getCurrentTimeDiff(tokens[2],tokens[3],result);
+									std::strcpy(output, result.c_str());
+								}
+								break;
+							case 5:
+								if (tokens[1] == "TIMEDIFF")
+								{
+									std::string result;
+									getTimeDiff(tokens[2],tokens[3],tokens[4],result);
+									std::strcpy(output, result.c_str());
+								}
+								else if (tokens[1] == "TIMEDIFF_CURRENT_UTC")
+								{
+									std::string result;
+									getCurrentTimeDiff(tokens[2],tokens[3],tokens[4],result);
+									std::strcpy(output, result.c_str());
 								}
 								break;
 							default:
@@ -1471,6 +1568,12 @@ void Ext::callExtension(char *output, const int &output_size, const char *functi
 									getDateTime(std::string(), result);
 									std::strcpy(output, result.c_str());
 								}
+								else if (tokens[1] == "LOCAL_TIME")
+								{
+									std::string result;
+									getLocalDateTime(result);
+									std::strcpy(output, result.c_str());
+								}
 								else if (tokens[1] == "VAR")
 								{
 									std::strcpy(output, ext_info.var.c_str());
@@ -1516,16 +1619,8 @@ void Ext::callExtension(char *output, const int &output_size, const char *functi
 								else if (tokens[1] == "UPTIME")
 								{
 									std::string result;
-									if (tokens[2] == "MINUTES")
-									{
-										getUPTimeMinutes(result);
-										std::strcpy(output, result.c_str());
-									}
-									else if (tokens[2] == "SECONDS")
-									{
-										getUPTimeSeconds(result);
-										std::strcpy(output, result.c_str());
-									}
+									getUPTime(tokens[2], result);
+									std::strcpy(output, result.c_str());
 								}
 								else
 								{
@@ -1542,7 +1637,7 @@ void Ext::callExtension(char *output, const int &output_size, const char *functi
 								}
 								else if (tokens[1] == "ADD_PROTOCOL")
 								{
-									addProtocol(output, "", tokens[2], tokens[3], ""); // ADD No Options
+									addProtocol(output, "", tokens[2], tokens[3], "");
 								}
 								else if (tokens[1] == "START_RCON")
 								{
@@ -1557,9 +1652,15 @@ void Ext::callExtension(char *output, const int &output_size, const char *functi
 									logger->error("extDB2: Error Invalid Format: {0}", input_str);
 								}
 								break;
-							case 5:
+						case 5:
 								//ADD PROTOCOL
-								if (tokens[1] == "ADD_PROTOCOL")
+								if (tokens[1] == "TIMEDIFF")
+								{
+									std::string result;
+									getTimeDiff(tokens[2],tokens[3],tokens[4],result);
+									std::strcpy(output, result.c_str());
+								}
+								else if (tokens[1] == "ADD_PROTOCOL")
 								{
 									addProtocol(output, "", tokens[2], tokens[3], tokens[4]); // ADD + Init Options
 								}
