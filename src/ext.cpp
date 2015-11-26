@@ -836,7 +836,7 @@ void Ext::getCurrentTimeDiff(std::string &type, std::string& time1, std::string 
 	timespan = dateDiffTime_1 - Poco::DateTime();
 
 	if (type == "ALL") {
-		result = "[1,[" + Poco::DateTimeFormatter::format(timespan, "%Y,%n,%d,%H,%M") + "]]";
+		result = "[1,[" + Poco::DateTimeFormatter::format(timespan, "%d,%H,%M") + "]]";
 	} else if (type == "DAYS") {
 		result = "[1," + Poco::NumberFormatter::format(timespan.days())+ "]";
 	} else if (type == "HOURS") {
@@ -865,7 +865,7 @@ void Ext::getCurrentTimeDiff(std::string &type, std::string &time1, std::string 
 	timespan = dateDiffTime_1 - (Poco::DateTime() + Poco::Timespan(dateTime_offset * Poco::Timespan::HOURS));
 
 	if (type == "ALL") {
-		result = "[1,[" + Poco::DateTimeFormatter::format(timespan, "%Y,%n,%d,%H,%M") + "]]";
+		result = "[1,[" + Poco::DateTimeFormatter::format(timespan, "%d,%H,%M") + "]]";
 	} else if (type == "DAYS") {
 		result = "[1," + Poco::NumberFormatter::format(timespan.days())+ "]";
 	} else if (type == "HOURS") {
@@ -885,7 +885,7 @@ void Ext::getTimeDiff(std::string &type, std::string& time1, std::string& time2,
 	timespan = dateDiffTime_1 - dateDiffTime_2;
 
 	if (type == "ALL") {
-		result = "[1,[" + Poco::DateTimeFormatter::format(timespan, "%Y,%n,%d,%H,%M") + "]]";
+		result = "[1,[" + Poco::DateTimeFormatter::format(timespan, "%d,%H,%M") + "]]";
 	} else if (type == "DAYS") {
 		result = "[1," + Poco::NumberFormatter::format(timespan.days())+ "]";
 	} else if (type == "HOURS") {
