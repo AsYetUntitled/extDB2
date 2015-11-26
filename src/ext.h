@@ -154,8 +154,10 @@ class Ext: public AbstractExt
 		void getDateTime(const std::string &input_str, std::string &result);
 		void getLocalDateTime(std::string &result);
 		void getUPTime(std::string &token, std::string &result);
+		void getDateAdd(std::string& time1, std::string& time2, std::string &result);
 		void getTimeDiff(std::string &type, std::string& time1, std::string& time2, std::string &result);
 		void getCurrentTimeDiff(std::string &type, std::string& time1, std::string &result);
+		void getCurrentLocalTimeDiff(std::string &type, std::string& time1, std::string &result);
 		void getCurrentTimeDiff(std::string &type, std::string &time1, std::string &offset, std::string &result);
 
 		// BELogScanner

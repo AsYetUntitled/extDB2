@@ -830,10 +830,65 @@ void Ext::getLocalDateTime(std::string &result)
 }
 
 
+void Ext::getDateAdd(std::string& time1, std::string& input_str, std::string &result)
+{
+	input_str.erase(input_str.begin());
+	input_str.pop_back();
+	Poco::StringTokenizer tokens(input_str, ",");
+	if (tokens.count() == 4)
+	{
+		int days;
+		int hours;
+		int minutes;
+		int seconds;
+		int microSeconds = 0;
+
+		if (!(Poco::NumberParser::tryParse(tokens[0], days)))
+		{
+			days = 0;
+		}
+		if (!(Poco::NumberParser::tryParse(tokens[1], hours)))
+		{
+			hours = 0;
+		}
+		if (!(Poco::NumberParser::tryParse(tokens[2], minutes)))
+		{
+			minutes = 0;
+		}
+		if (!(Poco::NumberParser::tryParse(tokens[3], seconds)))
+		{
+			seconds = 0;
+		}
+		timespan = Poco::Timespan(days,hours,minutes,seconds,microSeconds);
+		Poco::DateTimeParser::parse(timeDiff_fmt, time1, dateTime, timeDiff_zoneDiff);
+		dateTime = dateDiffTime_1 + timespan;
+		result = "[1,[" + Poco::DateTimeFormatter::format(dateTime, "%Y,%n,%d,%H,%M") + "]]";
+	};
+}
+
+
 void Ext::getCurrentTimeDiff(std::string &type, std::string& time1, std::string &result)
 {
 	Poco::DateTimeParser::parse(timeDiff_fmt, time1, dateDiffTime_1, timeDiff_zoneDiff);
 	timespan = dateDiffTime_1 - Poco::DateTime();
+
+	if (type == "ALL") {
+		result = "[1,[" + Poco::DateTimeFormatter::format(timespan, "%d,%H,%M") + "]]";
+	} else if (type == "DAYS") {
+		result = "[1," + Poco::NumberFormatter::format(timespan.days())+ "]";
+	} else if (type == "HOURS") {
+		result = "[1," + Poco::NumberFormatter::format(timespan.totalHours())+ "]";
+	} else if (type == "MINUTES") {
+		result = "[1," + Poco::NumberFormatter::format(timespan.totalMinutes())+ "]";
+	} else if (type == "SECONDS") {
+		result = "[1," + Poco::NumberFormatter::format(timespan.totalSeconds())+ "]";
+	};
+}
+
+void Ext::getCurrentLocalTimeDiff(std::string &type, std::string& time1, std::string &result)
+{
+	Poco::DateTimeParser::parse(timeDiff_fmt, time1, dateDiffTime_1, timeDiff_zoneDiff);
+	timespan = dateDiffTime_1 - Poco::LocalDateTime().utc();
 
 	if (type == "ALL") {
 		result = "[1,[" + Poco::DateTimeFormatter::format(timespan, "%d,%H,%M") + "]]";
@@ -1485,10 +1540,22 @@ void Ext::callExtension(char *output, const int &output_size, const char *functi
 								}
 								break;
 							case 4:
-								if (tokens[1] == "TIMEDIFF_CURRENT_UTC")
+								if (tokens[1] == "TIMEDIFF_CURRENT")
 								{
 									std::string result;
 									getCurrentTimeDiff(tokens[2],tokens[3],result);
+									std::strcpy(output, result.c_str());
+								}
+								else if (tokens[1] == "TIMEDIFF_CURRENT_LOCAL")
+								{
+									std::string result;
+									getCurrentTimeDiff(tokens[2],tokens[3],result);
+									std::strcpy(output, result.c_str());
+								}
+								else if (tokens[1] == "DATEADD")
+								{
+									std::string result;
+									getDateAdd(tokens[2],tokens[3],result);
 									std::strcpy(output, result.c_str());
 								}
 								break;
@@ -1499,7 +1566,7 @@ void Ext::callExtension(char *output, const int &output_size, const char *functi
 									getTimeDiff(tokens[2],tokens[3],tokens[4],result);
 									std::strcpy(output, result.c_str());
 								}
-								else if (tokens[1] == "TIMEDIFF_CURRENT_UTC")
+								else if (tokens[1] == "TIMEDIFF_CURRENT")
 								{
 									std::string result;
 									getCurrentTimeDiff(tokens[2],tokens[3],tokens[4],result);
@@ -1630,8 +1697,25 @@ void Ext::callExtension(char *output, const int &output_size, const char *functi
 								}
 								break;
 							case 4:
-								// DATABASE
-								if (tokens[1] == "ADD_DATABASE")
+								if (tokens[1] == "TIMEDIFF_CURRENT")
+								{
+									std::string result;
+									getCurrentTimeDiff(tokens[2],tokens[3],result);
+									std::strcpy(output, result.c_str());
+								}
+								else if (tokens[1] == "TIMEDIFF_CURRENT_LOCAL")
+								{
+									std::string result;
+									getCurrentTimeDiff(tokens[2],tokens[3],result);
+									std::strcpy(output, result.c_str());
+								}
+								else if (tokens[1] == "DATEADD")
+								{
+									std::string result;
+									getDateAdd(tokens[2],tokens[3],result);
+									std::strcpy(output, result.c_str());
+								}
+								else if (tokens[1] == "ADD_DATABASE")
 								{
 									connectDatabase(output, tokens[2], tokens[3]);
 								}
@@ -1653,11 +1737,16 @@ void Ext::callExtension(char *output, const int &output_size, const char *functi
 								}
 								break;
 						case 5:
-								//ADD PROTOCOL
 								if (tokens[1] == "TIMEDIFF")
 								{
 									std::string result;
 									getTimeDiff(tokens[2],tokens[3],tokens[4],result);
+									std::strcpy(output, result.c_str());
+								}
+								else if (tokens[1] == "TIMEDIFF_CURRENT")
+								{
+									std::string result;
+									getCurrentTimeDiff(tokens[2],tokens[3],tokens[4],result);
 									std::strcpy(output, result.c_str());
 								}
 								else if (tokens[1] == "ADD_PROTOCOL")
