@@ -798,11 +798,11 @@ void Ext::getUPTime(std::string &token, std::string &result)
 {
 	if (token == "SECONDS")
 	{
-		result = "[1,[" + Poco::NumberFormatter::format(Poco::Timespan(timestamp.elapsed()).totalSeconds()) + "]]";
+		result = "[1," + Poco::NumberFormatter::format(Poco::Timespan(timestamp.elapsed()).totalSeconds()) + "]";
 	} else if (token == "MINUTES") {
-		result = "[1,[" + Poco::NumberFormatter::format(Poco::Timespan(timestamp.elapsed()).totalMinutes()) + "]]";
+		result = "[1," + Poco::NumberFormatter::format(Poco::Timespan(timestamp.elapsed()).totalMinutes()) + "]";
 	} else if (token == "HOURS") {
-		result = "[1,[" + Poco::NumberFormatter::format(Poco::Timespan(timestamp.elapsed()).totalHours()) + "]]";
+		result = "[1," + Poco::NumberFormatter::format(Poco::Timespan(timestamp.elapsed()).totalHours()) + "]";
 	}
 }
 
@@ -861,7 +861,8 @@ void Ext::getDateAdd(std::string& time1, std::string& input_str, std::string &re
 		}
 		timespan = Poco::Timespan(days,hours,minutes,seconds,microSeconds);
 		Poco::DateTimeParser::parse(timeDiff_fmt, time1, dateTime, timeDiff_zoneDiff);
-		dateTime = dateDiffTime_1 + timespan;
+		//Poco::Timespan(dateTime_offset * Poco::Timespan::HOURS)
+		dateTime = dateTime + timespan;
 		result = "[1,[" + Poco::DateTimeFormatter::format(dateTime, "%Y,%n,%d,%H,%M") + "]]";
 	};
 }
