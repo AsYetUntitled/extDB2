@@ -859,14 +859,9 @@ void Ext::getDateAdd(std::string& time1, std::string& input_str, std::string &re
 		{
 			seconds = 0;
 		}
-		logger->info("extDB2: Days: {0}, Hours: {1}, Minutes: {2}, Seconds: {3}, microSeconds: {4}",days,hours,minutes,seconds,microSeconds);
 		timespan = Poco::Timespan(days,hours,minutes,seconds,microSeconds);
-		logger->info("extDB2: Days: {0}, Hours: {1}, Minutes: {2}, Seconds: {3}, microSeconds: {4}",timespan.days(),timespan.hours(),timespan.minutes(),timespan.seconds(),timespan.microseconds());
 		Poco::DateTimeParser::parse(timeDiff_fmt, time1, dateTime, timeDiff_zoneDiff);
-		logger->info("extDB2: DatTimeFormatter: {0}", Poco::DateTimeFormatter::format(dateTime, "%Y,%n,%d,%H,%M"));
 		//Poco::Timespan(dateTime_offset * Poco::Timespan::HOURS)
-		logger->info("extDB2x: Days: {0}, Hours: {1}, Minutes: {2}, Seconds: {3}, microSeconds: {4}",timespan.days(),timespan.hours(),timespan.minutes(),timespan.seconds(),timespan.microseconds());
-		logger->info("extDB2x: Days: {0}, Hours: {1}, Minutes: {2}, Seconds: {3}, microSeconds: {4}",timespan.days(),timespan.hours(),timespan.minutes(),timespan.seconds(),timespan.totalMicroseconds());
 		dateTime += timespan;
 		result = "[1,[" + Poco::DateTimeFormatter::format(dateTime, "%Y,%n,%d,%H,%M") + "]]";
 	};
