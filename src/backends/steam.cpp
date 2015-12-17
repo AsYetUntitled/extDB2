@@ -29,10 +29,10 @@ From Frank https://gist.github.com/Fank/11127158
 #include <boost/algorithm/string.hpp>
 #include <boost/filesystem.hpp>
 
-#include "Poco/Dynamic/Var.h"
-#include "Poco/JSON/Array.h"
-#include "Poco/JSON/Object.h"
-#include "Poco/JSON/Parser.h"
+#include <Poco/Dynamic/Var.h>
+#include <Poco/JSON/Array.h>
+#include <Poco/JSON/Object.h>
+#include <Poco/JSON/Parser.h>
 
 #include <Poco/MD5Engine.h>
 #include <Poco/DigestEngine.h>
