@@ -826,7 +826,7 @@ void Ext::getDateTime(const std::string &input_str, std::string &result)
 
 void Ext::getLocalDateTime(std::string &result)
 {
-	result = "[1,[" + Poco::DateTimeFormatter::format(Poco::DateTime(), "%Y,%n,%d,%H,%M") + "]]";
+	result = "[1,[" + Poco::DateTimeFormatter::format(Poco::LocalDateTime(), "%Y,%n,%d,%H,%M") + "]]";
 }
 
 
