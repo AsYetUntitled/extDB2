@@ -1,4 +1,42 @@
 -------------------------------------------------------------------------------
+71 :
+	Fixed: Minor Issue of not trimming whitespace from INPUTS in SQL_CUSTOM_V2 ini file 
+
+	Updated: Poco Library
+	Updated: TBBMalloc (Windows Build only)
+	Updated: MySQL  
+-------------------------------------------------------------------------------
+70 :
+	Fixed: 9:LOCAL_TIME now returns localtime
+
+	Updated: Poco Library + MySQL + Intel TBB Malloc
+	Updated: extDB2 now build against Windows 10 SDK
+
+	Known Issues: 9:DateAdd Might be off by afew +- afew minutes.
+-------------------------------------------------------------------------------
+69 :
+	REMOVED: Old functions
+	
+	FIXED: Uptime function
+	
+	ADDED: TimeDiff
+
+	MINOR: Some minor code tweaks
+-------------------------------------------------------------------------------
+68 :
+	UPDATED: SPDLog
+
+	ADDED: vs2015 support
+
+	ADDED: Ability to get extension uptime
+-------------------------------------------------------------------------------
+67 :
+	FIXED: Typo in linux build script
+
+	ADDED: A SPDLog fix for vs2013 
+
+	REMOVED: Removed old files
+-------------------------------------------------------------------------------
 66 :
 	FIXED: Issue with SQL_CUSTOM_V2 + Error handling of null entries, when no there is no OUTPUT setting defined.
 	ADDED: SQL_CUSTOM_V2 for DEBUG BUILDS, will output a warning if Number of OUTPUT Options != SQL Columns.
