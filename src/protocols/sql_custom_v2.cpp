@@ -359,14 +359,14 @@ bool SQL_CUSTOM_V2::init(AbstractExt *extension, const std::string &database_id,
 					custom_calls[call_name].sql_inputs_options.push_back(std::vector < Value_Options >());
 
 					// Get Input Options
-					Poco::StringTokenizer tokens_input(template_ini->getString((call_name + ".SQL" + sql_line_num_str + "_INPUTS"), ""), ",");
+					Poco::StringTokenizer tokens_input(template_ini->getString((call_name + ".SQL" + sql_line_num_str + "_INPUTS"), ""), ",", Poco::StringTokenizer::TOK_TRIM);
 					for (auto &token_input : tokens_input)
 					{
 						// Initialize Default Input Options
 						Value_Options inputs_options;
 						inputs_options.check =  template_ini->getBool(call_name + ".Sanitize Input Value Check", default_input_sanitize_value_check);
 
-						Poco::StringTokenizer tokens_input_options(token_input, "-");
+						Poco::StringTokenizer tokens_input_options(token_input, "-", Poco::StringTokenizer::TOK_TRIM);
 						for (auto &sub_token_input : tokens_input_options)
 						{
 							int temp_int;
