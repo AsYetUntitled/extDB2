@@ -4,10 +4,10 @@ Arma3 Database + Rcon Extension for both Windows + Linux.
 <a href="https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=2SUEFTGABTAM2"><img src="https://www.paypalobjects.com/en_US/i/btn/btn_donate_LG.gif" alt="[paypal]" />
 
 #### Public Missions / Mods using extDB2
-http://www.exilemod.com  
+https://www.exilemod.com  
 http://a3wasteland.com  
 https://github.com/MrEliasen/Supremacy-Framework  
-http://www.altisliferpg.com  
+https://armarpglife.com/forums  
 
 #### Features
 
